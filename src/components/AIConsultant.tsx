@@ -1,0 +1,390 @@
+import React, { useState, useRef, useEffect } from "react";
+import { Language } from "../types";
+import { TRANSLATIONS, getTranslation } from "../i18n";
+import { 
+  Sparkles, 
+  Send, 
+  Bot,
+  Key,
+  Settings
+} from "lucide-react";
+
+interface Message {
+  sender: "user" | "ai";
+  text: string;
+  time?: string;
+}
+
+interface AIConsultantProps {
+  lang: Language;
+}
+
+export const AIConsultant: React.FC<AIConsultantProps> = ({ lang }) => {
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+  const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
+
+  const [inputMessage, setInputMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      sender: "ai",
+      text: getTranslation(lang, "aiGreeting", "سلام! من دستیار هوشمند و کارشناس ارشد کاداستر آریانا رهنما هستم. چگونه می‌توانم در ارزیابی قیمت املاک، نرخ روز تسعیر ارز کاداستر یا راهنمای سندگذاری بین‌المللی به شما کمک کنم؟"),
+      time: new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" })
+    }
+  ]);
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Custom User Key and Free Credits Storage
+  const [userApiKey, setUserApiKey] = useState<string>(() => {
+    return localStorage.getItem("user_gemini_key") || "";
+  });
+  const [creditsRemaining, setCreditsRemaining] = useState<number>(() => {
+    const stored = localStorage.getItem("ai_message_credits_rem");
+    return stored !== null ? Math.max(0, parseInt(stored, 10)) : 50;
+  });
+  const [showSettings, setShowSettings] = useState(false);
+  const [tempKey, setTempKey] = useState(userApiKey);
+
+  const presets = [
+    getTranslation(lang, "aiPreset1", "قیمت متوسط املاک مسکو چقدر است؟"),
+    getTranslation(lang, "aiPreset2", "ارزش‌گذاری هوشمند کاداستر چگونه انجام می‌شود؟"),
+    getTranslation(lang, "aiPreset3", "امنیت کاداستر آریانا رهنما چگونه تامین می‌شود؟")
+  ];
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  const handleSaveKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanKey = tempKey.trim();
+    localStorage.setItem("user_gemini_key", cleanKey);
+    setUserApiKey(cleanKey);
+    setShowSettings(false);
+    
+    const notificationTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "ai",
+        text: cleanKey 
+          ? (lang === "fa" ? "🔑 کلید اختصاصی Gemini شما با موفقیت ثبت شد. ترافیک شما اکنون نامحدود است!" : "🔑 Your custom Gemini API key was saved successfully. Your queries are now unlimited!")
+          : (lang === "fa" ? "ℹ️ کلید اختصاصی حذف شد. برنامه مجدداً از اعتبار سهمیه عمومی رایگان استفاده می‌کند." : "ℹ️ Custom key removed. System is back to using standard shared credits."),
+        time: notificationTime
+      }
+    ]);
+  };
+
+  const handleSendMessage = async (msgText: string) => {
+    if (!msgText.trim() || loading) return;
+
+    // Check credits before sending, if there is no userApiKey
+    if (!userApiKey && creditsRemaining <= 0) {
+      const responseTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "ai",
+          text: lang === "fa" 
+            ? "⚠️ اعتبار سهمیه عمومی رایگان شما (۵۰ توکن آریانا) به پایان رسیده است. برای ادامه، دکمه چرخ‌دنده بالا را زده و کلید اختصاصی Gemini خود را ثبت کنید."
+            : "⚠️ Your free shared credit (50 Ariana tokens) has been exhausted. Please click the Settings gear icon above to provide your own Gemini API key to continue.",
+          time: responseTime
+        }
+      ]);
+      setShowSettings(true);
+      return;
+    }
+
+    const currentTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
+    setMessages((prev) => [...prev, { sender: "user", text: msgText, time: currentTime }]);
+    setInputMessage("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/gemini/consult", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: msgText, lang, userApiKey }),
+      });
+
+      const responseTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
+      if (response.ok) {
+        const data = await response.json();
+        setMessages((prev) => [...prev, { sender: "ai", text: data.reply, time: responseTime }]);
+        
+        // Decrement credits only if not using custom user key
+        if (!userApiKey) {
+          setCreditsRemaining((prev) => {
+            const next = Math.max(0, prev - 1);
+            localStorage.setItem("ai_message_credits_rem", String(next));
+            return next;
+          });
+        }
+      } else {
+        throw new Error("API issue");
+      }
+    } catch {
+      // Elegant, rich offline assistant response when API key is missing or system offline
+      setTimeout(() => {
+        const responseTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
+        let fallbackReply = "";
+        const lower = msgText.toLowerCase();
+
+        if (lower.includes("moscow") || lower.includes("مسکو") || lower.includes("روسیه")) {
+          fallbackReply = getTranslation(lang, "aiReplyMoscow", "بر اساس جدیدترین پایش‌های کاداستر آریانا رهنما، آپارتمان‌های لوکس در مسکو سیتی بین ۱۰,۰۰۰ تا ۱۵,۰۰۰ دلار به ازای هر متر مربع ارزش‌گذاری می‌شوند.");
+        } else if (lower.includes("security") || lower.includes("امنیت") || lower.includes("تامین")) {
+          fallbackReply = getTranslation(lang, "aiReplySecurity", "آریانا رهنما از سیستم انزوای کامل فایل‌ها، کوکی‌های امن سشن، احراز هویت دومرحله‌ای و کدهای ویژه ضدربات به عنوان سپرهای قدرتمند استفاده می‌کند.");
+        } else if (lower.includes("ارزش‌گذاری") || lower.includes("کاداستر") || lower.includes("چگونه")) {
+          fallbackReply = getTranslation(lang, "aiReplyCadastre", "ارزش‌گذاری کاداستر بر مبنای هوش مصنوعی و نرخ تسعیر لحظه‌ای بازار آزاد ارزها صورت می‌گیرد تا سود دهی بالایی برای خریداران ایجاد کند.");
+        } else {
+          fallbackReply = getTranslation(lang, "aiReplyGeneral", "خدمات آریانا رهنما شامل کشورهای ایران، ترکیه، روسیه، امارات، آلمان، افغانستان و پاکستان می‌باشد. می‌توانید از بخش محاسبات هوشمند جهت ارزیابی دقیق قیمت ملک بهره‌مند شوید.");
+        }
+
+        setMessages((prev) => [...prev, { sender: "ai", text: fallbackReply, time: responseTime }]);
+        
+        // Decrement credits on fallback too
+        if (!userApiKey) {
+          setCreditsRemaining((prev) => {
+            const next = Math.max(0, prev - 1);
+            localStorage.setItem("ai_message_credits_rem", String(next));
+            return next;
+          });
+        }
+      }, 700);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div 
+      className={`relative p-5 bg-gradient-to-br from-slate-900 via-indigo-950/25 to-slate-950 border border-indigo-500/30 rounded-3xl flex flex-col h-[490px] justify-between transition-all duration-300 shadow-[0_0_15px_rgba(99,102,241,0.15)] hover:shadow-[0_0_25px_rgba(99,102,241,0.3)] hover:border-indigo-500/50 ${isRtl ? "rtl text-right" : "ltr text-left"}`}
+      id="ai-consultant-sidebar"
+    >
+      {/* Absolute Decorative Glow element inside */}
+      <div className="absolute top-0 right-1/4 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none animate-pulse"></div>
+      <div className="absolute bottom-10 left-10 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl pointer-events-none"></div>
+
+      {/* Decorative Golden Label / Visual Magnet */}
+      <div className="absolute -top-3 left-4 right-4 flex justify-between items-center pointer-events-none px-2">
+        <span className="bg-gradient-to-r from-amber-500 via-indigo-500 to-amber-500 text-[8px] font-black uppercase text-slate-950 px-3 py-1 rounded-full shadow-lg shadow-black/80 font-mono tracking-widest animate-pulse border border-amber-400/20">
+          ✨ {userApiKey ? (lang === "fa" ? "کلید اختصاصی فعال است" : "CUSTOM KEY ACTIVE") : (lang === "fa" ? "پردازشگر زنده جمینی فعال است" : "GEMINI ACTIVE INFRASTRUCTURE")}
+        </span>
+      </div>
+
+      {/* Header Container */}
+      <div className="border-b border-indigo-500/20 pb-3 mt-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Animated Smart Avatar Ring */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-indigo-500 rounded-2xl blur opacity-40 animate-pulse"></div>
+              <div className="relative p-2.5 bg-slate-950/80 border border-indigo-500/40 text-indigo-400 rounded-2xl flex items-center justify-center">
+                <Bot className="w-5 h-5 animate-bounce-slow" />
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full animate-ping"></span>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                  {t.aiConsultantTitle}
+                </h3>
+                <span className="text-[7px] bg-indigo-500/20 text-indigo-300 font-bold px-1 rounded">
+                  v3.7
+                </span>
+              </div>
+              <p className="text-[10px] text-indigo-300/80 font-medium mt-0.5">
+                {lang === "fa" ? "مشاور اختصاصی املاک و ارز یاب کاداستر" : t.aiConsultantSub}
+              </p>
+            </div>
+          </div>
+
+          {/* Settings & Token Status Controls */}
+          <div className="flex items-center gap-2">
+            {/* Token Badge */}
+            <div className="flex items-center gap-1 px-2 py-1 bg-slate-950/85 border border-indigo-500/10 rounded-lg text-[9px] font-mono text-indigo-300">
+              <Key className="w-3 h-3 text-amber-500" />
+              <span>
+                {userApiKey ? "∞" : `${creditsRemaining}T`}
+              </span>
+            </div>
+
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-1.5 bg-slate-950/85 hover:bg-slate-900 border border-indigo-500/10 hover:border-indigo-500/35 text-indigo-400 hover:text-indigo-200 rounded-lg transition-all"
+              title={lang === "fa" ? "تنظیمات کلید API اختصاصی" : "API Key Settings"}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Settings Panel Drawer style inside the container */}
+      {showSettings ? (
+        <div className="flex-1 flex flex-col justify-between bg-slate-950/95 border border-indigo-500/25 rounded-2xl p-4 my-3 text-xs overflow-y-auto scrollbar-thin">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-indigo-300 font-bold">
+              <Key className="w-4 h-4 text-amber-400" />
+              <span>{lang === "fa" ? "تنظیم کلید اختصاصی جمینی" : "Gemini API Key Setup"}</span>
+            </div>
+            
+            <p className="text-[10.5px] text-slate-400 leading-relaxed">
+              {lang === "fa" 
+                ? "جهت جلوگیری از هزینه‌های اشتراکی سهمیه عمومی، پس از ۵۰ درخواست رایگان، می‌توانید کلید API رایگان خود را از گوگل دریافت کرده و در زیر وارد کنید. هیچ مقداری در سرور ذخیره نشده و مستقیماً روی مرورگر شما کار می‌کند."
+                : "To maintain server security and respect fair use, after 50 queries you can input your personal free Gemini API key. It is saved only in your secure local browser space."}
+            </p>
+
+            {/* Quick 1-2-3 Guide for User key creation */}
+            <div className="bg-slate-900/80 border border-indigo-500/10 rounded-xl p-3 space-y-2 text-[10px] text-slate-300">
+              <div className="font-bold text-indigo-300 text-[10.5px]">
+                {lang === "fa" ? "🔍 راهنمای دریافت کلید رایگان:" : "🔍 How to get a free key:"}
+              </div>
+              <ul className="list-decimal list-inside space-y-1 text-slate-400">
+                {lang === "fa" ? (
+                  <>
+                    <li>به سایت <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Google AI Studio</a> مراجعه کنید.</li>
+                    <li>روی دکمه سبز رنگ <span className="text-amber-400 font-semibold">Get API key</span> کلیک کنید.</li>
+                    <li>کلید ساخته شده را کپی کرده و در کادر زیر قرار دهید.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Visit <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Google AI Studio</a>.</li>
+                    <li>Click the green <span className="text-amber-400 font-semibold">Get API key</span> button.</li>
+                    <li>Create key, copy and paste it into the input field below.</li>
+                  </>
+                )}
+              </ul>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveKey} className="space-y-3 pt-2 border-t border-slate-900">
+            <input
+              type="text"
+              placeholder="AIzaSy..."
+              className="w-full bg-slate-900 border border-slate-800 p-2 rounded-xl text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500"
+              value={tempKey}
+              onChange={(e) => setTempKey(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="flex-1 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold rounded-lg text-[11px] active:scale-95 cursor-pointer"
+              >
+                {lang === "fa" ? "ثبت کلید" : "Save Key"}
+              </button>
+              <button
+                type="button"
+                className="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded-lg text-[11px] cursor-pointer"
+                onClick={() => {
+                  setTempKey("");
+                  localStorage.removeItem("user_gemini_key");
+                  setUserApiKey("");
+                  setShowSettings(false);
+                }}
+              >
+                {lang === "fa" ? "پاک کردن" : "Clear"}
+              </button>
+            </div>
+            <button
+               type="button"
+               onClick={() => setShowSettings(false)}
+               className="w-full text-center text-indigo-400 hover:text-indigo-300 text-[10px] mt-1 cursor-pointer block"
+            >
+               {lang === "fa" ? "← بازگشت به چت" : "← Back to Chat"}
+            </button>
+          </form>
+        </div>
+      ) : (
+        <>
+          {/* Messages Feed */}
+          <div 
+            className="flex-1 overflow-y-auto my-3 space-y-3 px-1 py-1 text-xs border-b border-indigo-500/10 scrollbar-thin scrollbar-thumb-indigo-500/10 scrollbar-track-transparent" 
+            id="chat-messages-container"
+          >
+            {messages.map((m, idx) => (
+              <div
+                key={idx}
+                className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
+              >
+                <div className={`max-w-[88%] flex flex-col gap-1 ${m.sender === "user" ? "items-end" : "items-start"}`}>
+                  <div
+                    className={`rounded-2xl px-3.5 py-2.5 leading-relaxed text-[11px] shadow-md ${
+                      m.sender === "user"
+                        ? "bg-gradient-to-l from-indigo-600 to-indigo-700 text-white rounded-tr-none font-semibold shadow-indigo-600/10"
+                        : "bg-slate-950/90 text-slate-300 rounded-tl-none border border-slate-850 shadow-black/40"
+                    }`}
+                  >
+                    {m.text}
+                  </div>
+                  {m.time && (
+                    <span className="text-[8px] text-slate-500 px-1 font-mono">{m.time}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-slate-950/95 border border-indigo-500/10 rounded-2xl rounded-tl-none px-4 py-2 flex items-center gap-1.5 shadow-md shadow-black/20">
+                  <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></span>
+                  <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.15s]"></span>
+                  <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.3s]"></span>
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Inputs & Interaction Hub */}
+          <div className="space-y-3 pt-1 animate-fade-in">
+            {/* Animated Quick-Access Suggestions Label */}
+            <div className="flex items-center gap-1.5 text-[10px] text-indigo-300/90 font-bold px-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin-slow" />
+              <span>{lang === "fa" ? "پیشنهاد گفتگو کاداستر:" : "Instant Quick Queries:"}</span>
+            </div>
+
+            {/* Dynamic Horizontal query capsules */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-none" id="faq-preset-suggestions">
+              {presets.map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSendMessage(p)}
+                  className="text-[9.5px] font-semibold bg-slate-950/90 hover:bg-slate-900 hover:text-white text-indigo-300 border border-slate-850 hover:border-indigo-500/40 whitespace-nowrap px-3 py-1.5 rounded-full transition-all duration-200 cursor-pointer shadow-sm active:scale-95"
+                >
+                  🚀 {p}
+                </button>
+              ))}
+            </div>
+
+            {/* Input submission box with rich gradients */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage(inputMessage);
+              }}
+              className="flex gap-2 bg-slate-950 border border-indigo-500/15 focus-within:border-indigo-500/50 p-1.5 rounded-2xl transition-all duration-300"
+            >
+              <input
+                type="text"
+                className="flex-1 bg-transparent px-3 py-1.5 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:ring-0 font-medium"
+                placeholder={t.aiConsultantPlaceholder}
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-xl text-[11px] font-extrabold shadow-sm active:scale-95 cursor-pointer flex items-center gap-1.5 transition-all"
+              >
+                <span>{isRtl ? "ارسال" : "Send"}</span>
+                <Send className="w-3 h-3" />
+              </button>
+            </form>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};

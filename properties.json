@@ -1,0 +1,173 @@
+[
+  {
+    "id": "prop-1",
+    "title": "Moscow City Sky Residences Penthouse",
+    "description": "Premium 3-bedroom skyway penthouse on the 62nd floor with panoramic views of the Moscow River and Kremlins.",
+    "country": "RU",
+    "district": "Presnensky District",
+    "address": "Presnenskaya Naberezhnaya, Russian Fed",
+    "type": "sale",
+    "price": 145000000,
+    "area": 195,
+    "rooms": 3,
+    "phone": "+7 925 801 4455",
+    "coordinates": {
+      "latitude": 55.7500,
+      "longitude": 37.5367
+    },
+    "ownerId": "usr-system",
+    "isApproved": true,
+    "createdAt": "2026-05-01T10:00:00Z",
+    "images": [
+      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=85",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=85"
+    ],
+    "translations": {
+      "fa": {
+        "title": "پنت‌هاوس مجلل مسکو سیتی اسکای",
+        "description": "پنت‌هاوس پرمیوم ۳ خوابه در طبقه ۶۲ با منظره پانورامای رودخانه مسکو و کاخ کرملین."
+      },
+      "ru": {
+        "title": "Пентхаус в Небоскребе Москва-Сити",
+        "description": "Премиальный 3-комнатный пентхаус на 62 этаже с панорамным видом на Москву-реку и Кремль."
+      },
+      "ar": {
+        "title": "بنتهاوس مجمع موسكو سيتي الفاخر",
+        "description": "بنتهاوس فاخر ٣ غرف في الطابق ٦٢ مع إطلالة بانورامية على نهر موسكو والكرملين."
+      }
+    }
+  },
+  {
+    "id": "prop-2",
+    "title": "Luxury Penthouse Niavaran Heights",
+    "description": "Ultra-modern smart mansion with indoor private pool, dynamic spatial HVAC, and pristine white marble structure.",
+    "country": "IR",
+    "district": "Niavaran",
+    "address": "Niavaran St, Block 12, Tehran",
+    "type": "sale",
+    "price": 85000000000,
+    "area": 280,
+    "rooms": 4,
+    "phone": "+98 912 345 6789",
+    "coordinates": {
+      "latitude": 35.8129,
+      "longitude": 51.4728
+    },
+    "ownerId": "usr-system",
+    "isApproved": true,
+    "createdAt": "2026-05-15T12:00:00Z",
+    "images": [
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=85",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=85"
+    ],
+    "translations": {
+      "fa": {
+        "title": "پنت‌هاوس فوق‌لاکچری ارتفاعات نیاوران",
+        "description": "عمارت مدرن و هوشمند به همراه استخر سرپوشیده اختصاصی، سیستم تهویه اتوماتیک نوین و متریال تماماً سنگ مرمر سفید."
+      },
+      "de": {
+        "title": "Luxus-Penthouse Niavaran Heights",
+        "description": "Ultramoderne Smart-Villa mit privatem Innenpool, dynamischer Klimaanlage und reinem weißem Marmor."
+      }
+    }
+  },
+  {
+    "id": "prop-3",
+    "title": "Kabul Shahr-e-Naw Commercial Duplex",
+    "description": "Highly secure duplex townhouse with a private yard and modern security installations, ideal for families or offices.",
+    "country": "AF",
+    "district": "Shahr-e-Naw",
+    "address": "Street 4, Shahr-e-Naw, Kabul",
+    "type": "rent",
+    "price": 75000,
+    "area": 220,
+    "rooms": 3,
+    "phone": "+93 79 912 3456",
+    "coordinates": {
+      "latitude": 34.5333,
+      "longitude": 69.1667
+    },
+    "ownerId": "usr-system",
+    "isApproved": true,
+    "createdAt": "2026-05-20T08:30:00Z",
+    "images": [
+      "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?auto=format&fit=crop&w=800&q=85"
+    ],
+    "translations": {
+      "fa": {
+        "title": "دوبلکس تجاری مجلل شهر نو کابل",
+        "description": "ویلای دوبلکس بسیار امن با حیاط اختصاصی و تجهیزات امنیتی هوشمند مجهز، مناسب برای دفاتر کار یا سکونت خانوادگی."
+      },
+      "ps": {
+        "title": "د کابل شهر نو تجارتي دوپلکس ښارګوټی",
+        "description": "د خورا لوړ خوندیتوب او امنیت پرمختللي تاسیساتو لرونکی دوه پوړیزه کور ، د کورنۍ او یا دفتر کار لپاره مناسب."
+      }
+    }
+  },
+  {
+    "id": "prop-4",
+    "title": "New Delhi Vasant Vihar Modern Villa",
+    "description": "Architect-designed 5-bedroom luxury estate featuring landscaped terrace backyard and sustainable solar matrix system.",
+    "country": "IN",
+    "district": "Vasant Vihar",
+    "address": "C-Block, Vasant Vihar, New Delhi",
+    "type": "sale",
+    "price": 230000000,
+    "area": 410,
+    "rooms": 5,
+    "phone": "+91 98100 12345",
+    "coordinates": {
+      "latitude": 28.5606,
+      "longitude": 77.1633
+    },
+    "ownerId": "usr-system",
+    "isApproved": true,
+    "createdAt": "2026-05-24T15:45:00Z",
+    "images": [
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=85"
+    ],
+    "translations": {
+      "fa": {
+        "title": "ویلای مدرن دهلی نو وسنت ویهار",
+        "description": "عمارت ۵ خوابه لوکس مهندسی‌ساز همراه با حیاط تراس‌بندی شده سرسبز و پنل تولید برق خورشیدی مستقل."
+      },
+      "hi": {
+        "title": "नई दिल्ली वसंत विहार आधुनिक विला",
+        "description": "आर्किटेक्ट द्वारा डिजाइन किया गया शानदार 5-बेडरूम विला जिसमें छत पर बगीचा और सौर ऊर्जा ग्रिड सुसज्जित है।"
+      }
+    }
+  },
+  {
+    "id": "prop-5",
+    "title": "Dubai Marina Skyview Executive Suite",
+    "description": "High-altitude luxury executive residence facing the world-famous Palm Jumeirah and Yacht Harbor.",
+    "country": "AE",
+    "district": "Dubai Marina",
+    "address": "Marina Gate II, Penthouse Zone, Dubai",
+    "type": "sale",
+    "price": 4900000,
+    "area": 140,
+    "rooms": 2,
+    "phone": "+971 50 123 4567",
+    "coordinates": {
+      "latitude": 25.0784,
+      "longitude": 55.1353
+    },
+    "ownerId": "usr-system",
+    "isApproved": true,
+    "createdAt": "2026-05-27T09:12:00Z",
+    "images": [
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=85"
+    ],
+    "translations": {
+      "fa": {
+        "title": "سوئیت اختصاصی مارینا گیت دبی",
+        "description": "اقامتگاه فوق‌العاده با ارتفاع بالا رو به پالم جمیرا و بندرگاه قایق‌های تفریحی مارینا دبی."
+      },
+      "ar": {
+        "title": "شقة مارينا غيت التنفيذية الفاخرة",
+        "description": "جناح فخم في مرتفعات دبي مارينا يطل مباشرة على جزيرة نخلة جميرا وميناء اليخوت العالمي."
+      }
+    }
+  }
+]
