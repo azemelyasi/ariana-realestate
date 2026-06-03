@@ -206,6 +206,8 @@ export default function App() {
   // --- 👑 SYSTEM VETO LAW PARAMETERS ---
   const [globalVeto, setGlobalVeto] = useState<"none" | "partial" | "full">("none");
   const [activeModulesList, setActiveModulesList] = useState<any[]>([]);
+  const [vetoPasscodeInput, setVetoPasscodeInput] = useState<string>("");
+  const [vetoPasscodeError, setVetoPasscodeError] = useState<string>("");
 
   // Periodically fetch central database parameters to check if system is under lockdown
   useEffect(() => {
@@ -587,20 +589,41 @@ export default function App() {
           </div>
 
           <div className="border-t border-slate-850 pt-5 space-y-4">
-            <p className="text-[10px] text-slate-500">
-              {lang === "fa" ? "آیا شما ابرمدیر مستقل هستید؟ جهت آزادسازی سیستم وارد شوید:" : "Are you the Supreme Administrator? Sign in to unlock system access:"}
+            <p className="text-[10px] text-slate-500 font-semibold animate-pulse">
+              {lang === "fa" ? "آیا شما ابرمدیر مستقل هستید؟ جهت آزادسازی سیستم رمز عبور را وارد کنید:" : "Are you the Supreme Administrator? Enter passcode to override lock:"}
             </p>
-            <button
-              onClick={() => {
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (vetoPasscodeInput === "ariana2026") {
+                setIsAdminAuthenticated(true);
                 setUserRole("admin");
                 setActiveTab("admin");
                 localStorage.setItem("melkban_admin_authenticated", "true");
+                localStorage.setItem("melkban_admin_username", "Governor Amir");
+                setVetoPasscodeError("");
                 window.location.reload();
-              }}
-              className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold rounded-xl text-xs transition active:scale-95 cursor-pointer"
-            >
-              🔑 {lang === "fa" ? "ورود فوری به پنل فرماندهی" : "Authenticate as Governor Amir"}
-            </button>
+              } else {
+                setVetoPasscodeError(lang === "fa" ? "⚠️ رمز عبور وارد شده نامعتبر است." : "⚠️ Invalid secure passcode.");
+              }
+            }} className="space-y-3">
+              <input
+                type="password"
+                placeholder={lang === "fa" ? "رمز عبور مدیریت (مثال: ariana2026)" : "Secure Passcode (e.g. ariana2026)"}
+                value={vetoPasscodeInput}
+                onChange={(e) => setVetoPasscodeInput(e.target.value)}
+                className="w-full text-center px-4 py-2 bg-slate-950 border border-slate-850 rounded-xl text-white font-mono placeholder-slate-700 focus:outline-none focus:border-indigo-600 transition text-xs"
+                required
+              />
+              {vetoPasscodeError && (
+                <p className="text-[10px] text-rose-450 font-bold">{vetoPasscodeError}</p>
+              )}
+              <button
+                type="submit"
+                className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-black rounded-xl text-xs transition active:scale-95 cursor-pointer shadow-lg shadow-indigo-600/10"
+              >
+                🔑 {lang === "fa" ? "تایید هویت امنیتی و تاییدیه کاداستر" : "Submit Security Code"}
+              </button>
+            </form>
           </div>
         </div>
       </div>
@@ -691,14 +714,16 @@ export default function App() {
             >
               📞 {t.navContact}
             </button>
-            <button
-              onClick={() => setActiveTab("admin")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
-                activeTab === "admin" ? "bg-indigo-600 text-white shadow shadow-indigo-600/10" : "text-slate-400 hover:text-white hover:bg-slate-850"
-              }`}
-            >
-              🛡️ {t.navAdmin}
-            </button>
+            {isAdminAuthenticated && (
+              <button
+                onClick={() => setActiveTab("admin")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+                  activeTab === "admin" ? "bg-indigo-600 text-white shadow shadow-indigo-600/10" : "text-emerald-400 hover:text-white hover:bg-slate-850"
+                }`}
+              >
+                👑 {t.navAdmin}
+              </button>
+            )}
           </nav>
 
           {/* Quick Actions & Language chooser */}
@@ -718,6 +743,15 @@ export default function App() {
                 ))}
               </select>
             </div>
+
+            {/* Secret System Administrator Gate */}
+            <button
+              onClick={() => setActiveTab("admin")}
+              className={`p-1.5 text-slate-800 hover:text-slate-500 font-bold text-xs bg-slate-950 border border-slate-900 rounded-lg hover:border-slate-800 transition active:scale-95 cursor-pointer`}
+              title={lang === "fa" ? "درگاه ایمن کاداستر" : "Secure Cabinet Gateway"}
+            >
+              🔑
+            </button>
 
             {/* PWA Install Button */}
             {isInstallable && (
