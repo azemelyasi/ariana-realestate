@@ -608,7 +608,7 @@ export default function App() {
             }} className="space-y-3">
               <input
                 type="password"
-                placeholder={lang === "fa" ? "رمز عبور مدیریت (مثال: ariana2026)" : "Secure Passcode (e.g. ariana2026)"}
+                placeholder={lang === "fa" ? "رمز عبور مدیریت" : "Secure Passcode"}
                 value={vetoPasscodeInput}
                 onChange={(e) => setVetoPasscodeInput(e.target.value)}
                 className="w-full text-center px-4 py-2 bg-slate-950 border border-slate-850 rounded-xl text-white font-mono placeholder-slate-700 focus:outline-none focus:border-indigo-600 transition text-xs"
@@ -1050,33 +1050,36 @@ export default function App() {
                       if (!isUsernameValid && !isPasscodeValid) {
                         setPasscodeError(lang === "fa" ? "⚠️ نام کاربری و رمز عبور هر دو نامعتبر هستند." : "⚠️ Both username and passcode are incorrect.");
                       } else if (!isUsernameValid) {
-                        setPasscodeError(lang === "fa" ? "⚠️ نام کاربری وارد شده صحیح نیست. (راهنما: admin)" : "⚠️ Username is incorrect. (Hint: admin)");
+                        setPasscodeError(lang === "fa" ? "⚠️ نام کاربری وارد شده صحیح نیست." : "⚠️ Username is incorrect.");
                       } else {
                         setPasscodeError(lang === "fa" ? "⚠️ رمز عبور وارد شده نامعتبر است." : "⚠️ Passcode is incorrect.");
                       }
                     }
                   }}
                   className="space-y-4"
+                  autoComplete="off"
                 >
                   <div className="space-y-3">
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder={lang === "fa" ? "نام کاربری (admin)" : "Username (admin)"}
+                        placeholder={lang === "fa" ? "نام کاربری" : "Username"}
                         value={usernameInput}
                         onChange={(e) => setUsernameInput(e.target.value)}
                         className="w-full text-center px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono placeholder-slate-600 focus:outline-none focus:border-indigo-600 transition"
                         required
+                        autoComplete="off"
                       />
                     </div>
                     <div className="relative">
                       <input
                         type="password"
-                        placeholder={lang === "fa" ? "رمز عبور مدیریت (ariana2026)" : "Admin Passcode (ariana2026)"}
+                        placeholder={lang === "fa" ? "رمز عبور مدیریت" : "Admin Passcode"}
                         value={passcodeInput}
                         onChange={(e) => setPasscodeInput(e.target.value)}
                         className="w-full text-center px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono placeholder-slate-600 focus:outline-none focus:border-indigo-600 transition"
                         required
+                        autoComplete="new-password"
                       />
                     </div>
                   </div>
