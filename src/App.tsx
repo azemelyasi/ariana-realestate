@@ -23,6 +23,7 @@ import { DistrictIntelligence } from "./components/DistrictIntelligence";
 import { FavoritesManager } from "./components/FavoritesManager";
 import { ClientExportModal } from "./components/ClientExportModal";
 import { AIAndAutomationTab } from "./components/AIAndAutomationTab";
+import { SEOInspectorTab } from "./components/SEOInspectorTab";
 import arianaLogo from "./assets/images/ariana_premium_logo_1780405823718.png";
 
 const REGIONS = [
@@ -238,7 +239,7 @@ export default function App() {
   }, []);
 
   // Admin section state controllers
-  const [adminSubTab, setAdminSubTab] = useState<"property" | "site" | "disputes" | "automation">("property");
+  const [adminSubTab, setAdminSubTab] = useState<"property" | "site" | "disputes" | "automation" | "seo">("property");
   
   // Disputes Filters and Selected IDs to prevent React Hook violations
   const [disputeFilterStatus, setDisputeFilterStatus] = useState<string>("all");
@@ -411,6 +412,74 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("melkban_agency_commission", String(agencyCommission));
   }, [agencyCommission]);
+
+  // Dynamic SEO Page Title & Google Schema JSON-LD Injector
+  useEffect(() => {
+    try {
+      let title = "آریانا رهنما | سامانه رسمی املاک و کاداستر تجاری";
+      let desc = "سامانه کاداستر آریانا رهنما - ثبت اسناد رسمی و تراکنش‌های تتر ملکی بی مرز بر بستر لجر امن.";
+      
+      if (selectedProperty) {
+        title = `${selectedProperty.title} | آریانا رهنما`;
+        desc = selectedProperty.description;
+      } else if (searchQuery.trim().length > 0) {
+        title = `نتایج کاداستر برای "${searchQuery}" | آریانا رهنما`;
+        desc = `نمایش لیست اسناد رسمی و نتایج تاییدیه کاداستر مربوط به کلمه "${searchQuery}" در سامانه آریانا رهنما.`;
+      }
+      
+      // Update HTML Document Title
+      document.title = title;
+      
+      // Update HTML Meta Description dynamically if exists, or create it
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) {
+        metaDesc = document.createElement('meta');
+        metaDesc.setAttribute('name', 'description');
+        document.head.appendChild(metaDesc);
+      }
+      metaDesc.setAttribute('content', desc);
+      
+      // Dynamic JSON-LD Schema (Structured Data) for Google Crawler
+      const existingScript = document.getElementById("google-realestate-jsonld");
+      if (existingScript) {
+        existingScript.remove();
+      }
+      
+      const pForSchema = selectedProperty || properties.find(p => p.district.includes("لواسان")) || properties[0];
+      if (pForSchema) {
+        const script = document.createElement("script");
+        script.id = "google-realestate-jsonld";
+        script.type = "application/ld+json";
+        script.innerHTML = JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SingleFamilyResidence",
+          "name": pForSchema.title,
+          "description": pForSchema.description,
+          "numberOfBedrooms": pForSchema.bedrooms,
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": pForSchema.district,
+            "streetAddress": pForSchema.address,
+            "addressCountry": pForSchema.country || "IR"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": pForSchema.latitude,
+            "longitude": pForSchema.longitude
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": pForSchema.totalPrice,
+            "priceCurrency": pForSchema.country === "IR" ? "USD" : "AED"
+          },
+          "image": pForSchema.images[0]
+        });
+        document.head.appendChild(script);
+      }
+    } catch (err) {
+      console.error("SEO update error:", err);
+    }
+  }, [selectedProperty, searchQuery, properties]);
 
   // Disputes filtering
   const filteredDisputes = disputes.filter((d) => {
@@ -1253,7 +1322,7 @@ export default function App() {
                   <div className="space-y-6">
                 
                 {/* Master Tab-Switcher for the Dual-Management Interface */}
-                <div className="flex bg-slate-900/80 border border-slate-800 p-1.5 rounded-2xl max-w-2xl flex-wrap sm:flex-nowrap gap-1">
+                <div className="flex bg-slate-900/80 border border-slate-800 p-1.5 rounded-2xl max-w-4xl flex-wrap gap-1.5">
                   <button
                     onClick={() => setAdminSubTab("property")}
                     className={`flex-1 min-w-[130px] py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
@@ -1300,6 +1369,16 @@ export default function App() {
                     🤖 {lang === "fa" ? "هوش مصنوعی و خودکارسازی" : "4. AI & Automation"}
                     <span className="absolute -top-1 -right-1 bg-indigo-500 w-2 h-2 rounded-full animate-ping"></span>
                     <span className="absolute -top-1 -right-1 bg-indigo-500 w-2.5 h-2.5 rounded-full"></span>
+                  </button>
+                  <button
+                    onClick={() => setAdminSubTab("seo")}
+                    className={`flex-1 min-w-[130px] py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer relative ${
+                      adminSubTab === "seo" 
+                        ? "bg-indigo-600 text-white shadow" 
+                        : "text-emerald-400 hover:text-white hover:bg-slate-850"
+                    }`}
+                  >
+                    🔍 {lang === "fa" ? "بررسی سئو و شبیه‌ساز گوگل" : "5. Google SEO & Crawl"}
                   </button>
                 </div>
 
@@ -2095,6 +2174,15 @@ export default function App() {
                       lang={lang}
                       properties={properties}
                       onPropertiesUpdated={(updated) => setProperties(updated)}
+                    />
+                  </div>
+                )}
+
+                {adminSubTab === "seo" && (
+                  <div className="space-y-6 animate-fade-in" id="cadastral-seo-inspector-tab">
+                    <SEOInspectorTab
+                      lang={lang}
+                      properties={properties}
                     />
                   </div>
                 )}
