@@ -85,7 +85,7 @@ export const DistrictIntelligence: React.FC<DistrictIntelligenceProps> = ({ lang
   const activeMetrics = selectedDistrict ? getDistrictMetrics(selectedDistrict) : null;
 
   // Comprehensive Multilingual Translation Resource for District Intelligence
-  const tIntel: Record<string, Record<Language, string>> = {
+  const tIntel: Record<string, Partial<Record<Language, string>>> = {
     vibeHeader: {
       en: "Market Analytics & Local Vibe heatmaps",
       fa: "تحلیل بازار و نقشه‌های حرارتی محله‌ای کاداستر",
@@ -438,38 +438,38 @@ export const DistrictIntelligence: React.FC<DistrictIntelligenceProps> = ({ lang
       ar: "يرجى اختيار حي لعرض المؤشرات التفصيلية للموقع",
       de: "Bitte wählen Sie einen Bezirk aus, um lokale Parameter anzuzeigen",
       ja: "統計データを表示するには地区を選択してください",
-      zh: "请选择一个地区以查看本地指标参数",
-      uz: "Mahalliy ma'lumotlarni ko'rish uchun tuman tanlang",
-      ru: "Пожалуйста, выберите район для просмотра локальных параметров",
-      ku: "سەرەتا گەڕەکێک دەستنیشان بکە بۆ بینینی هەڵسەنگاندنەکە",
-      ps: "د سیمه ایزو معلوماتو لیدو لپاره مهرباني وکړئ یوه سیمه غوره کړئ",
-      hi: "स्थानीय मापदंडों को देखने के लिए कृपया एक जिले का चयन करें",
-      ur: "مقامی خصوصیات دیکھنے کے لیے براہ کرم کوئی علاقہ منتخب کریں"
+      zh: "请选择一个地区以查看本地化参数",
+      uz: "Lokal parametrlarni ko'rish uchun tuman tanlang",
+      ru: "Пожалуйста, выберите район для просмотра параметров",
+      ku: "تکایە گەڕەکێک دەستنیشان بکە بۆ بینینی زانیارییەکان",
+      ps: "مهرباني وکړئ د سيمه یيزو معيارونو کتلو لپاره ولسوالۍ وټاکئ",
+      hi: "स्थानीय पैरामीटर देखने के लिए कृपया एक क्षेत्र चुनें",
+      ur: "مقامی پیرامیٹرز دیکھنے کے لیے براہ کرم ایک محلہ منتخب کریں"
     }
   };
 
-  // AI Insights Translation Logic for all 13 supported languages
-  const getAiInsight = (m: DistrictMetrics) => {
-    const isHighYield = m.rentalYield > 7.5;
-    const isHighGrowth = m.appreciationRate > 22;
+  const getAiInsight = (m: DistrictMetrics): string => {
+    const isHighYield = m.rentalYield > 8;
+    const isHighGrowth = m.appreciationRate > 25;
 
-    const advices: Record<string, Record<Language, string>> = {
-      highYield: {
-        en: "Outstanding annual cashflow and yield. High density of corporate tenants and expatriates makes this a prime rent-out prospect.",
-        fa: "این محله به دلیل بازدهی اجاره بسیار معتبر، گزینه‌ای طلایی برای خریداران اجاره‌محور و سرمایه‌گذاران نقدی کاداستر است.",
-        tr: "Olağanüstü yıllık nakit akışı ve kira getirisi. Kurumsal kiracılar ve gurbetçilerin yüksek yoğunluğu burayı birincil kiralama adayı yapmaktadır.",
-        ar: "عوائد إيجار سنوية ممتازة. الكثافة العالية للمستأجرين من الشركات والمغتربين تجعل هذا الموقع خياراً ممتازاً للاستثمار العقاري المدر للدخل.",
-        de: "Hervorragender jährlicher Cashflow und Mietrendite. Die hohe Dichte an Firmenmietern und Expats macht dies zu einer erstklassigen Vermietungsperspektive.",
-        ja: "傑出した年間キャッシュフローと利回り。法人テナントや駐在員の密度が高く、賃貸投資先として最適です。",
-        zh: "卓越的年租金回报及现金流。企业租户和外籍人士的高密度聚集使其成为首选的出租前景。",
-        uz: "Ajoyib yillik naqd pul oqimi va ijara rentabelligi. Korporativ ijarachilar va chet elliklarning yuqori zichligi bu erni ijaraga berish uchun asosiy istiqbolga aylantiradi.",
-        ru: "Выдающийся годовой денежный поток и доходность от аренды. Высокая плотность корпоративных арендаторов делает этот район отличным вариантом для инвестиций.",
-        ku: "داهاتی ساڵانەی نایاب لە گرێبەستەکانی کرێدا. چڕی بەرزی کرێچی کۆمپانیاکان و بیانییەکان لێرەدا دەبێتە پێشەنگ کاداستر.",
-        ps: "د کلنۍ کرایې خورا ښه عواید. د بهرنیو او کاداستر پانګه اچوونکو لپاره د پانګونې یو طلایی فرصت دی.",
-        hi: "उत्कृष्ट वार्षिक नकदी प्रवाह और किराए पर प्रतिफल। कॉर्पोरेट किरायेदारों और प्रवासियों का उच्च घनत्व इसे किराए पर देने की प्रमुख संभावना बनाता है।",
-        ur: "کرایے کی بہترین سالانہ شرح واپسی۔ کارپوریٹ کرایہ داروں کی یہاں آمد اس جائیداد کو سرمایہ کاری کے لیے سنہری موقع بناتی ہے۔"
-      },
-      highGrowth: {
+    const advices: Record<string, Partial<Record<Language, string>>> = {
+    highYield: {
+      en: "Exceptional rental yield potential. High occupancy rates by corporate tenants make this a premium investment play.",
+      fa: "پتانسیل فوق‌العاده بازدهی اجاره سالانه. نرخ اشغال بالا توسط مستاجران شرکتی، این منطقه را به فرصتی طلایی تبدیل کرده است.",
+      tr: "Olağanüstü kira getirisi potansiyeli. Kurumsal kiracılar tarafından sağlanan yüksek doluluk oranları burayı premium kılmaktadır.",
+      ar: "إمكانيات عائد إيجار استثنائي. معدلات إشغال مرتفعة من قبل المستأجرين من الشركات تجعل هذا الاستثمار ممتازًا.",
+      de: "Außergewöhnliche Mietrenditeerwartung. Hohe Belegungsraten durch Firmenkunden machen dies zu einer erstklassigen Anlage.",
+      ja: "卓越した賃貸利回りの可能性。法人テナントによる高い稼働率がプレミアムな投資を可能にします。",
+      zh: "非凡的租金收益潜能。企业高管的高入驻率使其成为极佳的长线资产置业地。",
+      uz: "Ajoyib ijra rentabelligi. Korporativ ijarachilarning yuqori bandligi buni premium investitsiyaga aylantiradi.",
+      ru: "Исключительный потенциал арендной доходности. Высокая заполняемость корпоративными клиентами делает объект отличным вложением.",
+      ku: "پتانسیلی نایابی داهاتی کرێی ساڵانە. ڕێژەی بەرزی نیشتەجێبوونی کۆمپانیاکان وەک دەرفەتێکی زێڕین وایە.",
+      ps: "د کلنۍ کرایې خورا لوړ پتانسیل. د شرکتونو لخوا دلته د کورونو د نیولو لوړه کچه دا په یوې زرینې پانګونې بدلوي.",
+      hi: "असाधारण किराये की उपज क्षमता। कॉर्पोरेट किरायेदारों द्वारा उच्च अधिभोग दर इसे एक प्रीमियम निवेश बनाती है।",
+      ur: "کرایے کی بہترین سالانہ شرح واپسی۔ کارپوریٹ کرایہ داروں کی یہاں آمد اس جائیداد کو سرمایہ کاری کے لیے سنہری موقع بناتی ہے۔"
+    },
+
+    highGrowth: {
         en: "Exceptional asset evaluation trajectory. Perfect for capital-gain generation and early entry development plays.",
         fa: "سرمایه‌گذاری روی این منطقه به واسطه نرخ ذوب ثبتی بالا و رشد سرسام‌آور ارزش مسکونی، پتانسیل خروج نقدینگی فوق‌العاده‌ای دارد.",
         tr: "Olağanüstü varlık değerleme gidişatı. Sermaye kazancı yaratma ve erken aşama geliştirme projeleri için mükemmel.",
@@ -502,9 +502,9 @@ export const DistrictIntelligence: React.FC<DistrictIntelligenceProps> = ({ lang
     };
 
     const adviceKey = isHighYield ? "highYield" : isHighGrowth ? "highGrowth" : "stable";
-    const selectedAdvice = advices[adviceKey][lang] || advices[adviceKey].en;
+    const selectedAdvice = advices[adviceKey]?.[lang] || advices[adviceKey]?.en || "";
 
-    const insights: Record<Language, string> = {
+    const insights: Partial<Record<Language, string>> = {
       en: `Ariana Rahnuma Intel: "${m.name}" represents an elite zone in ${activeCountry.nameEn}. Bolstered by a local security score of ${m.safetyIndex}% and spatial transit rating of ${m.transitAccess}%, properties average at ${m.avgSqmPrice.toLocaleString()} ${activeCountry.currency} per sqm. ${selectedAdvice}`,
       fa: `کارشناسی آریانا رهنما: محله «${m.name}» از برترین پهنه‌های کشور ${activeCountry.nameFa} محسوب می‌شود. شاخص امنیت محلی آن حدود ${toLocalizedDigits(m.safetyIndex, "fa")}٪ و دسترسی به ترانزیت کاداستر آن ${toLocalizedDigits(m.transitAccess, "fa")}٪ برآورد شده است. قیمت میانگین هر متر مربع حدود ${toLocalizedDigits(m.avgSqmPrice.toLocaleString(), "fa")} ${activeCountry.currencySymbol} است. ${selectedAdvice}`,
       tr: `Ariana Rahnuma Analizi: "${m.name}", ${activeCountry.nameEn} ülkesindeki elit bölgelerden biridir. %${m.safetyIndex} güvenlik puanı ve %${m.transitAccess} ulaşım bağlantısı ile buradaki m² fiyatı ortalama ${m.avgSqmPrice.toLocaleString()} ${activeCountry.currency} seviyesindedir. ${selectedAdvice}`,
@@ -520,7 +520,7 @@ export const DistrictIntelligence: React.FC<DistrictIntelligenceProps> = ({ lang
       ur: `کارشناسی آریانا رهنما: علاقہ "${m.name}" ملک ${activeCountry.nameFa} کے بہترین مقامات میں سے ایک ہے۔ جہاں کا امن و امان ${m.safetyIndex}٪ اور پبلک ٹرانسپورٹ تک رسائی کی شرح ${m.transitAccess}٪ کے قریب ہے، نیز چوراہوں پر فی مربع میٹر اوسط قیمت ${m.avgSqmPrice.toLocaleString()} ${activeCountry.currencySymbol} ہے۔ ${selectedAdvice}`
     };
 
-    return insights[lang] || insights.en;
+    return insights[lang] || insights.en || "";
   };
 
   const getT = (key: string): string => {

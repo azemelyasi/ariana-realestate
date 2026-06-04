@@ -25,6 +25,15 @@ import { ClientExportModal } from "./components/ClientExportModal";
 import { AIAndAutomationTab } from "./components/AIAndAutomationTab";
 import arianaLogo from "./assets/images/ariana_premium_logo_1780405823718.png";
 
+const REGIONS = [
+  { id: "all", nameEn: "All World", nameFa: "کل جهان", icon: "🌍", codes: [] },
+  { id: "gulf", nameEn: "Gulf & Middle East", nameFa: "خلیج فارس و خاورمیانه", icon: "🏝️", codes: ["AE", "SA", "QA", "KW", "BH", "OM", "IQ", "SY", "LB", "JO", "YE", "IR"] },
+  { id: "asia", nameEn: "Central & South Asia", nameFa: "آسیای مرکزی و جنوبی", icon: "🏔️", codes: ["AF", "PK", "IN"] },
+  { id: "europe", nameEn: "Europe & Turkey", nameFa: "اروپا و ترکیه", icon: "🏰", codes: ["DE", "GB", "RU", "TR"] },
+  { id: "africa", nameEn: "North Africa", nameFa: "شمال آفریقا", icon: "🐫", codes: ["EG", "MA", "LY", "SD", "TN", "DZ"] },
+  { id: "americas_asia", nameEn: "Global Hubs (SG / CA)", nameFa: "قطب‌های جهانی (سنگاپور/کانادا)", icon: "🚀", codes: ["SG", "CA"] },
+];
+
 export default function App() {
   // Lang preference default is ENGLISH as requested
   const [lang, setLang] = useState<Language>(() => {
@@ -311,6 +320,7 @@ export default function App() {
 
   // Filter conditions
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterRegion, setFilterRegion] = useState("all");
   const [filterCountry, setFilterCountry] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filterBedrooms, setFilterBedrooms] = useState("all");
@@ -389,6 +399,15 @@ export default function App() {
     localStorage.setItem("melkban_settings", JSON.stringify(settings));
   }, [settings]);
 
+  // Synchronize country selection with region selection
+  useEffect(() => {
+    if (filterRegion === "all") return;
+    const activeReg = REGIONS.find(r => r.id === filterRegion);
+    if (activeReg && filterCountry !== "all" && !activeReg.codes.includes(filterCountry)) {
+      setFilterCountry("all");
+    }
+  }, [filterRegion, filterCountry]);
+
   useEffect(() => {
     localStorage.setItem("melkban_agency_commission", String(agencyCommission));
   }, [agencyCommission]);
@@ -465,6 +484,17 @@ export default function App() {
       const matchInCooling = p.cooling ? normalizeText(p.cooling).includes(part) : false;
       const matchInCabinets = p.cabinets ? normalizeText(p.cabinets).includes(part) : false;
       const matchInDeed = p.deed ? normalizeText(p.deed).includes(part) : false;
+      const matchInBrokerName = p.brokerName ? normalizeText(p.brokerName).includes(part) : false;
+      const matchInBrokerLicense = p.brokerLicense ? normalizeText(p.brokerLicense).includes(part) : false;
+      
+      const matchCountryName = COUNTRIES.some(c => {
+        if (p.country !== c.code) return false;
+        return (
+          normalizeText(c.nameEn).includes(part) ||
+          normalizeText(c.nameFa).includes(part) ||
+          normalizeText(c.nameLocal).includes(part)
+        );
+      });
       
       // Smart semantic mapping (e.g. typing Persian "لوکس" matches English "luxury"/"premium", typing "خانه" matches houses/villas/penthouses/apartments)
       const semanticMatch = (
@@ -493,12 +523,17 @@ export default function App() {
         matchInCabinets ||
         matchInDeed ||
         matchInType ||
+        matchInBrokerName ||
+        matchInBrokerLicense ||
+        matchCountryName ||
         semanticMatch
       );
     });
 
     const isSearchActive = searchQuery.trim().length > 0;
     const matchCountry = isSearchActive || filterCountry === "all" || p.country === filterCountry;
+    const activeRegionObj = REGIONS.find(r => r.id === filterRegion);
+    const matchRegion = isSearchActive || filterRegion === "all" || (activeRegionObj && p.country && activeRegionObj.codes.includes(p.country));
     const matchType = filterType === "all" || p.type === filterType;
     const matchBeds = 
       filterBedrooms === "all" || 
@@ -508,7 +543,7 @@ export default function App() {
       (filterBedrooms === "3" && p.bedrooms === 3) ||
       (filterBedrooms === "4" && p.bedrooms >= 4);
 
-    return matchSearch && matchCountry && matchType && matchBeds;
+    return matchSearch && matchCountry && matchRegion && matchType && matchBeds;
   });
 
   const handleAddProperty = (propData: Partial<Property>) => {
@@ -530,6 +565,17 @@ export default function App() {
       latitude: propData.latitude || 25.2048,
       longitude: propData.longitude || 55.2708,
       images: propData.images ?? ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&auto=format&fit=crop&q=60"],
+      heating: propData.heating,
+      cabinets: propData.cabinets,
+      cooling: propData.cooling,
+      deed: propData.deed,
+      brokerName: propData.brokerName,
+      brokerEmail: propData.brokerEmail,
+      brokerLicense: propData.brokerLicense,
+      brokerCardPhoto: propData.brokerCardPhoto,
+      agencyLogo: propData.agencyLogo,
+      isBrokerVerified: propData.isBrokerVerified ?? true,
+      isLocalTrustEndorsed: propData.isLocalTrustEndorsed,
       createdAt: new Date().toISOString(),
       isApproved: !settings.requireApproval
     };
@@ -758,7 +804,7 @@ export default function App() {
               <button
                 onClick={handleInstallPWA}
                 className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white border border-emerald-550/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md shadow-emerald-600/10 cursor-pointer animate-pulse-subtle"
-                title={lang === "fa" ? "نصب اپلیکیشن آریانا رهنما" : "Install Ariana Rahnuma App"}
+                title={lang === "fa" ? `نصب اپلیکیشن ${t.brand}` : `Install ${t.brand} App`}
               >
                 <span>📲</span>
                 <span>{lang === "fa" ? "نصب برنامه" : "Install App"}</span>
@@ -829,6 +875,62 @@ export default function App() {
               <V2LiveCurrencyTerminal lang={lang} />
             )}
 
+            {/* GLOBAL REYAB REGION CATEGORIES (ZERO-CONFUSION GLOBAL DECK) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black tracking-widest text-indigo-400 uppercase">
+                  {lang === "fa" ? "🌍 ناوبری و دسته‌بندی هوشمند قاره‌ای جهان (بدون سردرگمی)" : "🌍 DECENTRALIZED GLOBAL CONDOMINIUM REGIONS (ZERO CONFUSION)"}
+                </span>
+                <span className="text-[8.5px] bg-indigo-950/40 text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-900/40">
+                  {lang === "fa" ? `نمایش بر اساس موقعیت مداری` : `AUTO-GEOLOCKED`}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                {REGIONS.map((reg) => {
+                  const isActive = filterRegion === reg.id;
+                  
+                  // Calculate count of properties within this region
+                  const pCount = properties.filter((p) => {
+                    if (reg.id === "all") return true;
+                    return reg.codes.includes(p.country);
+                  }).length;
+
+                  return (
+                    <button
+                      key={reg.id}
+                      type="button"
+                      onClick={() => {
+                        setFilterRegion(reg.id);
+                        setFilterCountry("all"); // Auto-reset country inside region
+                      }}
+                      className={`p-3 rounded-2xl border text-left transition-all duration-150 transform hover:-translate-y-0.5 flex flex-col justify-between h-20 relative overflow-hidden cursor-pointer ${
+                        isActive
+                          ? "bg-gradient-to-br from-indigo-950 to-slate-900 border-indigo-500 shadow-lg shadow-indigo-500/10"
+                          : "bg-slate-900/60 border-slate-850 hover:border-slate-800 hover:bg-slate-900 hover:text-white"
+                      }`}
+                    >
+                      {/* Active indicator ring */}
+                      {isActive && (
+                        <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-indigo-500 rounded-full ring-2 ring-indigo-500/30"></div>
+                      )}
+                      
+                      <div className="text-xl leading-none">{reg.icon}</div>
+                      
+                      <div className="mt-2 min-w-0">
+                        <span className={`text-[10px] font-black truncate block leading-none ${isActive ? "text-indigo-400" : "text-slate-200"}`}>
+                          {lang === "fa" ? reg.nameFa : reg.nameEn}
+                        </span>
+                        <span className="text-[8px] font-mono text-slate-500 font-bold block mt-1">
+                          {toLocalizedDigits(pCount, lang)} {lang === "fa" ? "آگهی فعال" : "active files"}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Advanced Filters hub */}
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl">
               <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -857,8 +959,12 @@ export default function App() {
                     value={filterCountry}
                     onChange={(e) => setFilterCountry(e.target.value)}
                   >
-                    <option value="all">{t.filterCountry || "All Regions"}</option>
-                    {COUNTRIES.map((c) => (
+                    <option value="all">
+                      {lang === "fa" 
+                        ? (filterRegion === "all" ? "کل دنیا" : "همه کشورهای قاره") 
+                        : (filterRegion === "all" ? "All Countries" : "All Region Countries")}
+                    </option>
+                    {(filterRegion === "all" ? COUNTRIES : COUNTRIES.filter(c => (REGIONS.find(r => r.id === filterRegion)?.codes || []).includes(c.code))).map((c) => (
                       <option key={c.code} value={c.code}>
                         {c.flag} {lang === "fa" ? c.nameFa : c.nameEn}
                       </option>
@@ -894,11 +1000,12 @@ export default function App() {
                   <button
                     onClick={() => {
                       setSearchQuery("");
+                      setFilterRegion("all");
                       setFilterCountry("all");
                       setFilterType("all");
                       setFilterBedrooms("all");
                     }}
-                    className="bg-slate-950 hover:bg-slate-850 border border-slate-850/80 text-indigo-400 font-bold text-[10px] rounded-xl transition-all"
+                    className="bg-slate-950 hover:bg-slate-850 border border-slate-850/80 text-indigo-400 font-bold text-[10px] rounded-xl transition-all cursor-pointer"
                   >
                     🔄 {t.btnReset || "Reset"}
                   </button>
@@ -1020,12 +1127,12 @@ export default function App() {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white">
-                    {lang === "fa" ? "درگاه امنیتی مدیریت آریانا رهنما" : "Ariana Rahnuma Administrative Gateway"}
+                    {lang === "fa" ? `درگاه امنیتی مدیریت ${t.brand}` : `${t.brand} Administrative Gateway`}
                   </h3>
                   <p className="text-xs text-slate-400 mt-2 leading-relaxed">
                     {lang === "fa" 
-                      ? "جهت دسترسی به پنل مدیریت کلان کاداستر آریانا رهنما، بررسی عملکرد سیستم، تایید اسناد و ویرایش کارمزد، لطفاً رمز عبور عبور امنیتی مدیریت را وارد نمایید." 
-                      : "To access global cadastral control parameters, review records, analyze networks, and configure system fees, please provide the master administration passcode."}
+                      ? `جهت دسترسی به پنل مدیریت کلان کاداستر ${t.brand}، بررسی عملکرد سیستم، تایید اسناد و ویرایش کارمزد، لطفاً رمز عبور عبور امنیتی مدیریت را وارد نمایید.` 
+                      : `To access global cadastral control parameters for ${t.brand}, review records, analyze networks, and configure system fees, please provide the master administration passcode.`}
                   </p>
                 </div>
                 
@@ -1247,7 +1354,7 @@ export default function App() {
                       </div>
 
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs border-collapse">
+                        <table className="w-full text-start text-xs border-collapse">
                           <thead>
                             <tr className="border-b border-slate-850 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
                               <th className="py-3 px-3">{getTranslation(lang, "adminColProperty", "Property & Location")}</th>
@@ -1255,7 +1362,7 @@ export default function App() {
                               <th className="py-3 px-3">{getTranslation(lang, "adminColBaseValue", "Base Property Value")}</th>
                               <th className="py-3 px-3">{getTranslation(lang, "adminColCommission", "Corporate Commission Target")}</th>
                               <th className="py-3 px-3">{getTranslation(lang, "adminColLedgerStatus", "Ledger Status")}</th>
-                              <th className="py-3 px-3 text-right">{getTranslation(lang, "adminColOperations", "Operations")}</th>
+                              <th className="py-3 px-3 text-end">{getTranslation(lang, "adminColOperations", "Operations")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-850/60 font-medium">
@@ -1293,7 +1400,7 @@ export default function App() {
                                       </span>
                                     )}
                                   </td>
-                                  <td className="py-3 px-3 text-right space-x-1 whitespace-nowrap">
+                                  <td className="py-3 px-3 text-end space-x-1 rtl:space-x-reverse whitespace-nowrap">
                                     {!p.isApproved && (
                                       <button
                                         onClick={() => handleApproveProperty(p.id)}
@@ -2067,7 +2174,7 @@ export default function App() {
                 />
               </div>
               <h3 className="text-md font-black text-slate-100 font-sans">
-                {lang === "fa" ? "نصب وب‌اپلیکیشن آریانا رهنما" : "Install Ariana Rahnuma Premium App"}
+                {lang === "fa" ? `نصب وب‌اپلیکیشن ${t.brand}` : `Install ${t.brand} Premium App`}
               </h3>
               <p className="text-[11px] text-slate-400 leading-normal">
                 {lang === "fa" 

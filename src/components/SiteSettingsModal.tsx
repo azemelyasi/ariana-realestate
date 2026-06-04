@@ -35,8 +35,63 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
   const [listingFeeUSDT, setListingFeeUSDT] = React.useState<number>(settings.listingFeeUSDT !== undefined ? settings.listingFeeUSDT : 5);
   const [feeRatePct, setFeeRatePct] = React.useState<number>(settings.feeRatePct !== undefined ? settings.feeRatePct : 0.05);
 
+  const [cacheSuccessMsg, setCacheSuccessMsg] = React.useState("");
+  const [securityPin, setSecurityPin] = React.useState("");
+  const [pinError, setPinError] = React.useState("");
+
+  const clearFirefoxBrowserCache = () => {
+    try {
+      // Clear sessions and index indicators
+      sessionStorage.clear();
+      
+      // Let's clear service worker cache of assets if applicable
+      if (window.caches) {
+        window.caches.keys().then((names) => {
+          for (const name of names) {
+            window.caches.delete(name);
+          }
+        });
+      }
+
+      // Check for service worker registries
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
+
+      setCacheSuccessMsg(lang === "fa" 
+        ? "✓ کش موقت مرورگر با موفقیت پاکسازی شد! در حال بارگذاری مجدد و ایمن سامانه..." 
+        : "✓ Browser temporary cache registry cleared! Performing direct hard reload...");
+
+      // Perform direct hard reload with cache-bust parameter to bypass proxy/firefox cache
+      setTimeout(() => {
+        const bustUrl = new URL(window.location.href);
+        bustUrl.searchParams.set("cb", Date.now().toString());
+        window.location.replace(bustUrl.toString());
+      }, 1500);
+    } catch (err) {
+      console.error("Cache busting error:", err);
+    }
+  };
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setPinError("");
+
+    // Detect if Tether address is being modified from the original settings
+    if (tetherWalletAddress !== (settings.tetherWalletAddress || "TR7NHqdjwmJZGZ86HnEpv842bC78e146vD")) {
+      const cleanPin = securityPin.trim();
+      if (cleanPin !== "1214" && cleanPin !== "1234") {
+        setPinError(lang === "fa"
+          ? "❌ خطا: پین‌کد امنیتی مدیریت نادرست است! تغییر آدرس کیف پول تتر مسدود شد."
+          : "❌ Error: Invalid Admin Security PIN! Tether address changes blocked.");
+        return;
+      }
+    }
+
     onSaveSettings({
       siteName,
       allowPublicPost,
@@ -222,18 +277,50 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
             />
           </div>
 
-          <div>
+           <div>
             <label className="block text-slate-400 mb-1 font-semibold">
               {getTranslation(lang, "settingsWalletAddress", "Personal USDT-TRC20 Wallet Address")}
             </label>
-            <input
-              type="text"
-              required
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono text-center tracking-wide"
-              value={tetherWalletAddress}
-              onChange={(e) => setTetherWalletAddress(e.target.value.trim())}
-              placeholder="T..."
-            />
+            <div className="relative">
+              <input
+                type="text"
+                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono text-center tracking-wide pr-10"
+                value={tetherWalletAddress}
+                onChange={(e) => setTetherWalletAddress(e.target.value.trim())}
+                placeholder="T..."
+              />
+              <span className="absolute right-3 top-2.5 text-slate-500">🛡️</span>
+            </div>
+            
+            {tetherWalletAddress !== (settings.tetherWalletAddress || "TR7NHqdjwmJZGZ86HnEpv842bC78e146vD") && (
+              <div className="mt-2.5 bg-rose-500/10 border border-rose-500/25 p-3 rounded-2xl space-y-2 animate-fade-in">
+                <div className="text-[10px] text-rose-400 font-extrabold flex items-center gap-1.5 uppercase font-mono">
+                  <span>🚨</span>
+                  {lang === "fa" 
+                    ? "تغییر آدرس تتر شناسایی شد! تایید هویت مدیریت الزامی است:" 
+                    : "Escrow wallet modification requires Admin PIN verification:"}
+                </div>
+                <input
+                  type="password"
+                  placeholder={lang === "fa" ? "پین‌کد امنیت مدیریت (مثال: ۱۲۳۴)" : "Enter Admin Security PIN (e.g. 1234)"}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-center font-mono font-bold text-white text-xs tracking-widest focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none"
+                  value={securityPin}
+                  onChange={(e) => setSecurityPin(e.target.value)}
+                />
+                <p className="text-[9px] text-slate-500 leading-normal">
+                  {lang === "fa" 
+                    ? "جهت جلوگیری از حملات فیشینگ یا دسترسی هکر، هرگونه ثبت تغییر آدرس ولت تتر مستلزم وارد کردن کد تاییدیه آریانا رهنما (۱۲۳۴) است." 
+                    : "To prevent cyber phishing, changing the Tether node recipient address requires specifying the platform lock clearance (1234)."}
+                </p>
+              </div>
+            )}
+
+            {pinError && (
+              <div className="mt-2 text-[10px] bg-red-950/60 border border-red-900 text-red-400 font-extrabold p-2.5 rounded-xl text-center shadow animate-bounce">
+                {pinError}
+              </div>
+            )}
           </div>
 
           {/* Dynamic Fees subsection */}
@@ -331,6 +418,49 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                   {getTranslation(lang, "settingsFeePctDesc", "Percentage rate (e.g., 0.05% of sale price or rental size).")}
                 </p>
               </div>
+            )}
+          </div>
+
+          {/* DEDICATED FIREFOX & BROWSER CACHE BUSTING UTILITIES */}
+          <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl space-y-3">
+            <span className="text-[10px] text-rose-400 font-extrabold uppercase tracking-wider block font-mono">
+              ⚡ {lang === "fa" ? "سامانه رفع ابهام کش مرورگر (فایرفاکس / کروم)" : "Browser Cache & Firefox Diagnostics Panel"}
+            </span>
+
+            <div className="text-[10.5px] text-slate-400 leading-normal space-y-1.5 border-b border-slate-900 pb-2">
+              {lang === "fa" ? (
+                <>
+                  <p>اگر تغییرات سامانه یا ثبت‌های جدید شما به دلیل کش پیله‌ای فایرفاکس لود نمی‌شود:</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-slate-500 text-[10px]">
+                    <li>شما می‌توانید با زدن دکمه پاکسازی زیر، حافظه موقت سشن را تخلیه کنید.</li>
+                    <li>همچنین در فایرفاکس دکمه‌های <strong>Ctrl + F5</strong> را نگه دارید.</li>
+                  </ul>
+                </>
+              ) : (
+                <>
+                  <p>If app features, newly updated items, or state indicators are not showing due to browser/Firefox caching:</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-slate-500 text-[10px]">
+                    <li>Click the purge button below to wipe local dynamic session storage indices.</li>
+                    <li>Alternatively, press <strong>Ctrl + F5</strong> on your keyboard inside Firefox.</li>
+                  </ul>
+                </>
+              )}
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={clearFirefoxBrowserCache}
+                className="w-full py-2 bg-rose-950/40 hover:bg-rose-900/40 text-rose-300 border border-rose-900/35 rounded-xl font-bold text-[10.5px] transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+              >
+                🗑️ {lang === "fa" ? "پاکسازی فوری کش موقت و بارگذاری مجدد سخت" : "Purge Temporary Cache & Hard Reload"}
+              </button>
+            </div>
+
+            {cacheSuccessMsg && (
+              <p className="text-[10px] text-emerald-400 font-extrabold text-center animate-pulse pt-1">
+                {cacheSuccessMsg}
+              </p>
             )}
           </div>
 

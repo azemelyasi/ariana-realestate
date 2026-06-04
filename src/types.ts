@@ -1,4 +1,4 @@
-export type Language = "en" | "fa" | "tr" | "ar" | "de" | "ja" | "zh" | "uz" | "ru" | "ku" | "ps" | "hi" | "ur";
+export type Language = "en" | "fa" | "tr" | "ar" | "de" | "ja" | "zh" | "uz" | "ru" | "ku" | "ps" | "hi" | "ur" | "sg" | "fr" | "es";
 
 export interface CountryConfig {
   code: string;
@@ -38,6 +38,13 @@ export interface Property {
   cabinets?: string;
   cooling?: string;
   deed?: string;
+  brokerName?: string;
+  brokerEmail?: string;
+  brokerLicense?: string;
+  brokerCardPhoto?: string;
+  agencyLogo?: string;
+  isBrokerVerified?: boolean;
+  isLocalTrustEndorsed?: boolean;
 }
 
 export interface CalendarEvent {

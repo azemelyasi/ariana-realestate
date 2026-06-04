@@ -13,7 +13,7 @@ interface ClientExportModalProps {
 }
 
 // Default values localized for each of the 13 supported languages
-const DEFAULT_CLIENT_NAMES: Record<Language, string> = {
+const DEFAULT_CLIENT_NAMES: Partial<Record<Language, string>> = {
   en: "Mr. John Smith",
   fa: "جناب آقای احمدی",
   tr: "Sayın Ahmet Yılmaz",
@@ -29,7 +29,7 @@ const DEFAULT_CLIENT_NAMES: Record<Language, string> = {
   ur: "جناب علی احمد صاحب",
 };
 
-const DEFAULT_BROKER_NAMES: Record<Language, string> = {
+const DEFAULT_BROKER_NAMES: Partial<Record<Language, string>> = {
   en: "Ariana Rahnuma Official Partner",
   fa: "کارگزار رسمی آریانا رهنما",
   tr: "Ariana Rahnuma Resmi Brokeri",
@@ -45,7 +45,7 @@ const DEFAULT_BROKER_NAMES: Record<Language, string> = {
   ur: "آریانا رهنما آفیشل پارٹنر",
 };
 
-const DEFAULT_GREETINGS: Record<Language, string> = {
+const DEFAULT_GREETINGS: Partial<Record<Language, string>> = {
   en: "Pursuant to our discussion regarding premier real estate investments, please find the matching curated listings prepared for your consideration.",
   fa: "پیرو گفتگوی تلفنی در خصوص خرید واحدهای مسکونی و سنددار، لیست گزینه‌های منتخب منطبق با شرایط درخواستی شما برای بررسی تقدیم حضور می‌گردد.",
   tr: "Görüşmemize istinaden talep ettiğiniz kriterlere uygun olarak hazırladığımız özel portföy listesini incelemenize sunarız.",
@@ -62,7 +62,7 @@ const DEFAULT_GREETINGS: Record<Language, string> = {
 };
 
 // Comprehensive multilingual dictionary for the export flyer and control inputs
-const LOCALIZED_DICT: Record<string, Record<Language, string>> = {
+const LOCALIZED_DICT: Record<string, Partial<Record<Language, string>>> = {
   title: {
     en: "SMART CLIENT BROCHURE STUDIO",
     fa: "سامانه استخراج کاتالوگ و بروشور مشتری کاداستر",
@@ -650,14 +650,14 @@ export const ClientExportModal: React.FC<ClientExportModalProps> = ({
 
   // Customizer state dynamically initialized according to the chosen language
   const [clientName, setClientName] = useState(() => {
-    return DEFAULT_CLIENT_NAMES[lang] || DEFAULT_CLIENT_NAMES["en"];
+    return DEFAULT_CLIENT_NAMES[lang] || DEFAULT_CLIENT_NAMES["en"]!;
   });
   const [brokerName, setBrokerName] = useState(() => {
-    return DEFAULT_BROKER_NAMES[lang] || DEFAULT_BROKER_NAMES["en"];
+    return DEFAULT_BROKER_NAMES[lang] || DEFAULT_BROKER_NAMES["en"]!;
   });
   const [brokerPhone, setBrokerPhone] = useState("09121234567");
   const [customGreeting, setCustomGreeting] = useState(() => {
-    return DEFAULT_GREETINGS[lang] || DEFAULT_GREETINGS["en"];
+    return DEFAULT_GREETINGS[lang] || DEFAULT_GREETINGS["en"]!;
   });
 
   // Toggles

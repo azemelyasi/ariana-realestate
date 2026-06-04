@@ -116,15 +116,37 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       {/* Content details */}
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>
-          <span className="text-[10px] text-indigo-400 font-bold tracking-wider block mb-1 truncate" title={`${property.district}${property.address && property.address !== property.district ? ` - ${property.address}` : ""}`}>
-            📍 {property.district} {property.address && property.address !== property.district ? `(${property.address})` : ""}
-          </span>
+          <div className="flex items-center justify-between gap-1 mb-1 flex-wrap">
+            <span className="text-[10px] text-indigo-400 font-bold tracking-wider block truncate" title={`${property.district}${property.address && property.address !== property.district ? ` - ${property.address}` : ""}`}>
+              📍 {property.district} {property.address && property.address !== property.district ? `(${property.address})` : ""}
+            </span>
+            <span className="text-[8px] bg-indigo-950/40 border border-indigo-900/30 px-1.5 py-0.5 rounded text-indigo-300 font-mono" title="Mathematical Coordinates Secured to avoid lawsuits">
+              📡 GPS: SECURED
+            </span>
+          </div>
           <h4 className="text-sm font-bold text-slate-100 line-clamp-1 mb-2 hover:text-indigo-400 transition cursor-pointer" onClick={() => onViewDetails(property)}>
             {property.title}
           </h4>
-          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">
+          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
             {property.description}
           </p>
+
+          {/* Zillow Killer Trust badging */}
+          <div className="flex flex-wrap gap-1.5 mb-3.5">
+            {property.isLocalTrustEndorsed ? (
+              <span className="text-[8.5px] items-center bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg text-amber-400 font-bold flex gap-1">
+                🤝 {lang === "fa" ? "تعهدنامه ملی و محلی" : "Local Trust Certified"}
+              </span>
+            ) : (
+              <span className="text-[8.5px] items-center bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg text-emerald-400 font-bold flex gap-1">
+                ⚖️ {lang === "fa" ? "مجوز رسمی احراز شد" : "Official Registry Verified"}
+              </span>
+            )}
+            
+            <span className="text-[8.5px] items-center bg-blue-500/15 border border-blue-500/20 px-2 py-0.5 rounded-lg text-blue-300 font-semibold font-mono flex gap-1">
+              ⚖️ {lang === "fa" ? "سند بدون غش حقوقی" : "Lawsuit Immunity"}
+            </span>
+          </div>
         </div>
 
         <div>

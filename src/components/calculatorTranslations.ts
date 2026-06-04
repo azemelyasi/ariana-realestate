@@ -54,7 +54,7 @@ export interface CalculatorTranslationSet {
   costOfLiving: string;
 }
 
-export const CALC_TRANSLATIONS: Record<Language, CalculatorTranslationSet> = {
+export const CALC_TRANSLATIONS: Partial<Record<Language, CalculatorTranslationSet>> = {
   en: {
     hubTitle: "Financial & Cadastral Hub",
     hubDesc: "Live appraisals & comprehensive currency conversions",

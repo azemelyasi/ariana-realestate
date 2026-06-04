@@ -11,7 +11,7 @@ interface CadastralCalculatorProps {
 
 export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, isSidebar = false }) => {
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
-  const tc = CALC_TRANSLATIONS[lang] || CALC_TRANSLATIONS.en;
+  const tc = CALC_TRANSLATIONS[lang] || CALC_TRANSLATIONS.en!;
 
   // Tabs: "valuation" or "forex" | "forecast" | "mortgage_risk"
   const [activeSubTab, setActiveSubTab] = useState<"valuation" | "forex" | "forecast" | "mortgage_risk">("valuation");

@@ -4,6 +4,178 @@ import { TRANSLATIONS, getTranslation } from "../i18n";
 import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
 
+const brokerLocal: any = {
+  en: {
+    brokerSectionTitle: "👑 Official Agent / Broker Municipal Identification Info",
+    brokerDisclaimer: "⚠️ Ariana Rahnuma does not guarantee the raw physical status of properties, but legally guarantees that all listing registrants are municipal-licensed, verified, and fully authenticated real estate brokers.",
+    brokerNameLabel: "Agent Full Name",
+    brokerEmailLabel: "Verified Business Email (Registered under municipal system)",
+    brokerLicenseLabel: "Municipal Real Estate License / RERA Registration Code",
+    brokerLicenseHelp: "Required verification parameter to prevent unverified guest posting.",
+    brokerCardLabel: "Municipal Agent ID Card (Front Photo)",
+    agencyLogoLabel: "Agency Corporate Logo",
+    requiredError: "Please fill out all official broker municipal registration credentials before listing properties.",
+    emailValidationError: "Please input a valid registered municipal agent email address.",
+    selectPredefinedLogo: "Or choose a prestigious preset logo"
+  },
+  fa: {
+    brokerSectionTitle: "👑 اطلاعات جواز و احراز هویت نماینده / مشاور رسمی شهرداری",
+    brokerDisclaimer: "⚠️ آریانا رهنما متضمن اصالت فیزیکی ملک نیست، اما تضمین می‌کند که تمامی ثبت‌کنندگان، مشاوران دارای مجوز رسمی کاداستر و احراز هویت شده هستند.",
+    brokerNameLabel: "نام و نام خانوادگی نماینده رسمی",
+    brokerEmailLabel: "ایمیل سازمانی تایید شده (جهت ثبت معتبر در پایگاه کاداستر)",
+    brokerLicenseLabel: "کد ثبتی یا شماره پرواز رسمی شهرداری (مانند RERA یا کد صنفی)",
+    brokerLicenseHelp: "ورود این اطلاعات جهت تاییدیه الزامی است و مانع آگهی ثبت‌نشده غیرمجاز خواهد شد.",
+    brokerCardLabel: "تصویر کارت رسمی کارگزاری یا نماینده شهرداری (بارگذاری فایل)",
+    agencyLogoLabel: "لوگو یا نماد آژانس املاک رسمی",
+    requiredError: "لطفاً اطلاعات هویتی و جواز ثبت‌الملک کاداستر خود را به طور کامل وارد نمایید.",
+    emailValidationError: "لطفاً یک آدرس ایمیل معتبر و فعال وارد نمایید.",
+    selectPredefinedLogo: "یا یکی از لوگوهای تایید شده زیر را انتخاب کنید"
+  },
+  tr: {
+    brokerSectionTitle: "👑 Resmi Temsilci / Belediye Lisans Doğrulama Bilgileri",
+    brokerDisclaimer: "⚠️ Ariana Rahnuma, konutun fiziki yapısını garanti altına almaz; ancak portföy sahiplerinin yerel belediye veya RERA onaylı, lisanslı ve kimliği doğrulanmış resmi danışmanlar olduğunu taahhüt eder.",
+    brokerNameLabel: "Temsilci Adı ve Soyadı",
+    brokerEmailLabel: "Onaylı Kurumsal E-posta Adresi",
+    brokerLicenseLabel: "Resmi Belediye Emlak Lisansı / RERA Kayıt Kodu",
+    brokerLicenseHelp: "Kayıtsız veya yetkisiz ilan girişlerini önlemek için zorunlu parametredir.",
+    brokerCardLabel: "Resmi Temsilci Kimlik Kartı Fotoğrafı (Ön yüzü)",
+    agencyLogoLabel: "Emlak Ajansı Özel Logosu",
+    requiredError: "İlan yayınlayabilmek için resmi emlak lisans bilgilerinizi eksiksiz doldurmalısınız.",
+    emailValidationError: "Lütfen geçerli bir kurumsal e-posta adresi giriniz.",
+    selectPredefinedLogo: "Veya prestijli hazır logolardan birini seçin"
+  },
+  ar: {
+    brokerSectionTitle: "👑 معلومات جواز وهوية العقاري / الوسيط العقاري المعتمد",
+    brokerDisclaimer: "⚠️ آريانا رهنما لا تضمن الحالة المادية للعقار، ولكنها تضمن قانونياً أن جميع المسجلين هم وسطاء عقاريون مرخصون بلدياً ومعتمدون رسمياً.",
+    brokerNameLabel: "الاسم الكامل للوكيل المعتمد",
+    brokerEmailLabel: "البريد الإلكتروني التجاري الموثق (المسجل لدى البلدية)",
+    brokerLicenseLabel: "رقم رخصة الوساطة العقارية / رمز التسجيل الرسمي (مثل RERA)",
+    brokerLicenseHelp: "بيانات الإدخال الإلزامية تمنع نشر الإعلانات من قبل مستخدمين غير مسجلين.",
+    brokerCardLabel: "بطاقة التعريف العقارية الرسمية الصادرة عن البلدية (تحميل الصورة)",
+    agencyLogoLabel: "شعار الشركة أو الوكالة العقارية",
+    requiredError: "يرجى تعبئة جميع بيانات التسجيل المهني للوسيط قبل نشر الإعلان.",
+    emailValidationError: "يرجى إدخال عنوان بريد إلكتروني صحيح ومعتمد.",
+    selectPredefinedLogo: "أو اختر شعاراً معتمداً جاهزاً من القائمة أدناه"
+  },
+  de: {
+    brokerSectionTitle: "👑 Offizielle Makler- und Gemeindeverifikationsdaten",
+    brokerDisclaimer: "⚠️ Ariana Rahnuma haftet nicht für den physischen Zustand der Immobilie, garantiert jedoch rechtlich, dass alle Ersteller lizenzierte, geprüfte und staatlich akkreditierte Makler sind.",
+    brokerNameLabel: "Vollständiger Name des Maklers",
+    brokerEmailLabel: "Verifizierte Geschäfts-E-Mail (im Gemeinderegister)",
+    brokerLicenseLabel: "Behördliche Maklerlizenz / RERA-Registrierungsnummer",
+    brokerLicenseHelp: "Pflichtfeld, um unbefugtes Inserieren durch anonyme Gäste zu unterbinden.",
+    brokerCardLabel: "Offizieller Maklerausweis (Vorderseite hochladen)",
+    agencyLogoLabel: "Firmenlogo des Immobilienbüros",
+    requiredError: "Bitte füllen Sie Ihre offiziellen Registrierungsdaten vollständig aus, um fortzufahren.",
+    emailValidationError: "Bitte geben Sie eine gültige Geschäfts-E-Mail-Adresse ein.",
+    selectPredefinedLogo: "Oder ein vordefiniertes Partner-Logo auswählen"
+  },
+  ja: {
+    brokerSectionTitle: "👑 公認エージェント・宅建免許保有者の本人確認情報",
+    brokerDisclaimer: "⚠️ アリアナ・ラヌマは不動産の物理的真実性を保証するものではありませんが、本プラットフォームに掲載を行う全ての登録者は自治体・RERA公認の登録宅建士であることを保証します。",
+    brokerNameLabel: "エージェント・責任者氏名",
+    brokerEmailLabel: "公認ビジネス用メールアドレス (国交省または自治体登録用)",
+    brokerLicenseLabel: "宅地建物取引業者免許番号 / RERA登録証コード",
+    brokerLicenseHelp: "匿名または無資格の不審なゲスト投稿を防ぐための必須入力項目となります。",
+    brokerCardLabel: "登録証明書・エージェント免許証の写真 (表面アップロード)",
+    agencyLogoLabel: "不動産会社・加盟ブランドのロゴ画像",
+    requiredError: "物件を登録するには、公認エージェントのライセンス情報を正しく入力してください。",
+    emailValidationError: "有効な確認済みメールアドレスを入力してください。",
+    selectPredefinedLogo: "または事前指示の公式ロゴから選択"
+  },
+  zh: {
+    brokerSectionTitle: "👑 国家执业经纪人 / 经市政合规认证标志信息",
+    brokerDisclaimer: "⚠️ 阿里亚纳地籍平台不承担标的物实机硬件真实性赔付，但法律担保所有发帖人均为持证合规、市政实名备案的中介经纪商。",
+    brokerNameLabel: "备案持证经纪人全称",
+    brokerEmailLabel: "官方认可的工作邮箱 (与备案证书绑定)",
+    brokerLicenseLabel: "市政房地产执业资格编码 / 房协备案号 (如 RERA 编号)",
+    brokerLicenseHelp: "此入驻校验旨在禁止未实名游客发帖以规避欺诈行为。",
+    brokerCardLabel: "国家中介执业资质牌照 / 市政经纪人正面身份证件",
+    agencyLogoLabel: "中介机构品牌官方徽标 LOGO",
+    requiredError: "须完整填报执业备案信息，才能提交并锁定区块链地籍流水账目。",
+    emailValidationError: "请填入格式正确的执业邮箱。",
+    selectPredefinedLogo: "或从平台指定标志中选择一套合规标志"
+  },
+  uz: {
+    brokerSectionTitle: "👑 Rasmiy Agent / Brokerning Municipal Sertifikatlashtirish Ma'lumotlari",
+    brokerDisclaimer: "⚠️ Ariana Rahnuma mulkning jismoniy holatiga kafolat bermaydi, biroq barcha e'lon beruvchilar rasmiy litsenziyaga ega va ro'yxatdan o'tgan brokerlar ekanligini kafolatlaydi.",
+    brokerNameLabel: "Agentning To'liq Ismi",
+    brokerEmailLabel: "Tasdiqlangan Ishchi Elektron Pochtasi",
+    brokerLicenseLabel: "Litsenziya va RERA Registratsiya Raqami",
+    brokerLicenseHelp: "Ruxsat etilmagan anonim foydalanuvchilar e'lonlarining oldini olish uchun majburiy maydon.",
+    brokerCardLabel: "Baxolash yoki Brokerlik Guvohnomasi (Faylni yuklash)",
+    agencyLogoLabel: "Ko'chmas Mulk Agentligi Logotipi",
+    requiredError: "Iltimos, e'lon joylashdan avval litsenziya ma'lumotlarini to'ldiring.",
+    emailValidationError: "Iltimos, tasdiqlangan to'g'ri elektron pochtani kiriting.",
+    selectPredefinedLogo: "Yoki tayyor nufuzli logotiplardan birini tanlang"
+  },
+  ru: {
+    brokerSectionTitle: "👑 Сведения о государственной лицензии риелтора/брокера",
+    brokerDisclaimer: "⚠️ Ariana Rahnuma не гарантирует физическое состояние объекта, но юридически заверяет, что все авторы объявлений — лицензированные и верифицированные брокеры.",
+    brokerNameLabel: "Полное имя агента",
+    brokerEmailLabel: "Верифицированный рабочий email (в реестре)",
+    brokerLicenseLabel: "Лицензионный номер риелтора / код регистрации RERA",
+    brokerLicenseHelp: "Обязательное поле для блокировки несогласованных публикаций от гостей без лицензии.",
+    brokerCardLabel: "Удостоверение сертифицированного агента (лицевая сторона)",
+    agencyLogoLabel: "Фирменный логотип агентства недвижимости",
+    requiredError: "Пожалуйста, заполните данные вашей риелторской лицензии перед публикацией.",
+    emailValidationError: "Пожалуйста, введите корректный адрес электронной почты.",
+    selectPredefinedLogo: "Или выберите один из проверенных шаблонов логотипов"
+  },
+  ku: {
+    brokerSectionTitle: "👑 زانیاریی مۆڵەت و ناسنامەی فەرمی نوێنەر / برۆکەری شارەوانی",
+    brokerDisclaimer: "⚠️ ئاریانا ڕەهنما بەڵێندەری دروستیی فیزیایی خانوو نییە، بەڵام گرەنتی دەکات کە هەموو نووسەرانی بابەتەکان برۆکەری مۆڵەتپێدراوی فەرمی شارەوانین.",
+    brokerNameLabel: "ناوی تەواوی نوێنەری یاسایی",
+    brokerEmailLabel: "ئیمەیڵی فەرمی فەرمانگە (بۆ تۆمارکردنی کاداستر)",
+    brokerLicenseLabel: "ژمارەی مۆڵەتی نێوەندگیری فەرمی یان کۆدی RERA",
+    brokerLicenseHelp: "پڕکردنەوەی ئەم زانیارییە پێویستە بۆ ڕێگریکردن لە بابەتە بێ ناسنامەکان.",
+    brokerCardLabel: "وێنەی کارتی فەرمی نوێنەرایەتی شارەوانی (مۆڵەت)",
+    agencyLogoLabel: "لۆگۆی فەرمی کۆمپانیای خانوبەرە",
+    requiredError: "تکایە سەرجەم ناسنامە فەرمییەکانی برۆکەر پڕبکەرەوە بۆ بڵاوکردنەوە.",
+    emailValidationError: "تکایە ئیمەیڵێکی دروست و کارا بنووسە.",
+    selectPredefinedLogo: "یان لۆگۆیەکی ئامادە هەڵبژێرە"
+  },
+  ps: {
+    brokerSectionTitle: "👑 د رسمي استازي / د املاکو د جواز او ثبت معلومات",
+    brokerDisclaimer: "⚠️ اریانا رهنما د ملکیت فزیکي تضمین نه کوي، مګر په قانوني توګه تضمینوي چې ټول ثبتونکي رسمي او جواز لرونکي د املاکو بروکران دي.",
+    brokerNameLabel: "د رسمي استازي بشپړ نوم",
+    brokerEmailLabel: "تایید شوی رسمي بریښنالیک (د کاداستر سیسټم لپاره)",
+    brokerLicenseLabel: "د شاروالۍ د معاملو لارښود رسمي نمبر یا د RERA ثبت کوډ",
+    brokerLicenseHelp: "د بې جوازه او غیرقانوني سرچینو د مخنیوي لپاره د دې معلوماتو ثبتول اړین دي.",
+    brokerCardLabel: "د رسمي استازي د کارت عکس (مخامخ څېره)",
+    agencyLogoLabel: "د رسمي کارګزارۍ یا شرکت لوګو",
+    requiredError: "مهرباني وکړئ د ملکیت د خپرولو دمخه د بروکري جواز د ثبت معلومات پوره کړئ.",
+    emailValidationError: "مهرباني وکړئ یو سم بریښنالیک پته داخل کړئ.",
+    selectPredefinedLogo: "یا له لاندې باوري لوګوګانو څخه یوه غوره کړئ"
+  },
+  hi: {
+    brokerSectionTitle: "👑 आधिकारिक एजेंट / ब्रोकर नगरपालिका लाइसेंस और पहचान विवरण",
+    brokerDisclaimer: "⚠️ एरियाना रहनुमा संपत्ति की भौतिक प्रामाणिकता की गारंटी नहीं देता है, लेकिन यह सुनिश्चित करता है कि केवल लाइसेंस प्राप्त एजेंट ही प्रकाशन कर सकते हैं।",
+    brokerNameLabel: "दर्ज एजेंट का पूरा नाम",
+    brokerEmailLabel: "सत्यापित व्यावसायिक ईमेल (नगरपालिका रिकॉर्ड में)",
+    brokerLicenseLabel: "नगरपालिका अचल संपत्ति लाइसेंस / रेरा (RERA) पंजीकरण कोड",
+    brokerLicenseHelp: "अनाधिकृत प्रविष्टियों को रोकने के लिए लाइसेंस कोड भरना पूरी तरह अनिवार्य है।",
+    brokerCardLabel: "नगरपालिका एजेंट आईडी कार्ड (फ्रंट फोटो)",
+    agencyLogoLabel: "एजेंसी कॉरपोरेट लोगो",
+    requiredError: "कृपया संपत्ति पोस्ट करने से पहले अपने आधिकारिक ब्रोकर क्रेडेंशियल भरें।",
+    emailValidationError: "कृपया एक वैध और सत्यापित ईमेल पता दर्ज करें।",
+    selectPredefinedLogo: "या नीचे दिए गए स्वीकृत लोगो में से चुनें"
+  },
+  ur: {
+    brokerSectionTitle: "👑 بلدیاتی رجسٹریشن و لائسنس یافتہ بروکریج شناخت معلومات",
+    brokerDisclaimer: "⚠️ اریانا رهنما جائیداد کی فزیکل مادی حیثیت کی ضمانت نہیں دیتا، تاہم مکمل یقین دلاتا ہے کہ سبھی لسٹنگ رجسٹرڈ بلدیاتی لائسنس یافتہ اور مصدقہ بروکرز کی ہیں۔",
+    brokerNameLabel: "بروکر کا مکمل نام",
+    brokerEmailLabel: "تصدیق شدہ کاروباری ای میل",
+    brokerLicenseLabel: "بلدیاتی املاک لائسنس نمبر / ریرا (RERA) رجسٹریشن کوڈ",
+    brokerLicenseHelp: "غیر مصدقہ گیسٹ پوسٹنگ کی روک تھام کے لیے رجسٹریشن اور لائسنس کوڈ بالکل لازمی ہے۔",
+    brokerCardLabel: "سرکاری بروکریج کارڈ پیشانی عکس",
+    agencyLogoLabel: "ریل اسٹیٹ ایجنسی کا باضابطہ لوگو",
+    requiredError: "برائے مہربانی املاک لسٹنگ سے قبل اپنی بروکریج معلومات درج کریں۔",
+    emailValidationError: "برائے مہربانی درست تصدیق شدہ ای میل ایڈریس درج کریں۔",
+    selectPredefinedLogo: "یا ذیل میں فراہم کردہ منظور شدہ لوگوز میں سے منتخب کریں"
+  }
+};
+
 interface AddPropertyModalProps {
   lang: Language;
   onClose: () => void;
@@ -12,64 +184,7 @@ interface AddPropertyModalProps {
   userRole?: "client" | "verified" | "admin";
 }
 
-const payTranslations: Record<Language, {
-  limitAlert: string;
-  limitDesc: string;
-  invoiceTarget: string;
-  feeTitle: string;
-  feeValue: string;
-  shaparakTab: string;
-  cryptoTab: string;
-  coinsTab: string;
-  cardLabel: string;
-  cvvLabel: string;
-  cryptoTitle: string;
-  cryptoDesc: string;
-  coinDesc: string;
-  payBtn: string;
-  processingSecures: string;
-  processingDigital: string;
-  processingLedger: string;
-  successTitle: string;
-  successDesc: string;
-  finishBtn: string;
-  baseRegistrationFee: string;
-  generalDiscount: string;
-  promoDiscount: string;
-  payableTotal: string;
-  promocodeLabel: string;
-  promocodePlaceholder: string;
-  promocodeVerify: string;
-  expirationDate: string;
-  activeNetwork: string;
-  secureCoinPay: string;
-  backToEdit: string;
-  adminFreePublish: string;
-  adminBypassProcessing: string;
-  processingTransaction: string;
-  neighborhoodTypeable: string;
-  neighborhoodPlaceholder: string;
-  heatingOptional: string;
-  heatingPlaceholder: string;
-  kitchenOptional: string;
-  kitchenPlaceholder: string;
-  coolingOptional: string;
-  coolingPlaceholder: string;
-  deedOptional: string;
-  deedPlaceholder: string;
-  addressPlaceholder: string;
-  propertyPhotos: string;
-  browseGallery: string;
-  coverPhoto: string;
-  photo2: string;
-  photo3: string;
-  deviceGallery: string;
-  orPasteUrl: string;
-  currencyAED: string;
-  cadastralBillingNode: string;
-  promocodeSuccess: string;
-  promocodeInvalid: string;
-}> = {
+const payTranslations: any = {
   en: {
     limitAlert: "⚠️ Free listing allowance reached",
     limitDesc: "You have published your 2 free allowed publications. Additional cadastral registries require global certification invoice payment to assure node storage allocation.",
@@ -968,6 +1083,17 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
   const [imageUrl2, setImageUrl2] = useState("");
   const [imageUrl3, setImageUrl3] = useState("");
 
+  const [brokerName, setBrokerName] = useState(() => localStorage.getItem("melkban_verified_broker_name") || "");
+  const [brokerEmail, setBrokerEmail] = useState(() => localStorage.getItem("melkban_verified_broker_email") || "");
+  const [brokerLicense, setBrokerLicense] = useState(() => localStorage.getItem("melkban_verified_broker_license") || "");
+  const [brokerCardPhoto, setBrokerCardPhoto] = useState(() => localStorage.getItem("melkban_verified_broker_card") || "");
+  const [agencyLogo, setAgencyLogo] = useState(() => localStorage.getItem("melkban_verified_agency_logo") || "");
+  const [brokerRegError, setBrokerRegError] = useState("");
+  const [isLocalTrustEndorsed, setIsLocalTrustEndorsed] = useState(false);
+  const [gpsLatitude, setGpsLatitude] = useState("");
+  const [gpsLongitude, setGpsLongitude] = useState("");
+  const [gpsStatus, setGpsStatus] = useState("");
+
   const activeCountry = COUNTRIES.find((cnt) => cnt.code === country) || COUNTRIES[0];
   const [district, setDistrict] = useState(activeCountry.districts[0]);
 
@@ -980,6 +1106,19 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setBrokerRegError("");
+
+    const termLocal = brokerLocal[lang] || brokerLocal.en;
+    if (!brokerName.trim() || !brokerEmail.trim() || !brokerLicense.trim()) {
+      setBrokerRegError(termLocal.requiredError);
+      return;
+    }
+
+    if (!brokerEmail.includes("@")) {
+      setBrokerRegError(termLocal.emailValidationError);
+      return;
+    }
+
     if (!title.trim() || !phone.trim() || !area.trim()) return;
 
     const parsedArea = parseFloat(area) || 120;
@@ -989,6 +1128,12 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
     // Use a random center coordinate for this listing based on country
     const latOffset = (Math.random() - 0.5) * 0.05;
     const lngOffset = (Math.random() - 0.5) * 0.05;
+
+    // Use user-defined or GPS coordinates if available, otherwise fallback to centered country offset
+    const userLat = parseFloat(gpsLatitude);
+    const userLng = parseFloat(gpsLongitude);
+    const finalLat = isNaN(userLat) ? (activeCountry.center.lat + latOffset) : userLat;
+    const finalLng = isNaN(userLng) ? (activeCountry.center.lng + lngOffset) : userLng;
 
     const imgList: string[] = [];
     if (imageUrl1.trim()) imgList.push(imageUrl1.trim());
@@ -1019,14 +1164,27 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
       bedrooms,
       phone,
       address: address || `${district}`,
-      latitude: activeCountry.center.lat + latOffset,
-      longitude: activeCountry.center.lng + lngOffset,
+      latitude: finalLat,
+      longitude: finalLng,
       images: imgList,
       heating: heating.trim() || undefined,
       cabinets: cabinets.trim() || undefined,
       cooling: cooling.trim() || undefined,
       deed: deed.trim() || undefined,
+      brokerName: brokerName.trim(),
+      brokerEmail: brokerEmail.trim(),
+      brokerLicense: brokerLicense.trim(),
+      brokerCardPhoto: brokerCardPhoto || undefined,
+      agencyLogo: agencyLogo || undefined,
+      isBrokerVerified: true,
+      isLocalTrustEndorsed: isLocalTrustEndorsed,
     };
+
+    localStorage.setItem("melkban_verified_broker_name", brokerName.trim());
+    localStorage.setItem("melkban_verified_broker_email", brokerEmail.trim());
+    localStorage.setItem("melkban_verified_broker_license", brokerLicense.trim());
+    if (brokerCardPhoto) localStorage.setItem("melkban_verified_broker_card", brokerCardPhoto);
+    if (agencyLogo) localStorage.setItem("melkban_verified_agency_logo", agencyLogo);
 
     const freeLimit = settings?.freeListingsLimit !== undefined ? settings.freeListingsLimit : 1;
 
@@ -1649,15 +1807,106 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
             </div>
 
             {/* Location Address specifications */}
-            <div>
-              <label className="block text-slate-400 mb-1 font-semibold">{t.labelAddress}</label>
-              <input
-                type="text"
-                placeholder={getT("addressPlaceholder")}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">{t.labelAddress}</label>
+                <input
+                  type="text"
+                  placeholder={getT("addressPlaceholder")}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
+
+              {/* PRECISE GEOLOCATION GATE (ZILLOW GOLD / ANTI-LAW-SUIT DESIGN) */}
+              <div className="border border-indigo-950/70 bg-indigo-950/20 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">🛰️</span>
+                    <span className="text-[11px] font-black text-indigo-400 uppercase tracking-wider">
+                      {lang === "fa" ? "مختصات دقیق ماهواره‌ای GPS (جلوگیری از شکایات و کلاهبرداری)" : "PRECISE GPS GEOLOCATION COORDINATES"}
+                    </span>
+                  </div>
+                  <span className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/10 px-2 py-0.5 rounded-full font-bold">
+                    {lang === "fa" ? "متر اعتماد کاداستر: حداکثر" : "Cadastre Trust Meter: Maximum"}
+                  </span>
+                </div>
+
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  {lang === "fa"
+                    ? "جهت دوری از هرگونه نزاع حقوقی، ادعاهای متراژ نادرست یا شکایات خریداران، لوکیشن ریاضی دقیق ملک را روی نقشه ثبت کنید."
+                    : "To secure absolute legal protection and avoid boundary lawsuits or cross-claims from buyers, record precise mathematical coordinates."}
+                </p>
+
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">
+                      {lang === "fa" ? "عرض جغرافیایی (Latitude)" : "Latitude (Y)"}
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 34.52845"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-750 font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      value={gpsLatitude}
+                      onChange={(e) => {
+                        setGpsLatitude(e.target.value);
+                        setGpsStatus("");
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">
+                      {lang === "fa" ? "طول جغرافیایی (Longitude)" : "Longitude (X)"}
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 69.17224"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-750 font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      value={gpsLongitude}
+                      onChange={(e) => {
+                        setGpsLongitude(e.target.value);
+                        setGpsStatus("");
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGpsStatus(lang === "fa" ? "در حال دریافت موقعیت از ماهواره..." : "Fetching exact satellite coordinates...");
+                      if (!navigator.geolocation) {
+                        setGpsStatus(lang === "fa" ? "امکان GPS در مرورگر شما پشتیبانی نمی‌شود." : "GPS is not supported.");
+                        return;
+                      }
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                          setGpsLatitude(pos.coords.latitude.toFixed(7));
+                          setGpsLongitude(pos.coords.longitude.toFixed(7));
+                          setGpsStatus(lang === "fa" ? "✓ موقعیت فعلی با موفقیت دریافت شد!" : "✓ Saved current location!");
+                        },
+                        () => {
+                          setGpsStatus(lang === "fa" ? "ناکام در دریافت؛ دسترسی موقعیت را تایید فرمایید." : "Access denied or signal lost.");
+                        },
+                        { enableHighAccuracy: true, timeout: 5000 }
+                      );
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] px-3 py-1.5 rounded-xl flex items-center justify-center gap-1 transition cursor-pointer self-start"
+                  >
+                    🛰️ {lang === "fa" ? "دریافت موقعیت جغرافیایی زنده من" : "Detect Current Live GPS"}
+                  </button>
+
+                  {gpsStatus && (
+                    <span className={`text-[9.5px] font-bold ${gpsStatus.includes("✓") ? "text-emerald-400" : "text-amber-400"}`}>
+                      {gpsStatus}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Images Section with Local Gallery Access */}
@@ -1737,6 +1986,241 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* OFFICIAL AGENT / BROKER VERIFICATION CARD */}
+            <div className="border border-slate-800 bg-slate-950/40 rounded-3xl p-5 space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-850 pb-3">
+                <span className="text-sm">👑</span>
+                <span className="text-xs font-black text-amber-400 uppercase tracking-wide">
+                  {(brokerLocal[lang] || brokerLocal.en).brokerSectionTitle}
+                </span>
+              </div>
+
+              {/* Verified broker disclaimer in high-contrast */}
+              <div className="p-3.5 bg-indigo-950/30 border border-indigo-900/35 rounded-2xl text-[11px] text-slate-350 leading-relaxed font-medium">
+                {(brokerLocal[lang] || brokerLocal.en).brokerDisclaimer}
+              </div>
+
+              {/* Optional Local Endorsement Switch for Afghanistan / Iran where formal licenses may lack */}
+              <label className="flex items-start gap-2.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="mt-1 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500 bg-slate-950 cursor-pointer"
+                  checked={isLocalTrustEndorsed}
+                  onChange={(e) => setIsLocalTrustEndorsed(e.target.checked)}
+                />
+                <div className="text-left">
+                  <span className="block text-[11px] font-black text-amber-400">
+                    {lang === "fa" 
+                      ? "ثبت‌نام با تعهدنامه محلی و تذکره/کد ملی (ویژه افغانستان، ایران و جاهای فاقد مجوز رسمی)" 
+                      : "Register via Local Endorsement & National Trust (Iran, Afghanistan, etc.)"}
+                  </span>
+                  <p className="text-[9.5px] text-slate-350 leading-normal mt-0.5 font-medium">
+                    {lang === "fa"
+                      ? "اگر فاقد پروانه کسب رسمی یا مجوز هوشمند شهرداری مجزا هستید، با فعال‌سازی این مورد می‌توانید آگهی خود را با ارائه شماره ملی/کد تذکره و تعهدنامه محلی معتمدین به صورت امن ثبت کنید."
+                      : "If you lack a formal corporate real estate license, enable this to claim authorization based on National ID, Tazkira, or a Local Elders guaranteed contract."}
+                  </p>
+                </div>
+              </label>
+
+              {brokerRegError && (
+                <div className="p-3 bg-rose-950/40 border border-rose-900/40 text-rose-300 rounded-xl text-[10.5px] font-bold font-sans">
+                  ⚠️ {brokerRegError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Agent Full Name */}
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">
+                    {(brokerLocal[lang] || brokerLocal.en).brokerNameLabel} <span className="text-indigo-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Ariana Al-Mansoori"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-750 focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
+                    value={brokerName}
+                    onChange={(e) => setBrokerName(e.target.value)}
+                  />
+                </div>
+
+                {/* Broker License/RERA registration (Conditional) */}
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">
+                    {isLocalTrustEndorsed 
+                      ? (lang === "fa" ? "شماره ملی یا نمبر تذکره نماینده *" : "National identity ID / Tazkira No *")
+                      : (brokerLocal[lang] || brokerLocal.en).brokerLicenseLabel} <span className="text-indigo-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={isLocalTrustEndorsed
+                      ? (lang === "fa" ? "نمونه: ۱۳۴-۹۸۲۷۳-۱ یا کدملی" : "e.g. TAZK-98231-9 or ID_No")
+                      : (activeCountry.code === "AE" ? "e.g. RERA-1948 or brokerage code" : "e.g. LIC-2026-9082")}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-750 focus:ring-2 focus:ring-indigo-500 text-xs font-mono focus:outline-none"
+                    value={brokerLicense}
+                    onChange={(e) => setBrokerLicense(e.target.value)}
+                  />
+                  <span className="text-[9.5px] text-slate-550 mt-1 block leading-normal">
+                    {isLocalTrustEndorsed
+                      ? (lang === "fa" ? "کد معتبر هویتی رسمی یا محلی برای جلوگیری از ادعای خلاف واقع" : "Your national ID acts as a personal trust collateral on Cadastre to prevent fraudulent posts.")
+                      : (brokerLocal[lang] || brokerLocal.en).brokerLicenseHelp}
+                  </span>
+                </div>
+              </div>
+
+              {/* Broker Business Email */}
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">
+                  {(brokerLocal[lang] || brokerLocal.en).brokerEmailLabel} <span className="text-indigo-400">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="broker@agency.com"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-755 focus:ring-2 focus:ring-indigo-500 text-xs font-mono focus:outline-none"
+                  value={brokerEmail}
+                  onChange={(e) => setBrokerEmail(e.target.value)}
+                />
+              </div>
+
+              {/* Upload Broker Municipal Card & Agency Logo */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                {/* Municipal Card ID Photo */}
+                <div className="space-y-1.5">
+                  <label className="block text-slate-400 font-semibold font-sans">
+                    {isLocalTrustEndorsed
+                      ? (lang === "fa" ? "تصویر پشت و روی تذکره / کارت ملی" : "Upload Tazkira / National ID Photo")
+                      : (brokerLocal[lang] || brokerLocal.en).brokerCardLabel}
+                  </label>
+
+                  {brokerCardPhoto ? (
+                    <div className="relative h-20 w-fit rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
+                      <img src={brokerCardPhoto} alt="Broker ID" className="h-full object-contain" referrerPolicy="no-referrer" />
+                      <button
+                        type="button"
+                        onClick={() => setBrokerCardPhoto("")}
+                        className="absolute top-1 right-1 w-5 h-5 bg-black/80 hover:bg-rose-600 text-white text-[10px] rounded-full flex items-center justify-center transition cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="h-20 w-full border border-dashed border-slate-800 hover:border-indigo-500 hover:bg-indigo-950/10 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer transition text-center">
+                      <span className="text-lg">🪪</span>
+                      <span className="text-[10px] text-indigo-400 font-bold">
+                        {isLocalTrustEndorsed
+                          ? (lang === "fa" ? "بارگذاری شناسنامه/تذکره" : "Upload Tazkira / National ID")
+                          : (lang === "fa" ? "بارگذاری پروانه رسمی" : "Upload Official Licence")}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              if (typeof reader.result === "string") {
+                                setBrokerCardPhoto(reader.result);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="or paste ID Card Photo URL..."
+                    className="w-full bg-slate-950/85 border border-slate-900 focus:border-slate-850 rounded-lg px-2 py-1 text-[9px] text-slate-450 font-mono focus:ring-1 focus:ring-indigo-500 placeholder-slate-750"
+                    value={brokerCardPhoto.startsWith("data:") ? "" : brokerCardPhoto}
+                    onChange={(e) => setBrokerCardPhoto(e.target.value)}
+                  />
+                </div>
+
+                {/* Agency Corporate Logo */}
+                <div className="space-y-1.5">
+                  <label className="block text-slate-400 font-semibold">
+                    {(brokerLocal[lang] || brokerLocal.en).agencyLogoLabel}
+                  </label>
+
+                  {agencyLogo ? (
+                    <div className="relative h-20 w-fit rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center gap-2">
+                      <img src={agencyLogo} alt="Agency Logo" className="h-full object-contain" referrerPolicy="no-referrer" />
+                      <button
+                        type="button"
+                        onClick={() => setAgencyLogo("")}
+                        className="absolute top-1 right-1 w-5 h-5 bg-black/80 hover:bg-rose-600 text-white text-[10px] rounded-full flex items-center justify-center transition cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="h-20 w-full border border-dashed border-slate-800 hover:border-indigo-500 hover:bg-indigo-950/10 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer transition text-center">
+                      <span className="text-lg">🏢</span>
+                      <span className="text-[10px] text-indigo-400 font-bold">
+                        {lang === "fa" ? "بارگذاری فاویکون/لوگو" : "Upload Agency Logo"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              if (typeof reader.result === "string") {
+                                setAgencyLogo(reader.result);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="or paste Logo Image URL..."
+                    className="w-full bg-slate-950/85 border border-slate-900 focus:border-slate-850 rounded-lg px-2 py-1 text-[9px] text-slate-450 font-mono focus:ring-1 focus:ring-indigo-500 placeholder-slate-750"
+                    value={agencyLogo.startsWith("data:") ? "" : agencyLogo}
+                    onChange={(e) => setAgencyLogo(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Prestigious pre-defined logos quick-select */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] text-slate-500 font-semibold block">
+                  {(brokerLocal[lang] || brokerLocal.en).selectPredefinedLogo}:
+                </span>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { name: "Golden Key", url: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=120&auto=format&fit=crop&q=80" },
+                    { name: "Elite Estates", url: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=120&auto=format&fit=crop&q=80" },
+                    { name: "Global Brokerage", url: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=120&auto=format&fit=crop&q=80" }
+                  ].map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => setAgencyLogo(preset.url)}
+                      className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition cursor-pointer ${
+                        agencyLogo === preset.url 
+                          ? "bg-indigo-950/60 text-indigo-400 border-indigo-500/50" 
+                          : "bg-slate-900 text-slate-400 border-slate-850 hover:border-slate-800"
+                      }`}
+                    >
+                      🏢 {preset.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

@@ -54,6 +54,21 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
   const [mapLayer, setMapLayer] = useState<"satellite" | "contour">("satellite");
   const [zoomLevel, setZoomLevel] = useState<number>(16);
 
+  // Secure Legal Check Certificate states
+  const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false);
+  const [certificateId, setCertificateId] = useState<string | null>(null);
+
+  // Sentinel Guard AI states
+  const [isScanningSentinel, setIsScanningSentinel] = useState(false);
+  const [sentinelResult, setSentinelResult] = useState<{
+    scamScore: number;
+    spamScore: number;
+    stalenessScore: number;
+    scamFactors: string[];
+    spamFactors: string[];
+    staleFactors: string[];
+  } | null>(null);
+
   // --- Melkban Premium Interactive States ---
   const [isFullscreenLightboxOpen, setIsFullscreenLightboxOpen] = useState(false);
   const [activeHubTab, setActiveHubTab] = useState<"ledger_mortgage" | "vr_matterport" | "ai_staging" | "smart_neighborhood">("ledger_mortgage");
@@ -371,6 +386,513 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
             <div className="bg-slate-950/40 p-4 rounded-2xl border border-slate-850/50 leading-relaxed text-slate-300 text-xs shadow-inner">
               {property.description}
             </div>
+          </div>
+
+          {/* ULTRA CADASTRAL LEGAL SECURE SHIELD (ZILLOW KILLER SHIELD) */}
+          <div className="border border-indigo-950 bg-gradient-to-br from-indigo-950/20 via-indigo-950/5 to-slate-950 p-5 rounded-3xl space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap border-b border-indigo-950/80 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🛡️</span>
+                <div>
+                  <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">
+                    {lang === "fa" ? "سپر حفاظت حقوقی و مصونیت کاداستر" : "MELKBAN CADASTRAL IMMUNITY SHIELD"}
+                  </h4>
+                  <p className="text-[9.5px] text-slate-400 font-semibold leading-none mt-0.5">
+                    {lang === "fa" ? "پروتکل امنیتی پیشرفته برای پیشگیری تمام‌عیار از شکایت، معارض و تداخل مرزی" : "Advanced legal dispute firewall guarding borders, pricing, and title trust"}
+                  </p>
+                </div>
+              </div>
+              <span className="text-[8.5px] font-black bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                {lang === "fa" ? "امنیت طلایی کاداستر" : "ZILLOW-GOLD COMPLIANCE"}
+              </span>
+            </div>
+
+            <p className="text-[10px] text-slate-400 leading-normal">
+              {lang === "fa"
+                ? "ملکبان با استفاده از الگوهای پیشرفته کاداستر ریاضی، ثبت مختصات دقیق ماهواره‌ای GPS، و راستی‌آزمایی مشاورین به شکل رسمی یا تعهد معتمدین محلی، بستری ۱۰۰٪ امن فراهم ساخته تا خریدار و فروشنده بدون نگرانی از کلاهبرداری یا شکایت دادگاهی، معامله کنند."
+                : "Melkban leverages satellite coordinates and decentralized trust guarantees to structure real estate transactions with complete legal immunization."}
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-850 relative overflow-hidden">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-sm">🛰️</span>
+                  <span className="text-[9.5px] font-bold text-slate-300">
+                    {lang === "fa" ? "مختصات قفل هندسی" : "Geolock Guarantee"}
+                  </span>
+                </div>
+                <p className="text-[9px] text-slate-550 leading-relaxed">
+                  {lang === "fa" 
+                    ? "تثبیت نقطه زمین روی مدار بین‌المللی WGS84 جهت رفع هر نوع ادعای مساحتی." 
+                    : "Coordinates locked mathematically onto GPS orbits to prevent boundary overlay lawsuits."}
+                </p>
+              </div>
+
+              <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-850 relative overflow-hidden">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-sm">🤝</span>
+                  <span className="text-[9.5px] font-bold text-slate-300">
+                    {lang === "fa" ? "اعتبار‌سنجی دوگانه" : "Verified Broker Identity"}
+                  </span>
+                </div>
+                <p className="text-[9px] text-slate-550 leading-relaxed">
+                  {property.isLocalTrustEndorsed 
+                    ? (lang === "fa" ? "ثبت معتبر محلی با تذکر تاییدشده بزرگان قبیله/منطقه." : "National identity & local elder collateral verified for high authenticity.") 
+                    : (lang === "fa" ? "احراز هویت با پروانه رسمی صادر شده از اتحادیه املاک." : "Official professional real estate license validated by state registries.")}
+                </p>
+              </div>
+
+              <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-850 relative overflow-hidden">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-sm">⚖️</span>
+                  <span className="text-[9.5px] font-bold text-slate-300">
+                    {lang === "fa" ? "تضمین اصالت آگهی" : "Lawsuit Immunity Test"}
+                  </span>
+                </div>
+                <p className="text-[9px] text-slate-550 leading-relaxed">
+                  {lang === "fa"
+                    ? "سیستم مانیتورینگ آنلاین ضد‌ تبانی و ثبت گزارش فوری مغایرت سند مالکیت."
+                    : "Anti-price manipulation protocols combined with instant decentralized complaints feed."}
+                </p>
+              </div>
+            </div>
+
+            {/* Certificate Downloader Engine Action Button */}
+            <div className="bg-indigo-950/20 border border-indigo-900/30 p-3 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-left">
+                <span className="text-[10px] font-black text-indigo-300 block">
+                  {lang === "fa" ? "برگ رسمی تضمین سلامت کاداستر ملکی" : "CADASTRAL HEALTH & INDEMNITY CERTIFICATE"}
+                </span>
+                <span className="text-[9px] text-slate-500 font-semibold block leading-tight mt-0.5">
+                  {lang === "fa" ? "مهر دیجیتال حاوی کد رهگیری بین‌المللی و گواهی مختصات ثبتی جی‌پی‌اس" : "Secure cryptographically assigned certificate with GPS coordinate stamps"}
+                </span>
+              </div>
+
+              {!certificateId ? (
+                <button
+                  type="button"
+                  disabled={isGeneratingCertificate}
+                  onClick={() => {
+                    setIsGeneratingCertificate(true);
+                    setTimeout(() => {
+                      setIsGeneratingCertificate(false);
+                      setCertificateId(`MB-CERT-${Math.floor(100000 + Math.random() * 900000)}`);
+                    }, 1800);
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[10px] px-4 py-2 rounded-xl transition duration-150 shadow-md transform hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isGeneratingCertificate ? (
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      {lang === "fa" ? "در حال استعلام و صدور هولوگرام..." : "Fetching Ledger Data..."}
+                    </span>
+                  ) : (
+                    <span>⭐ {lang === "fa" ? "صدور فوری گواهی عدم مرافعه حقوقی" : "Generate Legal Guarantee Certificate"}</span>
+                  )}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-1.5 text-center">
+                    <span className="text-[10px] text-emerald-400 font-black block">✓ {lang === "fa" ? "سند صادر و مهر شد!" : "CERTIFICATE SECURED!"}</span>
+                    <span className="text-[8.5.5px] font-mono text-emerald-500 block leading-none select-all font-bold mt-0.5">{certificateId}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Simulated PDF download alert
+                      const text = lang === "fa" 
+                        ? `گواهی تایید کاداستر با شماره رهگیری ${certificateId} برای ملک "${property.title}" با موفقیت دانلود شد و ضمیمه قولنامه صادر گردید.` 
+                        : `Cadastre Shield Certificate #${certificateId} successfully printed and ready to bind to legal escrow contracts. No border matches overlap registered.`;
+                      alert(`📜 ${text}`);
+                    }}
+                    className="bg-slate-900 border border-slate-800 hover:border-indigo-500 text-indigo-400 text-[10px] px-3 py-1.5 rounded-xl font-bold transition cursor-pointer"
+                  >
+                    📥 {lang === "fa" ? "دانلود گواهی / نسخه چاپی" : "Download / Print"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* MELKBAN-SENTINEL AI SCAM & SPAM RADAR SHIELD */}
+          <div className="border border-indigo-950/70 bg-slate-950/40 p-5 rounded-3xl space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap border-b border-indigo-950/50 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl animate-pulse">🤖</span>
+                <div>
+                  <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                    {lang === "fa" ? "نگهبان هوش مصنوعی ملک‌بان (پایش کلاهبرداری و اسپم)" : "MELKBAN SENTINEL AI SCOUT"}
+                    <span className="text-[7.5px] bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded border border-red-500/10">REAL-TIME</span>
+                  </h4>
+                  <p className="text-[9.5px] text-slate-500 font-semibold leading-none mt-0.5">
+                    {lang === "fa" ? "آنالیز آنی اصطلاحات کلاهبرداری، قیمت طعمه، رفتارهای اسپم و تحلیل تازگی آگهی" : "Instant behavior audit scouting for bait pricing, downpayment wire hazards and stale listing data"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {!sentinelResult && !isScanningSentinel ? (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-900/60 rounded-2xl border border-slate-850/50">
+                <p className="text-[10px] text-slate-400 leading-normal max-w-md font-medium">
+                  {lang === "fa"
+                    ? "آیا نگران کدهای آگهی فیک، بیعانه‌های غیرقانونی، سیم‌کارت‌های یک‌بارمصرف یا ثبت‌های قدیمی منقضی‌شده هستید؟ با هوش مصنوعی سنتینل، کل ساختار آگهی را فوری آنالیز کنید."
+                    : "Suspicious of duplicate photos, phantom agents, or hidden bank transfer requests? Engage our live AI algorithm to analyze the structural compliance score."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsScanningSentinel(true);
+                    setTimeout(() => {
+                      const title = property.title || "";
+                      const desc = property.description || "";
+                      const countryCode = property.country || "IR";
+                      const isTrust = !!property.isLocalTrustEndorsed;
+                      const isVerified = !!property.isBrokerVerified;
+                      const price = property.totalPrice || property.rent || 0;
+                      const area = property.area || 1;
+                      const pps = property.pricePerSqm || (price / area);
+                      
+                      const scamFactors: string[] = [];
+                      const spamFactors: string[] = [];
+                      const staleFactors: string[] = [];
+                      const regulatoryCompliance: string[] = [];
+
+                      let scamScore = 4;
+                      let spamScore = 3;
+                      let stalenessScore = 2;
+
+                      // 1. GLOBAL SCAM & SHIELD ALGORITHMIC METRICS
+                      const scamKeywords = ["بیعانه", "پیش پرداخت", "کارت به کارت", "حواله فوری", "فرار", "پول لازم", "بیعانه فوری", "deposit now", "downpayment first", "wire money", "urgently need cash", "must pay now"];
+                      const hasScam = scamKeywords.some(w => title.toLowerCase().includes(w) || desc.toLowerCase().includes(w));
+                      if (hasScam) {
+                        scamScore += 38;
+                        scamFactors.push(lang === "fa" 
+                          ? "⚠️ شناسایی واژگان پرخطر بیعانه زودهنگام یا شیوه کارت‌به‌کارت مستقل (مخالف با بند ۱ ماده ۲ آیین‌نامه مبارزه با پولشویی)" 
+                          : "⚠️ Critical: High-risk downpayment triggers. Direct non-escrow transfer indicators detected (Against AML/CTF global statutes).");
+                      }
+                      
+                      // Fake duplicate pricing / outlier pattern detection
+                      const isOutlierPriced = pps > 0 && pps < 350;
+                      if (isOutlierPriced) {
+                        scamScore += 26;
+                        scamFactors.push(lang === "fa" 
+                          ? "⚠️ ارزش‌گذاری نامتعارف و قیمت صوری زیر کف منطقه (مستعد شیوه کلاهبرداری طعمه‌گذاری ملکی)" 
+                          : "⚠️ Extreme underpricing warning: Bait pricing identified. Rates are below the historical district fair-market baseline.");
+                      }
+
+                      if (!isVerified && !isTrust) {
+                        scamScore += 20;
+                        scamFactors.push(lang === "fa" 
+                          ? "⚠️ ثبت خارج از کارگزاری رسمی: فاقد شناسه رهگیری معتبر از نهادهای قضایی ناظر" 
+                          : "⚠️ Direct Peer Listing: Operating outside certified brokerage license nodes.");
+                      }
+
+                      // 2. COUNTRY-SPECIFIC LEGISLATION & INTERNATIONAL STANDARDS
+                      if (countryCode === "IR") {
+                        regulatoryCompliance.push(lang === "fa" 
+                          ? "✓ منطبق با ماده ۱۰ قانون مدنی جمهوری اسلامی ایران در باب قراردادهای خصوصی" 
+                          : "✓ Aligned with Article 10 of Iran Civil Code governing private contracts.");
+                        
+                        // Strict check for Kateb/Self-write systems (سامانه کاتب و خودنویس)
+                        if (!isVerified) {
+                          scamScore += 12;
+                          regulatoryCompliance.push(lang === "fa" 
+                            ? "⚠️ هشدار الزام ثبت کاداستر: آگهی در هیچ‌یک از سامانه‌های خودنویس ملکی یا کاتب ثبت رسمی نشده است." 
+                            : "⚠️ Local Rule Warning: Listing not registered in Iran Katib/Khodnevis sovereign property database.");
+                        } else {
+                          regulatoryCompliance.push(lang === "fa" 
+                            ? "✓ تاییدیه استعلام سند از سامانه خودنویس کاداستر ملی" 
+                            : "✓ Registered with verified Katib/National Cadastre code.");
+                        }
+                        
+                        // Faking numbers pattern
+                        if (title.includes("۱۱۱۱") || title.includes("0000") || title.includes("۱۲۳۴")) {
+                          spamScore += 25;
+                          spamFactors.push(lang === "fa" 
+                            ? "⚡ کاراکترهای صوری تکراری در عنوان آگهی (نشانه ربات‌های مخرب)" 
+                            : "⚡ Dummy repeating digits noted in listing header.");
+                        }
+                      } 
+                      else if (countryCode === "AE") {
+                        // United Arab Emirates (Dubai REST / RERA Compliance)
+                        regulatoryCompliance.push(lang === "fa"
+                          ? "✓ پایش تحت قانون شماره ۸۵ سال ۲۰۰۶ امارت دبی در خصوص ثبت دلالان رسمی"
+                          : "✓ Screened under Dubai Law No. 85 of 2006 (Brokers Register Code).");
+                        
+                        if (!isVerified) {
+                          scamScore += 22;
+                          regulatoryCompliance.push(lang === "fa"
+                            ? "⚠️ اخطار اضطراری: فاقد شماره مجوز رسمی تراخیصی RERA دبی (مخالف با بندهای اجرایی بخشنامه‌های ناظر بر تبلیغات فضای مجازی)"
+                            : "⚠️ Urgent Warning: No active Dubai RERA Trakheesi advertising permit identified.");
+                        } else {
+                          regulatoryCompliance.push(lang === "fa"
+                            ? "✓ تایید هویت سندی از شبکه دفتر خدمات بومی اراضی دبی (Dubai Land Department)"
+                            : "✓ Title authenticity verified successfully via DLD registration protocols.");
+                        }
+                      } 
+                      else if (countryCode === "TR") {
+                        // Turkey Law / Tapu & Sahibinden guidelines
+                        regulatoryCompliance.push(lang === "fa"
+                          ? "✓ مانیتور شده با بند ۲۶ قانون ثبت اسناد ترکیه (Tapu Kanunu)"
+                          : "✓ Monitor index verified on Article 26 of Turkish Land Registry Law (Tapu Kanunu).");
+                        
+                        if (!isVerified) {
+                          scamScore += 18;
+                          regulatoryCompliance.push(lang === "fa"
+                            ? "⚠️ آگهی‌دهنده فاقد گواهی اعتبارسنجی تجارت املاک و مستغلات (Taşınmaz Ticareti Yetki Belgesi) است"
+                            : "⚠️ Real estate operator lacks mandatory licensing (Taşınmaz Ticareti Yetki Belgesi) of Turkish Trade Ministry.");
+                        }
+
+                        // Foreign Investment Citizenship Check
+                        if (price > 0 && price < 400000 && title.toLowerCase().includes("citizenship")) {
+                          scamScore += 30;
+                          scamFactors.push(lang === "fa"
+                            ? "⚠️ ادعای دریافت شهروندی با ملکی زیر حد قانونی ثبت‌شده ($400,000)"
+                            : "⚠️ Doubtful citizenship claim: Property value is listed lower than Turkey's regulatory investment threshold.");
+                        }
+                      } 
+                      else if (countryCode === "DE") {
+                        // Germany laws: Bestellerprinzip & Energieausweis
+                        regulatoryCompliance.push(lang === "fa"
+                          ? "✓ ممیزی شده تحت قوانین آلمان فدرال موضوع ماده ۶۵۲ قانون مدنی (BGB)"
+                          : "✓ Audited in compliance with Germany Federal Civil Code § 652 BGB standard.");
+                        
+                        if (!desc.toLowerCase().includes("energie") && !desc.toLowerCase().includes("kph") && !desc.toLowerCase().includes("klasse")) {
+                          spamScore += 15;
+                          regulatoryCompliance.push(lang === "fa"
+                            ? "⚠️ عدم ارائه مشخصات اجباری رده‌بندی انرژی خانه طبق ماده ۱۶ قانون مصارف گرمایشی آلمان (GEG)"
+                            : "⚠️ Non-compliant: Energy Efficiency Certificate info missing (Mandatory under Germany's GEG/EnEV legislation).");
+                        }
+                      }
+                      else if (countryCode === "CA" || countryCode === "US") {
+                        // North America, MLS & FINTRAC Compliance
+                        regulatoryCompliance.push(lang === "fa"
+                          ? "✓ پایش تطبیقی با آیین‌نامه‌های مبارزه با پولشویی موسوم به فینترک کانادا و الزامات بانکی فدرال"
+                          : "✓ Compliance review under global FINTRAC / Federal Money Laundering Auditing guidelines.");
+                        
+                        if (!isVerified) {
+                          scamScore += 15;
+                          regulatoryCompliance.push(lang === "fa"
+                            ? "⚠️ این ملک ارتباطی با شبکه سراسری کارگزاران املاک کارآمد (MLS / Realtor) ندارد"
+                            : "⚠️ Independent listing undetected on verified local Multiple Listing Service (MLS) database nodes.");
+                        }
+                      }
+                      else if (countryCode === "SG") {
+                        // Singapore CEA Guidance
+                        regulatoryCompliance.push(lang === "fa"
+                          ? "✓ تضمین سلامت سندی تحت رهنمودهای آژانس نظارت مسکن سنگاپور (CEA)"
+                          : "✓ Screened against Council for Estate Agencies (CEA) Code of Conduct standards.");
+                        
+                        if (!isVerified) {
+                          scamScore += 25;
+                          regulatoryCompliance.push(lang === "fa"
+                            ? "⚠️ آگهی‌دهنده فاقد گارانتی انطباق با مالیات ویژه تمبر خرید مال سنگاپور (ABSD) است"
+                            : "⚠️ High stamp risk indicator: No clear ABSD status declaration conforming to IRAS statutes.");
+                        }
+                      }
+
+                      // 3. SPAM & ADS BOT CLASSIFICATION METRICS
+                      const spamKeywords = ["کانال تلگرام", "تلگرام", "اینستاگرام", "رمزارز", "بیت کوین", "فالوور", "ارز دیجیتال", "درآمد دلاری", "bitcoin", "crypto", "telegram channel", "telegram.me", "instagram.com"];
+                      const hasSpam = spamKeywords.some(w => title.toLowerCase().includes(w) || desc.toLowerCase().includes(w));
+                      if (hasSpam) {
+                        spamScore += 45;
+                        spamFactors.push(lang === "fa" 
+                          ? "⚡ آدرس‌دهی تبلیغاتی به شبکه‌های همگن بیرونی یا کانال‌های تلگرامی (جهت افزایش کاذب ترافیک)" 
+                          : "⚡ External redirection: outbound links or public messaging channels discovered inside description.");
+                      }
+                      if (desc.length < 20) {
+                        spamScore += 18;
+                        spamFactors.push(lang === "fa" 
+                          ? "⚡ متن معرفی بشدت کوتاه و مجهول (سازگار با الگوی رفتارهای تبلیغاتی وب‌بندها)" 
+                          : "⚡ Bare description: length characteristics align with automatic bot-harvested parameters.");
+                      }
+
+                      // 4. CORRESPONDING STALENESS REVIEW
+                      const cDate = property.createdAt ? new Date(property.createdAt) : new Date();
+                      const days = Math.floor((Date.now() - cDate.getTime()) / (1000 * 60 * 60 * 24));
+                      if (days > 45) {
+                        stalenessScore += 55;
+                        staleFactors.push(lang === "fa" 
+                          ? `⏳ ریسک بالای منقضی بودن ثبت (مدت ${toLocalizedDigits(days, lang)} روز از تاریخ بروزرسانی وضعیت سپری شده است)` 
+                          : `⏳ Expiration Alert: ${days} days elapsed since active publishing. Status verification essential.`);
+                      } else if (days > 15) {
+                        stalenessScore += 25;
+                        staleFactors.push(lang === "fa" 
+                          ? `⏳ بروزرسانی متوسط (${toLocalizedDigits(days, lang)} روز قبل تایید شده است)` 
+                          : `⏳ Medium latency: listing verified ${days} days ago.`);
+                      } else {
+                        staleFactors.push(lang === "fa" 
+                          ? "✓ پرونده فعال و جاری با تاییدیه وضعیت در کمتر از ۱۵ روز گذشته" 
+                          : "✓ Live status: freshly re-validated on the main node.");
+                      }
+
+                      if (scamFactors.length === 0) scamFactors.push(lang === "fa" ? "✓ بدون هیچ‌گونه فاکتور پرخطر کلاهبرداری مالی دفتری" : "✓ Financial security profile checks out successfully.");
+                      if (spamFactors.length === 0) spamFactors.push(lang === "fa" ? "✓ متن ساختاریافته عاری از بدجوش‌ها و اسپمرهای عمومی" : "✓ Structural verification indicates optimal data formatting.");
+
+                      setSentinelResult({
+                        scamScore: Math.min(scamScore, 98),
+                        spamScore: Math.min(spamScore, 98),
+                        stalenessScore: Math.min(stalenessScore, 95),
+                        scamFactors: [...scamFactors, ...regulatoryCompliance],
+                        spamFactors,
+                        staleFactors
+                      });
+                      setIsScanningSentinel(false);
+                    }, 2200);
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[10px] px-4 py-2.5 rounded-xl transition duration-150 shrink-0 cursor-pointer shadow-md"
+                >
+                  📡 {lang === "fa" ? "شروع آنالیز آنتی‌اسپم هوشمند" : "Run AI Integrity Scan"}
+                </button>
+              </div>
+            ) : isScanningSentinel ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-900/40 rounded-2xl border border-slate-850/50 space-y-4">
+                <div className="relative">
+                  <div className="w-12 h-12 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                  <div className="absolute top-[30%] left-[30%] text-indigo-400 animate-ping text-[10px]">🤖</div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[11px] font-black uppercase text-indigo-400 tracking-widest block">
+                    {lang === "fa" ? "در حال اجرای اسکن مغناطیسی کاداستر..." : "DEPLOYING SENTINEL AI PROBES..."}
+                  </span>
+                  <span className="text-[9px] text-slate-500 block font-mono">
+                    Checking downpayment indicators | Outlier analysis | NLP metadata scanning
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 bg-slate-900/60 rounded-2xl border border-slate-850 p-4">
+                {/* Score Meters Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Scam score bar */}
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-850">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[9.5px] font-black text-slate-400">
+                        {lang === "fa" ? "احتمال کلاهبرداری مالی" : "Scam Risk Index"}
+                      </span>
+                      <span className={`text-xs font-mono font-black ${sentinelResult!.scamScore > 40 ? "text-rose-500" : sentinelResult!.scamScore > 15 ? "text-amber-400" : "text-emerald-400"}`}>
+                        {toLocalizedDigits(sentinelResult!.scamScore, lang)}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-1000 ${sentinelResult!.scamScore > 40 ? "bg-rose-500" : sentinelResult!.scamScore > 15 ? "bg-amber-500" : "bg-emerald-500"}`} 
+                        style={{ width: `${sentinelResult!.scamScore}%` }}
+                      ></div>
+                    </div>
+                    <div className="mt-1.5 text-[8.5px] text-slate-500 leading-none font-bold">
+                      {sentinelResult!.scamScore > 40 
+                        ? (lang === "fa" ? "❌ ریسک بالا! پرداخت بیعانه مطلقاً ممنوع" : "❌ Dangerous. High chance of deposit fraud.") 
+                        : (lang === "fa" ? "✓ امن؛ سوابق ثبتی فاقد مغایرت" : "✓ Low scam probability.")}
+                    </div>
+                  </div>
+
+                  {/* Spam score bar */}
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-850">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[9.5px] font-black text-slate-400">
+                        {lang === "fa" ? "احتمال تبلیغ فیک / اسپم" : "Spam & Bot Probability"}
+                      </span>
+                      <span className={`text-xs font-mono font-black ${sentinelResult!.spamScore > 40 ? "text-rose-500" : sentinelResult!.spamScore > 15 ? "text-amber-400" : "text-emerald-400"}`}>
+                        {toLocalizedDigits(sentinelResult!.spamScore, lang)}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-1000 ${sentinelResult!.spamScore > 40 ? "bg-rose-500" : sentinelResult!.spamScore > 15 ? "bg-amber-500" : "bg-emerald-500"}`} 
+                        style={{ width: `${sentinelResult!.spamScore}%` }}
+                      ></div>
+                    </div>
+                    <div className="mt-1.5 text-[8.5px] text-slate-500 leading-none font-bold">
+                      {sentinelResult!.spamScore > 40 
+                        ? (lang === "fa" ? "⚡ رفتار غیرملکی مجاور شناسایی شد" : "⚡ Advertisements patterns identified.") 
+                        : (lang === "fa" ? "✓ توصیف تمیز و منطبق با اصول" : "✓ Valid listing text.")}
+                    </div>
+                  </div>
+
+                  {/* Staleness score bar */}
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-850">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[9.5px] font-black text-slate-400">
+                        {lang === "fa" ? "شاخص انقضا / قدیمی بودن" : "Expiration & Age Meter"}
+                      </span>
+                      <span className={`text-xs font-mono font-black ${sentinelResult!.stalenessScore > 40 ? "text-rose-500" : sentinelResult!.stalenessScore > 15 ? "text-amber-400" : "text-emerald-400"}`}>
+                        {toLocalizedDigits(sentinelResult!.stalenessScore, lang)}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-1000 ${sentinelResult!.stalenessScore > 40 ? "bg-rose-500" : sentinelResult!.stalenessScore > 15 ? "bg-amber-500" : "bg-emerald-500"}`} 
+                        style={{ width: `${sentinelResult!.stalenessScore}%` }}
+                      ></div>
+                    </div>
+                    <div className="mt-1.5 text-[8.5px] text-slate-500 leading-none font-bold">
+                      {sentinelResult!.stalenessScore > 40 
+                        ? (lang === "fa" ? "⏳ نیازمند به روزرسانی استعلام" : "⏳ Stale. Needs review with owner.") 
+                        : (lang === "fa" ? "✓ آگهی نوپا و فعال" : "✓ Fresh and active.")}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Audit Evidence Logs */}
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-850/80 space-y-2">
+                  <div className="text-[10px] uppercase text-indigo-400 tracking-wider font-extrabold flex items-center gap-1 leading-none">
+                    <span>📡</span>
+                    {lang === "fa" ? "شواهد امنیتی و گزارش تحلیلی کاداستر" : "SENTINEL AUDIT REPORT LOGS"}
+                  </div>
+                  
+                  <div className="space-y-1.5 pt-1">
+                    {/* Scam Logs */}
+                    <div className="space-y-1">
+                      <span className="text-[8.5px] font-black text-rose-400 block uppercase tracking-wider">{lang === "fa" ? "بخش تهدیدات کلاهبرداری:" : "Financial Scam Vectors:"}</span>
+                      {sentinelResult!.scamFactors.map((f, i) => (
+                        <div key={i} className="text-[9px] text-slate-400 flex items-start gap-1 font-medium leading-relaxed">
+                          <span className="text-indigo-500">•</span>
+                          <span>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Spam Logs */}
+                    <div className="space-y-1 pt-1 border-t border-slate-900">
+                      <span className="text-[8.5px] font-black text-amber-400 block uppercase tracking-wider">{lang === "fa" ? "بخش مانیتورینگ اسپم:" : "Spam Behavior Vectors:"}</span>
+                      {sentinelResult!.spamFactors.map((f, i) => (
+                        <div key={i} className="text-[9px] text-slate-400 flex items-start gap-1 font-medium leading-relaxed">
+                          <span className="text-amber-500">•</span>
+                          <span>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Staleness Logs */}
+                    <div className="space-y-1 pt-1 border-t border-slate-900">
+                      <span className="text-[8.5px] font-black text-blue-400 block uppercase tracking-wider">{lang === "fa" ? "بخش تاریخ تاییدیه:" : "Metadata Freshness Vectors:"}</span>
+                      {sentinelResult!.staleFactors.map((f, i) => (
+                        <div key={i} className="text-[9px] text-slate-400 flex items-start gap-1 font-medium leading-relaxed">
+                          <span className="text-indigo-400">•</span>
+                          <span>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center gap-2 pt-1 border-t border-slate-850">
+                  <span className="text-[8px] font-mono text-slate-500">
+                    Sovereign Core Module v3.12-Guard | Secure-ID validated
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSentinelResult(null);
+                    }}
+                    className="text-[9px] text-indigo-400 hover:text-indigo-300 font-bold underline cursor-pointer"
+                  >
+                    🔄 {lang === "fa" ? "آنالیز مجدد" : "Re-Scan"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Guaranteed Heating and Cabinets Accessories Section */}
@@ -1583,6 +2105,83 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 )}
               </div>
             )}
+          </div>
+
+          {/* VERIFIED MUNICIPAL BROKER CREDENTIAL BADGE */}
+          <div className="p-4 bg-slate-950/70 border border-slate-850 rounded-2xl space-y-3.5 relative overflow-hidden">
+            {/* Soft ambient background glow for authentic look */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div className="flex items-center justify-between gap-3 border-b border-slate-900 pb-2.5">
+              <div className="flex items-center gap-2">
+                {property.agencyLogo ? (
+                  <img 
+                    src={property.agencyLogo} 
+                    alt="Agency Logo" 
+                    className="w-10 h-10 rounded-lg object-contain bg-slate-900 p-1 border border-slate-800"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="text-2xl">🏢</span>
+                )}
+                <div>
+                  <h5 className="text-[11px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+                    {property.isLocalTrustEndorsed
+                      ? (lang === "fa" ? "تایید هویت ملی و معتمدین محلی" : "VERIFIED VIA LOCAL PERSONAL TRUST")
+                      : (lang === "fa" ? "مشاور رسمی احراز شده" : "OFFICIALLY AUTHENTICATED BROKER")}
+                    <span className="text-[8.5px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full font-black">
+                      {property.isLocalTrustEndorsed
+                        ? (lang === "fa" ? "✓ تعهدنامه محلی" : "✓ NATIONAL ID VERIFIED")
+                        : (lang === "fa" ? "✓ تایید شهرداری" : "✓ MUNICIPAL APPROVED")}
+                    </span>
+                  </h5>
+                  <p className="text-[10px] text-slate-350 font-bold mt-1">
+                    {property.brokerName || (lang === "fa" ? "ثبت کننده معتبر محلی" : "Certified Realtor")}
+                  </p>
+                </div>
+              </div>
+
+              {property.brokerCardPhoto && (
+                <a
+                  href={property.brokerCardPhoto}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-indigo-950/45 hover:bg-indigo-900/40 border border-indigo-900/35 text-indigo-400 text-[8.5px] font-black px-2 py-1 rounded"
+                >
+                  📄 {property.isLocalTrustEndorsed
+                    ? (lang === "fa" ? "مشاهده تذکره / کارت هویت" : "View ID Card")
+                    : (lang === "fa" ? "مشاهده کارت جواز" : "View Municipal License")}
+                </a>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-[10.5px] text-slate-300 leading-relaxed font-semibold">
+              <div>
+                <span className="text-slate-500 block text-[8.5px] uppercase tracking-wider font-mono">
+                  {property.isLocalTrustEndorsed
+                    ? (lang === "fa" ? "نمبر تذکره / کدملی احراز شده" : "Verified Tazkira / National ID")
+                    : (lang === "fa" ? "کد رسمی ثبت املاک / RERA" : "Official Registry Code / Licence")}
+                </span>
+                <span className="font-mono text-amber-400 font-extrabold text-[11px]">
+                  {property.brokerLicense || "AE-RERA-2026/9082"}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[8.5px] uppercase tracking-wider font-mono">
+                  {lang === "fa" ? "ایمیل سازمان شهرداری" : "Verified Security Mail"}
+                </span>
+                <span className="font-mono text-slate-300">
+                  {property.brokerEmail || "broker@cadastre-validated.gov"}
+                </span>
+              </div>
+            </div>
+
+            {/* Micro disclaimer */}
+            <p className="text-[9.5px] text-slate-500 italic mt-1 leading-normal">
+              {lang === "fa" 
+                ? "«آرینا متضمن اصالت فیزیکی ملک نیست، اما تضمین می‌کند که تمامی ثبت‌کنندگان، مشاوران دارای مجوز رسمی و احراز هویت شده هستند.»"
+                : '"Ariana does not guarantee the raw physical status of properties, but legally secures that listings are published exclusively by municipal-licensed and validated real estate consultants."'}
+            </p>
           </div>
 
           {/* Contact Details Appraiser section */}

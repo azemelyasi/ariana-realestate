@@ -3,17 +3,24 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Register PWA Service Worker for native-like offline installation support
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((reg) => {
-        console.log("Ariana Rahnuma Service Worker registered: ", reg.scope);
-      })
-      .catch((err) => {
-        console.error("Ariana Rahnuma Service Worker registration failed: ", err);
+// Self-healing mechanism: Automatically unregister any stale service workers and purge caches to prevent black screens
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister().then((success) => {
+        if (success) console.log("✓ Stale service worker successfully unregistered to prevent blank screens.");
       });
+    }
+  });
+}
+
+if (typeof window !== "undefined" && "caches" in window) {
+  window.caches.keys().then((names) => {
+    for (const name of names) {
+      window.caches.delete(name).then(() => {
+        console.log(`✓ Purged cache index: ${name}`);
+      });
+    }
   });
 }
 

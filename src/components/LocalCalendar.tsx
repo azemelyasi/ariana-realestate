@@ -58,7 +58,7 @@ export const LocalCalendar: React.FC<LocalCalendarProps> = ({ lang, events, onAd
     daysArray.push(new Date(year, month, d));
   }
 
-  const localeMap: Record<Language, string> = {
+  const localeMap: Partial<Record<Language, string>> = {
     en: "en-US",
     fa: "fa-IR",
     tr: "tr-TR",

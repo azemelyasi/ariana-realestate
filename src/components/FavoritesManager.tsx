@@ -247,7 +247,7 @@ export const FavoritesManager: React.FC<FavoritesManagerProps> = ({
               </span>
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <Scale className="w-5 h-5 text-indigo-400" />
-                {lang === "fa" ? "مرکز مقایسه تخصصی املاک آریانا رهنما" : "Ariana Rahnuma Advanced Side-by-Side Comparison Ledger"}
+                {lang === "fa" ? `مرکز مقایسه تخصصی املاک ${t.brand}` : `${t.brand} Advanced Side-by-Side Comparison Ledger`}
               </h3>
             </div>
 

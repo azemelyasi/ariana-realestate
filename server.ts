@@ -673,10 +673,9 @@ app.post("/api/automation/trigger-alert", (req, res) => {
 async function setupFrontend() {
   const fs = await import("fs");
   const distPath = path.join(process.cwd(), "dist");
-  const hasDist = fs.existsSync(distPath);
 
-  // If we are in production or if the dist assets exist, serve production static files
-  if (process.env.NODE_ENV === "production" || hasDist) {
+  // If we are in production, serve production static files
+  if (process.env.NODE_ENV === "production") {
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       if (req.url.startsWith("/api/")) {
