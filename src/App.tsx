@@ -413,6 +413,22 @@ export default function App() {
     localStorage.setItem("melkban_agency_commission", String(agencyCommission));
   }, [agencyCommission]);
 
+  // Load initially selected property from URL query parameter (e.g. ?property=prop-ir-2) for search crawler indexing
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const propId = params.get("property") || params.get("p");
+      if (propId && properties.length > 0) {
+        const found = properties.find(p => p.id === propId);
+        if (found) {
+          setSelectedProperty(found);
+        }
+      }
+    } catch (e) {
+      console.error("Error reading URL property parameter:", e);
+    }
+  }, [properties]);
+
   // Dynamic SEO Page Title & Google Schema JSON-LD Injector
   useEffect(() => {
     try {

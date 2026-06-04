@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- General Homepage Indexing -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Lavasan Modern Villa (High Priority Match) -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/?property=prop-ir-2</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/?property=prop-ir-2</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Elahiyeh Luxury Penthouse (High Priority Match) -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/?property=prop-ir-1</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/?property=prop-ir-1</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Fereshteh Smart Tower Apartment -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/?property=prop-ir-3</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/?property=prop-ir-3</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Niavaran Heights Mansion -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/?property=prop-2</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/?property=prop-2</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Moscow City Sky Penthouse -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/?property=prop-1</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/?property=prop-1</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Palm Jumeirah Ultra Mansion -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/?property=prop-4</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/?property=prop-4</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Malabar Hill Sky Mansion -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/?property=prop-5</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/?property=prop-5</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Bosphorus Waterfront Mansion -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/?property=prop-15</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/?property=prop-15</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Herat Heritage Mansion -->
+  <url>
+    <loc>https://ariana-realestate.vercel.app/?property=prop-10</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://arianarahnuma.com/?property=prop-10</loc>
+    <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
