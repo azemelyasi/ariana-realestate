@@ -2700,8 +2700,11 @@ export default function App() {
                           bedrooms: 0,
                           phone: "+9890000",
                           address: "",
+                          latitude: 35.6892,
+                          longitude: 51.3890,
                           images: [],
-                          createdAt: new Date().toISOString()
+                          createdAt: new Date().toISOString(),
+                          isApproved: true
                         });
                         setShowInboxModal(false);
                       }

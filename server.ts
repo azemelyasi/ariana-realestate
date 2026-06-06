@@ -680,7 +680,37 @@ import fs from "fs";
 const propertiesFilePath = path.join(process.cwd(), "properties.json");
 const chatsFilePath = path.join(process.cwd(), "chats.json");
 
-// Helper to read properties safely
+// Dynamic lazy initializer for Firebase client connection
+const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+let firebaseApp: any = null;
+let firestoreDb: any = null;
+
+async function initFirebase() {
+  if (fs.existsSync(configPath)) {
+    try {
+      const rawConfig = fs.readFileSync(configPath, "utf8");
+      const firebaseConfig = JSON.parse(rawConfig);
+      const { initializeApp } = await import("firebase/app");
+      const { getFirestore } = await import("firebase/firestore");
+      
+      firebaseApp = initializeApp(firebaseConfig);
+      firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+      console.log("★★★★★ Firebase Connected: Successfully initialized Firestore client DB connection ★★★★★");
+      
+      // Auto seed if empty
+      await seedFirestoreData();
+    } catch (err) {
+      console.error("Error during Firebase lazy init:", err);
+    }
+  } else {
+    console.warn("firebase-applet-config.json not found. Operating in local JSON files mode.");
+  }
+}
+
+// Spark on startup immediately
+initFirebase().catch(e => console.error("Firebase startup exception:", e));
+
+// Local disk read-back fallbacks
 function readPropertiesFromDisk(): any[] {
   try {
     if (fs.existsSync(propertiesFilePath)) {
@@ -693,7 +723,6 @@ function readPropertiesFromDisk(): any[] {
   return [];
 }
 
-// Helper to save properties safely
 function writePropertiesToDisk(properties: any[]) {
   try {
     fs.writeFileSync(propertiesFilePath, JSON.stringify(properties, null, 2), "utf8");
@@ -702,7 +731,6 @@ function writePropertiesToDisk(properties: any[]) {
   }
 }
 
-// Helper to read chats safely
 function readChatsFromDisk(): any[] {
   try {
     if (fs.existsSync(chatsFilePath)) {
@@ -715,7 +743,6 @@ function readChatsFromDisk(): any[] {
   return [];
 }
 
-// Helper to save chats safely
 function writeChatsToDisk(chats: any[]) {
   try {
     fs.writeFileSync(chatsFilePath, JSON.stringify(chats, null, 2), "utf8");
@@ -724,28 +751,175 @@ function writeChatsToDisk(chats: any[]) {
   }
 }
 
+// -------------------------------------------------------------
+// FIRESTORE HIGH ENERGY HYDRATION ENGINE
+// -------------------------------------------------------------
+async function seedFirestoreData() {
+  if (!firestoreDb) return;
+  try {
+    const { collection, getDocs, doc, setDoc } = await import("firebase/firestore");
+    
+    // Properties seeding
+    const propSnapshot = await getDocs(collection(firestoreDb, "properties"));
+    if (propSnapshot.empty) {
+      console.log("Firestore properties is completely vacant. Seeding default listings...");
+      const initialProps = readPropertiesFromDisk();
+      for (const p of initialProps) {
+        await setDoc(doc(firestoreDb, "properties", p.id), p);
+      }
+      console.log(`Firestore seeded successfully with ${initialProps.length} property listings!`);
+    }
+
+    // Chats seeding
+    const chatSnapshot = await getDocs(collection(firestoreDb, "chats"));
+    if (chatSnapshot.empty) {
+      console.log("Firestore chats is completely vacant. Seeding default messages...");
+      const initialChats = readChatsFromDisk();
+      for (const c of initialChats) {
+        await setDoc(doc(firestoreDb, "chats", c.id), c);
+      }
+      console.log(`Firestore seeded successfully with ${initialChats.length} chat messages!`);
+    }
+  } catch (err) {
+    console.error("Error seeding Firestore on startup:", err);
+  }
+}
+
+// Master read-write functions that interact seamlessly with Firestore and keep local files updated
+
+async function readPropertiesFromDatabase(): Promise<any[]> {
+  if (firestoreDb) {
+    try {
+      const { collection, getDocs } = await import("firebase/firestore");
+      const snapshot = await getDocs(collection(firestoreDb, "properties"));
+      const list: any[] = [];
+      snapshot.forEach((doc) => {
+        list.push(doc.data());
+      });
+      // Sort by sorting criteria (createdAt descending)
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      
+      if (list.length > 0) {
+        // Keep disk cache synced
+        try {
+          fs.writeFileSync(propertiesFilePath, JSON.stringify(list, null, 2), "utf8");
+        } catch (err) {}
+        return list;
+      }
+    } catch (e) {
+      console.error("Firestore readProperties failure, fallback to disk:", e);
+    }
+  }
+  return readPropertiesFromDisk();
+}
+
+async function savePropertyToDatabase(property: any) {
+  // Always update disk file cache
+  const list = readPropertiesFromDisk();
+  const index = list.findIndex((p: any) => p.id === property.id);
+  if (index !== -1) {
+    list[index] = property;
+  } else {
+    list.unshift(property);
+  }
+  writePropertiesToDisk(list);
+
+  // Update cloud Firestore
+  if (firestoreDb) {
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      await setDoc(doc(firestoreDb, "properties", property.id), property);
+      console.log(`Firestore SUCCESS: Fully persisted property ${property.id}`);
+    } catch (e) {
+      console.error(`Firestore error writing property ${property.id}:`, e);
+    }
+  }
+}
+
+async function deletePropertyFromDatabase(id: string) {
+  // Always update disk file cache
+  let list = readPropertiesFromDisk();
+  list = list.filter((p: any) => p.id !== id);
+  writePropertiesToDisk(list);
+
+  // Update cloud Firestore
+  if (firestoreDb) {
+    try {
+      const { doc, deleteDoc } = await import("firebase/firestore");
+      await deleteDoc(doc(firestoreDb, "properties", id));
+      console.log(`Firestore SUCCESS: Deleted property ${id}`);
+    } catch (e) {
+      console.error(`Firestore error deleting property ${id}:`, e);
+    }
+  }
+}
+
+async function readChatsFromDatabase(): Promise<any[]> {
+  if (firestoreDb) {
+    try {
+      const { collection, getDocs } = await import("firebase/firestore");
+      const snapshot = await getDocs(collection(firestoreDb, "chats"));
+      const list: any[] = [];
+      snapshot.forEach((doc) => {
+        list.push(doc.data());
+      });
+      // Sort in historical order
+      list.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+      
+      if (list.length > 0) {
+        // Keep disk cache synced
+        try {
+          fs.writeFileSync(chatsFilePath, JSON.stringify(list, null, 2), "utf8");
+        } catch (err) {}
+        return list;
+      }
+    } catch (e) {
+      console.error("Firestore readChats failure, fallback to disk:", e);
+    }
+  }
+  return readChatsFromDisk();
+}
+
+async function saveChatToDatabase(msg: any) {
+  // Always update disk file cache
+  const chats = readChatsFromDisk();
+  chats.push(msg);
+  writeChatsToDisk(chats);
+
+  // Update cloud Firestore
+  if (firestoreDb) {
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      await setDoc(doc(firestoreDb, "chats", msg.id), msg);
+      console.log(`Firestore SUCCESS: Fully persisted chat msg ${msg.id}`);
+    } catch (e) {
+      console.error(`Firestore error writing chat message ${msg.id}:`, e);
+    }
+  }
+}
+
 // In-Memory map for active OTP codes to simulate SMS
 const activeOTPs = new Map<string, { code: string; expires: number }>();
 
 // APIs:
 // GET list of active properties
-app.get("/api/properties", (req, res) => {
-  const list = readPropertiesFromDisk();
+app.get("/api/properties", async (_req, res) => {
+  const list = await readPropertiesFromDatabase();
   res.json({ success: true, properties: list });
 });
 
 // POST add or edit a property listing
-app.post("/api/properties", (req, res) => {
+app.post("/api/properties", async (req, res) => {
   const clientProp = req.body;
   if (!clientProp || !clientProp.title) {
     return res.status(400).json({ error: "Property title is mandatory" });
   }
 
-  const list = readPropertiesFromDisk();
   let updatedProp: any = { ...clientProp };
 
   if (clientProp.id) {
     // Edit flow
+    const list = await readPropertiesFromDatabase();
     const index = list.findIndex((p: any) => p.id === clientProp.id);
     if (index !== -1) {
       updatedProp = {
@@ -753,76 +927,76 @@ app.post("/api/properties", (req, res) => {
         ...clientProp,
         updatedAt: new Date().toISOString()
       };
-      list[index] = updatedProp;
       console.log(`Server: Modified existing listing ID: ${clientProp.id}`);
     } else {
-      // If it has an ID but not found in the file, we treat it as new or restore it
-      list.unshift(updatedProp);
+      // If it has an ID but not found in the db, we treat it as new
+      updatedProp.createdAt = updatedProp.createdAt || new Date().toISOString();
     }
   } else {
     // Add new listing flow
     updatedProp.id = "prop-" + Math.floor(Math.random() * 900000 + 100000);
     updatedProp.createdAt = new Date().toISOString();
     updatedProp.isApproved = false; // Requiring admin approval before general release
-    list.unshift(updatedProp);
     console.log(`Server: Added a brand new listing ID: ${updatedProp.id}`);
   }
 
-  writePropertiesToDisk(list);
-  res.json({ success: true, property: updatedProp, properties: list });
+  await savePropertyToDatabase(updatedProp);
+  const finalList = await readPropertiesFromDatabase();
+  res.json({ success: true, property: updatedProp, properties: finalList });
 });
 
 // POST delete listing
-app.post("/api/properties/delete", (req, res) => {
+app.post("/api/properties/delete", async (req, res) => {
   const { id } = req.body;
   if (!id) return res.status(400).json({ error: "Property ID required" });
 
-  let list = readPropertiesFromDisk();
-  list = list.filter((p: any) => p.id !== id);
-  writePropertiesToDisk(list);
+  await deletePropertyFromDatabase(id);
+  const finalList = await readPropertiesFromDatabase();
 
   console.log(`Server: Deleted listing ID: ${id}`);
-  res.json({ success: true, properties: list });
+  res.json({ success: true, properties: finalList });
 });
 
 // POST approve listing
-app.post("/api/properties/approve", (req, res) => {
+app.post("/api/properties/approve", async (req, res) => {
   const { id } = req.body;
   if (!id) return res.status(400).json({ error: "Property ID required" });
 
-  const list = readPropertiesFromDisk();
+  const list = await readPropertiesFromDatabase();
   const index = list.findIndex((p: any) => p.id === id);
   if (index !== -1) {
-    list[index].isApproved = true;
-    writePropertiesToDisk(list);
+    const updated = { ...list[index], isApproved: true };
+    await savePropertyToDatabase(updated);
+    const finalList = await readPropertiesFromDatabase();
     console.log(`Server: Approved listing ID ${id}`);
-    return res.json({ success: true, property: list[index], properties: list });
+    return res.json({ success: true, property: updated, properties: finalList });
   }
   res.status(404).json({ error: "Property ID not found" });
 });
 
 // POST reject listing
-app.post("/api/properties/reject", (req, res) => {
+app.post("/api/properties/reject", async (req, res) => {
   const { id } = req.body;
   if (!id) return res.status(400).json({ error: "Property ID required" });
 
-  const list = readPropertiesFromDisk();
+  const list = await readPropertiesFromDatabase();
   const index = list.findIndex((p: any) => p.id === id);
   if (index !== -1) {
-    list[index].isApproved = false;
-    writePropertiesToDisk(list);
+    const updated = { ...list[index], isApproved: false };
+    await savePropertyToDatabase(updated);
+    const finalList = await readPropertiesFromDatabase();
     console.log(`Server: Rejected listing ID ${id}`);
-    return res.json({ success: true, property: list[index], properties: list });
+    return res.json({ success: true, property: updated, properties: finalList });
   }
   res.status(404).json({ error: "Property ID not found" });
 });
 
 // GET rooms associated with a user
-app.get("/api/chats/rooms", (req, res) => {
+app.get("/api/chats/rooms", async (req, res) => {
   const userId = req.query.userId as string;
   if (!userId) return res.status(400).json({ error: "userId required" });
 
-  const chats = readChatsFromDisk();
+  const chats = await readChatsFromDatabase();
   
   // Group chats into conversation threads based on (propertyId + participant)
   const roomsMap = new Map<string, any>();
@@ -854,7 +1028,7 @@ app.get("/api/chats/rooms", (req, res) => {
 });
 
 // GET messages of a chat room
-app.get("/api/chats", (req, res) => {
+app.get("/api/chats", async (req, res) => {
   const propertyId = req.query.propertyId as string;
   const userId = req.query.userId as string;
 
@@ -862,7 +1036,7 @@ app.get("/api/chats", (req, res) => {
     return res.status(400).json({ error: "propertyId and userId required" });
   }
 
-  const chats = readChatsFromDisk();
+  const chats = await readChatsFromDatabase();
   
   // Filter messages for this specific property
   const filtered = chats.filter((msg: any) => {
@@ -879,7 +1053,6 @@ app.post("/api/chats/send", async (req, res) => {
     return res.status(400).json({ error: "Missing parameters" });
   }
 
-  const chats = readChatsFromDisk();
   const newMsg = {
     id: "msg-" + Date.now() + Math.floor(Math.random() * 1000),
     propertyId,
@@ -890,11 +1063,11 @@ app.post("/api/chats/send", async (req, res) => {
     timestamp: new Date().toISOString()
   };
 
-  chats.push(newMsg);
+  await saveChatToDatabase(newMsg);
 
   // If the message is from a visitor (not from broker), trigger Gemini AI Appraiser / Broker response
   if (senderId !== "broker" && !senderId.startsWith("broker-")) {
-    const propertiesList = readPropertiesFromDisk();
+    const propertiesList = await readPropertiesFromDatabase();
     const property = propertiesList.find((p: any) => p.id === propertyId);
     
     let aiResponseText = "";
@@ -961,13 +1134,12 @@ ${propDetails}
       timestamp: new Date().toISOString()
     };
 
-    chats.push(brokerReplyMsg);
+    await saveChatToDatabase(brokerReplyMsg);
   }
 
-  writeChatsToDisk(chats);
-
+  const finalChatsList = await readChatsFromDatabase();
   console.log(`Server Chat: Message processed from ${senderName} (${senderId}) for ${propertyName}`);
-  res.json({ success: true, message: newMsg, chats: chats.filter((m: any) => m.propertyId === propertyId) });
+  res.json({ success: true, message: newMsg, chats: finalChatsList.filter((m: any) => m.propertyId === propertyId) });
 });
 
 // POST send SMS OTP code simulator

@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net: default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable, hardened global helpers
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Strict validation blueprint for a Property listing
+    function isValidProperty(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 500
+        && data.description is string && data.description.size() <= 5000
+        && data.type is string && (data.type == 'sale' || data.type == 'rent')
+        && data.area is number && data.area > 0 && data.area <= 1000000
+        && data.country is string && data.country.size() <= 10
+        && data.district is string && data.district.size() <= 300
+        && data.phone is string && data.phone.size() <= 50
+        && data.address is string && data.address.size() <= 1500
+        && data.latitude is number
+        && data.longitude is number;
+    }
+
+    // Strict validation blueprint for direct ChatMessage
+    function isValidChatMsg(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.propertyId is string && data.propertyId.size() <= 128
+        && data.senderId is string && data.senderId.size() <= 128
+        && data.senderName is string && data.senderName.size() <= 150
+        && data.text is string && data.text.size() <= 5000;
+    }
+
+    // Match patterns for /properties/ collection
+    match /properties/{propertyId} {
+      allow read: if true; // Public property listings are readable by everyone
+      allow create, update: if isValidId(propertyId) && isValidProperty(request.resource.data);
+      allow delete: if isValidId(propertyId);
+    }
+
+    // Match patterns for /chats/ collection
+    match /chats/{chatId} {
+      allow read: if true; // Backend proxies read queries safely
+      allow create, update: if isValidId(chatId) && isValidChatMsg(request.resource.data);
+      allow delete: if isValidId(chatId);
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Property": {
+      "title": "Property",
+      "description": "A property listed on the Melkban real estate platform.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique property listing ID" },
+        "title": { "type": "string", "description": "Title of the listing" },
+        "description": { "type": "string", "description": "Full description of the property" },
+        "type": { "type": "string", "description": "Contract type: sale or rent", "enum": ["sale", "rent"] },
+        "pricePerSqm": { "type": "number", "description": "Price per square meter" },
+        "totalPrice": { "type": "number", "description": "Total price or valuation" },
+        "area": { "type": "number", "description": "Area in square meters" },
+        "country": { "type": "string", "description": "Country code (e.g. IR, AF, AE)" },
+        "district": { "type": "string", "description": "Sub-district or neighborhood" },
+        "bedrooms": { "type": "number", "description": "Number of bedrooms" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "address": { "type": "string", "description": "Detailed physical address" },
+        "latitude": { "type": "number", "description": "Latitude for geospatial placement" },
+        "longitude": { "type": "number", "description": "Longitude for geospatial placement" },
+        "images": { "type": "array", "description": "List of image URLs" },
+        "createdAt": { "type": "string", "description": "Strict ISO-8601 creation timestamp" },
+        "isApproved": { "type": "boolean", "description": "Whether approved by system administration" },
+        "isBrokerVerified": { "type": "boolean", "description": "Whether verified by an official broker" },
+        "isLocalTrustEndorsed": { "type": "boolean", "description": "Whether local community trust endorsed" }
+      },
+      "required": ["id", "title", "description", "type", "area", "country", "district", "phone", "address", "latitude", "longitude", "createdAt"]
+    },
+    "ChatMsg": {
+      "title": "Chat Message",
+      "description": "Secure in-app direct chat message between end-users and brokers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the message" },
+        "propertyId": { "type": "string", "description": "The listing reference ID" },
+        "propertyName": { "type": "string", "description": "Property title copy helper" },
+        "senderId": { "type": "string", "description": "Visitor ID or broker keyword identifier" },
+        "senderName": { "type": "string", "description": "Display name of message sender" },
+        "text": { "type": "string", "description": "Confidential cipher-secure message text content" },
+        "timestamp": { "type": "string", "description": "ISO-8601 message transmission date" }
+      },
+      "required": ["id", "propertyId", "senderId", "senderName", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/properties/{propertyId}": {
+      "schema": "Property",
+      "description": "Individual multi-national property real estate records."
+    },
+    "/chats/{chatId}": {
+      "schema": "ChatMsg",
+      "description": "Secure direct developer/appraiser in-app messaging storage."
+    }
+  }
+}

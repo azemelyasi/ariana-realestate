@@ -1821,14 +1821,19 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                   <button
                     type="button"
                     onClick={handleRequestOTP}
+                    disabled={isPhoneVerified || otpLoading}
                     className={`px-3 py-2 rounded-xl text-[10px] font-black tracking-wide border transition cursor-pointer active:scale-95 whitespace-nowrap ${
                       isPhoneVerified 
                         ? "bg-slate-900 border-emerald-500/30 text-emerald-400 cursor-default"
+                        : otpLoading
+                        ? "bg-slate-900 border-slate-800 text-slate-500 cursor-not-allowed"
                         : "bg-indigo-950/60 hover:bg-indigo-900 border-indigo-500/40 text-indigo-400"
                     }`}
                   >
                     {isPhoneVerified 
                       ? (lang === "fa" ? "✓ تایید شد" : "✓ Verified") 
+                      : otpLoading
+                      ? (lang === "fa" ? "⏳ در حال ارسال..." : "⏳ Sending...")
                       : (lang === "fa" ? "📱 ارسال پیامک" : "📱 Verify Code")}
                   </button>
                 </div>
