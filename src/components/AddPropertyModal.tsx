@@ -3,6 +3,7 @@ import { Property, Language, SystemSettings } from "../types";
 import { TRANSLATIONS, getTranslation } from "../i18n";
 import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
+import { CadastralInteractiveMap } from "./CadastralInteractiveMap";
 
 const brokerLocal: any = {
   en: {
@@ -182,6 +183,7 @@ interface AddPropertyModalProps {
   onAddProperty: (property: Partial<Property>) => void;
   settings: SystemSettings;
   userRole?: "client" | "verified" | "admin";
+  propertyToEdit?: Property;
 }
 
 const payTranslations: any = {
@@ -941,7 +943,7 @@ const payTranslations: any = {
   }
 };
 
-export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClose, onAddProperty, settings, userRole }) => {
+export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClose, onAddProperty, settings, userRole, propertyToEdit }) => {
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
 
@@ -1064,44 +1066,110 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
   };
 
   // Form states
-  const [country, setCountry] = useState("AE");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState<"sale" | "rent">("sale");
-  const [pricePerSqm, setPricePerSqm] = useState("");
-  const [rent, setRent] = useState("");
-  const [deposit, setDeposit] = useState("");
-  const [area, setArea] = useState("120");
-  const [bedrooms, setBedrooms] = useState(2);
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [heating, setHeating] = useState("");
-  const [cabinets, setCabinets] = useState("");
-  const [cooling, setCooling] = useState("");
-  const [deed, setDeed] = useState("");
-  const [imageUrl1, setImageUrl1] = useState("");
-  const [imageUrl2, setImageUrl2] = useState("");
-  const [imageUrl3, setImageUrl3] = useState("");
+  const [country, setCountry] = useState(propertyToEdit?.country || "AE");
+  const [title, setTitle] = useState(propertyToEdit?.title || "");
+  const [description, setDescription] = useState(propertyToEdit?.description || "");
+  const [type, setType] = useState<"sale" | "rent">(propertyToEdit?.type === "rent" ? "rent" : "sale");
+  const [pricePerSqm, setPricePerSqm] = useState(propertyToEdit?.pricePerSqm ? String(propertyToEdit.pricePerSqm) : "");
+  const [rent, setRent] = useState(propertyToEdit?.rent ? String(propertyToEdit.rent) : "");
+  const [deposit, setDeposit] = useState(propertyToEdit?.deposit ? String(propertyToEdit.deposit) : "");
+  const [area, setArea] = useState(propertyToEdit?.area ? String(propertyToEdit.area) : "120");
+  const [bedrooms, setBedrooms] = useState(propertyToEdit?.bedrooms !== undefined ? propertyToEdit.bedrooms : 2);
+  const [phone, setPhone] = useState(propertyToEdit?.phone || "");
+  const [address, setAddress] = useState(propertyToEdit?.address || "");
+  const [heating, setHeating] = useState(propertyToEdit?.heating || "");
+  const [cabinets, setCabinets] = useState(propertyToEdit?.cabinets || "");
+  const [cooling, setCooling] = useState(propertyToEdit?.cooling || "");
+  const [deed, setDeed] = useState(propertyToEdit?.deed || "");
+  const [imageUrl1, setImageUrl1] = useState(propertyToEdit?.images?.[0] || "");
+  const [imageUrl2, setImageUrl2] = useState(propertyToEdit?.images?.[1] || "");
+  const [imageUrl3, setImageUrl3] = useState(propertyToEdit?.images?.[2] || "");
 
-  const [brokerName, setBrokerName] = useState(() => localStorage.getItem("melkban_verified_broker_name") || "");
-  const [brokerEmail, setBrokerEmail] = useState(() => localStorage.getItem("melkban_verified_broker_email") || "");
-  const [brokerLicense, setBrokerLicense] = useState(() => localStorage.getItem("melkban_verified_broker_license") || "");
-  const [brokerCardPhoto, setBrokerCardPhoto] = useState(() => localStorage.getItem("melkban_verified_broker_card") || "");
-  const [agencyLogo, setAgencyLogo] = useState(() => localStorage.getItem("melkban_verified_agency_logo") || "");
+  const [brokerName, setBrokerName] = useState(() => propertyToEdit?.brokerName || localStorage.getItem("melkban_verified_broker_name") || "");
+  const [brokerEmail, setBrokerEmail] = useState(() => propertyToEdit?.brokerEmail || localStorage.getItem("melkban_verified_broker_email") || "");
+  const [brokerLicense, setBrokerLicense] = useState(() => propertyToEdit?.brokerLicense || localStorage.getItem("melkban_verified_broker_license") || "");
+  const [brokerCardPhoto, setBrokerCardPhoto] = useState(() => propertyToEdit?.brokerCardPhoto || localStorage.getItem("melkban_verified_broker_card") || "");
+  const [agencyLogo, setAgencyLogo] = useState(() => propertyToEdit?.agencyLogo || localStorage.getItem("melkban_verified_agency_logo") || "");
   const [brokerRegError, setBrokerRegError] = useState("");
-  const [isLocalTrustEndorsed, setIsLocalTrustEndorsed] = useState(false);
-  const [gpsLatitude, setGpsLatitude] = useState("");
-  const [gpsLongitude, setGpsLongitude] = useState("");
+  const [isLocalTrustEndorsed, setIsLocalTrustEndorsed] = useState(propertyToEdit?.isLocalTrustEndorsed || false);
+  const [gpsLatitude, setGpsLatitude] = useState(propertyToEdit?.latitude ? String(propertyToEdit.latitude) : "");
+  const [gpsLongitude, setGpsLongitude] = useState(propertyToEdit?.longitude ? String(propertyToEdit.longitude) : "");
   const [gpsStatus, setGpsStatus] = useState("");
 
   const activeCountry = COUNTRIES.find((cnt) => cnt.code === country) || COUNTRIES[0];
-  const [district, setDistrict] = useState(activeCountry.districts[0]);
+  const [district, setDistrict] = useState(propertyToEdit?.district || activeCountry.districts[0]);
 
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const code = e.target.value;
     setCountry(code);
     const cnt = COUNTRIES.find((c) => c.code === code) || COUNTRIES[0];
     setDistrict(cnt.districts[0]);
+    // Clear custom GPS coordinates so that the interactive map pan-positions to the new country center
+    setGpsLatitude("");
+    setGpsLongitude("");
+    setGpsStatus("");
+  };
+
+  // Phone/SMS OTP verification states
+  const [isPhoneVerified, setIsPhoneVerified] = useState(propertyToEdit ? true : false);
+  const [showOTPVerifyPopup, setShowOTPVerifyPopup] = useState(false);
+  const [otpCodeInput, setOtpCodeInput] = useState("");
+  const [otpSentCode, setOtpSentCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+
+  const handleRequestOTP = async () => {
+    if (isPhoneVerified) return;
+    if (!phone.trim()) {
+      alert(lang === "fa" ? "لطفاً ابتدا شماره تلفن همراه را وارد کنید." : "Please enter a valid phone number first.");
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpError("");
+    try {
+      const res = await fetch("/api/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim() })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setOtpSentCode(data.code);
+        setShowOTPVerifyPopup(true);
+      } else {
+        setOtpError(data.error || "Failed to send code");
+      }
+    } catch (e) {
+      setOtpError("Network connection error");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otpCodeInput.trim()) return;
+    setOtpLoading(true);
+    setOtpError("");
+    try {
+      const res = await fetch("/api/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim(), code: otpCodeInput.trim() })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setIsPhoneVerified(true);
+        setShowOTPVerifyPopup(false);
+        setOtpCodeInput("");
+      } else {
+        setOtpError(data.error || "Incorrect code entered");
+      }
+    } catch (e) {
+      setOtpError("Verification error");
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1151,6 +1219,7 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
     }
 
     const newProp: Partial<Property> = {
+      id: propertyToEdit?.id,
       title,
       description: description || "Special luxury property with excellent cadastral scoring.",
       type,
@@ -1186,16 +1255,21 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
     if (brokerCardPhoto) localStorage.setItem("melkban_verified_broker_card", brokerCardPhoto);
     if (agencyLogo) localStorage.setItem("melkban_verified_agency_logo", agencyLogo);
 
-    const freeLimit = settings?.freeListingsLimit !== undefined ? settings.freeListingsLimit : 1;
-
-    if (userAddedCount < freeLimit) {
-      const nextCount = userAddedCount + 1;
-      setUserAddedCount(nextCount);
-      localStorage.setItem("melkban_user_added_count", String(nextCount));
+    if (propertyToEdit) {
+      // Direct update submission for property edits
       onAddProperty(newProp);
     } else {
-      setPendingProperty(newProp);
-      setShowPaymentStep(true);
+      const freeLimit = settings?.freeListingsLimit !== undefined ? settings.freeListingsLimit : 1;
+
+      if (userAddedCount < freeLimit) {
+        const nextCount = userAddedCount + 1;
+        setUserAddedCount(nextCount);
+        localStorage.setItem("melkban_user_added_count", String(nextCount));
+        onAddProperty(newProp);
+      } else {
+        setPendingProperty(newProp);
+        setShowPaymentStep(true);
+      }
     }
   };
 
@@ -1237,7 +1311,7 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
         {/* Header bar */}
         <div className="p-6 border-b border-slate-850 flex justify-between items-center bg-slate-950/40">
           <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-            <span>📝</span> {showPaymentStep ? getT("cadastralBillingNode") : t.btnPost}
+            <span>📝</span> {showPaymentStep ? getT("cadastralBillingNode") : (propertyToEdit ? (lang === 'fa' ? 'ویرایش سند و آگهی ملک' : 'Edit Land Title & Listing') : t.btnPost)}
           </h3>
           <button
             onClick={onClose}
@@ -1735,14 +1809,61 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
               {/* Owner Phone number */}
               <div>
                 <label className="block text-slate-400 mb-1 font-semibold">{t.labelPhone} <span className="text-indigo-400">*</span></label>
-                <input
-                  type="text"
-                  required
-                  placeholder={activeCountry.code === "IR" ? "+98 9..." : activeCountry.code === "AE" ? "+971 ..." : "+1 ..."}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    placeholder={activeCountry.code === "IR" ? "+98 9..." : activeCountry.code === "AE" ? "+971 ..." : "+1 ..."}
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRequestOTP}
+                    className={`px-3 py-2 rounded-xl text-[10px] font-black tracking-wide border transition cursor-pointer active:scale-95 whitespace-nowrap ${
+                      isPhoneVerified 
+                        ? "bg-slate-900 border-emerald-500/30 text-emerald-400 cursor-default"
+                        : "bg-indigo-950/60 hover:bg-indigo-900 border-indigo-500/40 text-indigo-400"
+                    }`}
+                  >
+                    {isPhoneVerified 
+                      ? (lang === "fa" ? "✓ تایید شد" : "✓ Verified") 
+                      : (lang === "fa" ? "📱 ارسال پیامک" : "📱 Verify Code")}
+                  </button>
+                </div>
+
+                {showOTPVerifyPopup && (
+                  <div className="mt-2.5 p-3.5 bg-slate-950 border border-indigo-900/30 rounded-xl space-y-2 text-[11px] text-right rtl">
+                    <div className="text-slate-200 font-bold">
+                      {lang === "fa" ? "🔑 کد تایید پیامک‌شده را وارد کنید:" : "🔑 Enter the SMS verification code received:"}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. 123456"
+                        maxLength={6}
+                        value={otpCodeInput}
+                        onChange={(e) => setOtpCodeInput(e.target.value)}
+                        className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-white font-mono text-center focus:outline-none focus:border-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOTP}
+                        className="bg-indigo-650 hover:bg-indigo-600 text-white font-black px-3 py-1.5 rounded-lg transition text-[10px]"
+                      >
+                        {lang === "fa" ? "بررسی" : "Verify"}
+                      </button>
+                    </div>
+                    <div className="text-[9.5px] text-indigo-450 font-bold flex flex-col gap-0.5 font-mono">
+                      <span>🚀 [GATEWAY OTP CODE]: {lang === 'fa' ? `کد ارسال‌شده برای تست: ${otpSentCode}` : `Simulated code for testing: ${otpSentCode}`}</span>
+                      <span>💡 {lang === 'fa' ? 'اتصال هوشمند به هاب کاداستر با موفقیت برقرار شد.' : 'Live secure SMS gateway simulation active.'}</span>
+                    </div>
+                    {otpError && (
+                      <div className="text-[10px] text-rose-400 font-bold">{otpError}</div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1820,24 +1941,38 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
               </div>
 
               {/* PRECISE GEOLOCATION GATE (ZILLOW GOLD / ANTI-LAW-SUIT DESIGN) */}
-              <div className="border border-indigo-950/70 bg-indigo-950/20 rounded-2xl p-4 space-y-3">
+              <div className="border border-indigo-950/70 bg-indigo-950/20 rounded-2xl p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm">🛰️</span>
                     <span className="text-[11px] font-black text-indigo-400 uppercase tracking-wider">
-                      {lang === "fa" ? "مختصات دقیق ماهواره‌ای GPS (جلوگیری از شکایات و کلاهبرداری)" : "PRECISE GPS GEOLOCATION COORDINATES"}
+                      {lang === "fa" ? "مختصات دقیق و مکان‌نمای ماهواره‌ای زنده" : "PRECISE CORNER-PIN GPS MAP"}
                     </span>
                   </div>
                   <span className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/10 px-2 py-0.5 rounded-full font-bold">
-                    {lang === "fa" ? "متر اعتماد کاداستر: حداکثر" : "Cadastre Trust Meter: Maximum"}
+                    {lang === "fa" ? "تنظیم دستی روی نقشه زنده" : "Dynamic Interaction Enabled"}
                   </span>
                 </div>
 
-                <p className="text-[10px] text-slate-400 leading-normal">
+                <p className="text-[10px] text-slate-450 leading-normal">
                   {lang === "fa"
-                    ? "جهت دوری از هرگونه نزاع حقوقی، ادعاهای متراژ نادرست یا شکایات خریداران، لوکیشن ریاضی دقیق ملک را روی نقشه ثبت کنید."
-                    : "To secure absolute legal protection and avoid boundary lawsuits or cross-claims from buyers, record precise mathematical coordinates."}
+                    ? "جهت دوری از آدرس اشتباه، موقعیت دقیق را روی نقشه با جابجایی سنجاق مشخص کنید. ویژگی هوشمند: با نوشتن آدرس در کادر بالا (مثلا: خیابان الهیه، برج باغ مجلل مریم، تهران)، نقشه به صورت خودکار آن را مکان‌یابی کرده و سنجاق را قفل می‌کند! (حتی اگر GPS مرورگر خاموش باشد)."
+                    : "To eliminate errors, pin coordinates manually or type the address in the box above. The map centers and pinpacks automatically as you type, even if your device GPS permission is blocked!"}
                 </p>
+
+                {/* Real-time Interactive Map widget */}
+                <CadastralInteractiveMap
+                  lat={parseFloat(gpsLatitude) || activeCountry.center.lat}
+                  lng={parseFloat(gpsLongitude) || activeCountry.center.lng}
+                  lang={lang}
+                  onChange={(newLat, newLng) => {
+                    setGpsLatitude(newLat.toFixed(7));
+                    setGpsLongitude(newLng.toFixed(7));
+                    setGpsStatus(lang === "fa" ? "✓ موقعیت از روی نقشه تنظیم شد" : "✓ Pin-pointed via map");
+                  }}
+                  height="220px"
+                  initialSearchQuery={address}
+                />
 
                 <div className="grid grid-cols-2 gap-3.5">
                   <div>
@@ -2237,7 +2372,7 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                 type="submit"
                 className="flex-1 py-2.5 bg-indigo-650 hover:bg-indigo-600 text-white font-bold rounded-2xl text-xs transition cursor-pointer active:scale-95 shadow-lg shadow-indigo-650/15"
               >
-                {t.btnSubmit}
+                {propertyToEdit ? (lang === 'fa' ? 'بروزرسانی آگهی کاداستر' : 'Update Cadastral Listing') : t.btnSubmit}
               </button>
             </div>
           </form>

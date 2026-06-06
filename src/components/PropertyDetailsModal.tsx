@@ -4,15 +4,17 @@ import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
 import { getTranslation } from "../i18n";
 import { Compass, Globe, Copy, ShieldAlert, CheckCircle } from "lucide-react";
+import { CadastralInteractiveMap } from "./CadastralInteractiveMap";
 
 interface PropertyDetailsModalProps {
   property: Property;
   lang: Language;
   onClose: () => void;
   onSubmitComplaint?: (report: DisputeReport) => void;
+  onStartChat?: (property: Property) => void;
 }
 
-export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ property, lang, onClose, onSubmitComplaint }) => {
+export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ property, lang, onClose, onSubmitComplaint, onStartChat }) => {
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
   const c = COUNTRIES.find((cnt) => cnt.code === property.country) || COUNTRIES[0];
 
@@ -49,10 +51,6 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  
-  // Interactive simulated map state
-  const [mapLayer, setMapLayer] = useState<"satellite" | "contour">("satellite");
-  const [zoomLevel, setZoomLevel] = useState<number>(16);
 
   // Secure Legal Check Certificate states
   const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false);
@@ -261,7 +259,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
           {/* Top visual banner and badges with Multiple Image Gallery */}
           {(() => {
             const imagesList = property.images && property.images.length > 0 ? property.images : [
-              "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600"
+              "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"
             ];
             const clampedIndex = activeImageIndex >= imagesList.length ? 0 : activeImageIndex;
             const currentImage = imagesList[clampedIndex] || imagesList[0];
@@ -728,6 +726,21 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
 
                       if (scamFactors.length === 0) scamFactors.push(lang === "fa" ? "✓ بدون هیچ‌گونه فاکتور پرخطر کلاهبرداری مالی دفتری" : "✓ Financial security profile checks out successfully.");
                       if (spamFactors.length === 0) spamFactors.push(lang === "fa" ? "✓ متن ساختاریافته عاری از بدجوش‌ها و اسپمرهای عمومی" : "✓ Structural verification indicates optimal data formatting.");
+
+                      // 5. OFFICIAL BROKER & ENDORSED TRUST PREMIUM DIRECT ADJUSTMENT
+                      if (isVerified || isTrust) {
+                        scamScore = Math.max(1, scamScore - 35);
+                        spamScore = Math.max(1, spamScore - 30);
+                        
+                        // Add top-tier trust endorsements
+                        scamFactors.unshift(lang === "fa"
+                          ? "✓ سند ملی تک‌برگ کاداستر ثبتی: تایید قطعی مالکیت بدون معارض با کدرهگیری کاتب/خودنویس"
+                          : "✓ Double-Vetted Title Deed: 100% verified ownership through physical and sovereign cadastre inspection.");
+                        
+                        spamFactors.unshift(lang === "fa"
+                          ? "✓ نشان کاداستر طلایی: داده ارائه‌شده از کیفیت و انطباق سندی مطلقی برخوردار است"
+                          : "✓ Gold Cadastral Seal: Data quality matches the highest structural integrity metrics.");
+                      }
 
                       setSentinelResult({
                         scamScore: Math.min(scamScore, 98),
@@ -1275,19 +1288,19 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 living: {
                   nameFa: "سالن طراحی بهاره تعاملی (۳۶۰ درجه)",
                   nameEn: "Interactive Living Lounge (360°)",
-                  url: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200",
+                  url: "https://images.pexels.com/photos/1571439/pexels-photo-1571439.jpeg?auto=compress&cs=tinysrgb&w=1200",
                   hash: "MATTERPORT-LIV-98A"
                 },
                 bedroom: {
                   nameFa: "اتاق خواب مستر بزرگ (۳۶۰ درجه)",
                   nameEn: "Luxury Master Bedroom (360°)",
-                  url: "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=1200",
+                  url: "https://images.pexels.com/photos/2082087/pexels-photo-2082087.jpeg?auto=compress&cs=tinysrgb&w=1200",
                   hash: "MATTERPORT-BED-21C"
                 },
                 view: {
                   nameFa: "تراس پانوراما با نمای ۳۶۰ افق",
                   nameEn: "Panoramic Balcony View (360°)",
-                  url: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200",
+                  url: "https://images.pexels.com/photos/2062426/pexels-photo-2062426.jpeg?auto=compress&cs=tinysrgb&w=1200",
                   hash: "MATTERPORT-BALCONY-10E"
                 }
               };
@@ -1402,7 +1415,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
             })()}
 
             {activeHubTab === "ai_staging" && (() => {
-              const primaryImage = property.images?.[0] || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600";
+              const primaryImage = property.images?.[0] || "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800";
               
               const styles = {
                 original: {
@@ -1832,86 +1845,49 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
             </div>
 
             {/* Expanded visible map container */}
-            <div className="w-full bg-slate-950 rounded-2xl border border-slate-850 p-4">
+            <div className="w-full bg-slate-950 rounded-2xl border border-slate-850 p-4 animate-fadeIn">
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-900 mb-3.5 flex-wrap gap-2 text-xs">
                 <div className="flex items-center gap-1.5 text-slate-350">
                   <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
                   <span className="font-bold tracking-wide uppercase text-[10px]">
-                    🗺️ {lang === "fa" ? "ترسیم فنی نقشه کاداستر ملکی (بزرگنمایی)" : "Interactive Geolocation Radar View"}
+                    🗺️ {lang === "fa" ? "نقشه زنده و موقعیت ماهواره‌ای دقیق ملک" : "Interactive Geolocation Radar View"}
                   </span>
                 </div>
 
                 <div className="flex gap-2 items-center">
-                  {/* Layer trigger switcher */}
-                  <div className="flex items-center bg-slate-900 border border-slate-800 p-0.5 rounded-lg text-[9px] font-bold">
-                    <button
-                      onClick={() => setMapLayer("satellite")}
-                      className={`px-1.5 py-0.5 rounded transition ${mapLayer === "satellite" ? "bg-indigo-600 text-white" : "text-slate-450"}`}
-                    >
-                      🛰️ {lang === "fa" ? "ماهواره" : "Sat"}
-                    </button>
-                    <button
-                      onClick={() => setMapLayer("contour")}
-                      className={`px-1.5 py-0.5 rounded transition ${mapLayer === "contour" ? "bg-indigo-600 text-white" : "text-slate-450"}`}
-                    >
-                      📈 {lang === "fa" ? "توپو" : "Topo"}
-                    </button>
-                  </div>
-
-                  {/* Zoom controller */}
-                  <div className="flex items-center bg-slate-900 border border-slate-800 p-0.5 rounded-lg text-[9px] font-mono font-bold text-slate-400">
-                    <button onClick={() => setZoomLevel(Math.max(10, zoomLevel - 1))} className="px-1.5 hover:text-white">-</button>
-                    <span className="px-1">{zoomLevel}x</span>
-                    <button onClick={() => setZoomLevel(Math.min(22, zoomLevel + 1))} className="px-1.5 hover:text-white">+</button>
-                  </div>
+                  <span className="text-[10px] text-indigo-400 font-bold bg-indigo-950/60 border border-indigo-900/40 px-2 py-0.5 rounded">
+                    {lang === "fa" ? "کاداستر ملکی تایید شده" : "Verified Plot Layout"}
+                  </span>
                 </div>
               </div>
 
-              {/* Spacious visual grid map renderer */}
-              <div className="w-full h-56 bg-slate-900 border border-slate-850 rounded-xl relative overflow-hidden flex flex-col justify-between p-3 select-none">
-                {/* Simulated contour grid / satellite lines background */}
-                {mapLayer === "contour" ? (
-                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:24px_24px]"></div>
-                ) : (
-                  <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#0284c7_1px,transparent_1px),linear-gradient(to_bottom,#0284c7_1px,transparent_1px)] [background-size:32px_32px]"></div>
-                )}
+              {/* Spacious visual map renderer with Real Leaflet Map */}
+              <div className="w-full space-y-3">
+                <CadastralInteractiveMap
+                  lat={parseFloat(String(property.latitude)) || (c.center?.lat || 35.6892)}
+                  lng={parseFloat(String(property.longitude)) || (c.center?.lng || 51.3890)}
+                  readOnly={true}
+                  lang={lang}
+                  height="260px"
+                />
 
-                {/* Animated sonar ring */}
-                <div className="absolute top-[48%] left-[50%] w-24 h-24 -ml-12 -mt-12 rounded-full border border-indigo-400/20 bg-indigo-500/5 animate-pulse"></div>
-                <div className="absolute top-[48%] left-[50%] w-48 h-48 -ml-24 -mt-24 rounded-full border border-indigo-400/10 animate-ping" style={{ animationDuration: "3s" }}></div>
-                
-                {/* Real Coordinate marker */}
-                <div className="absolute top-[42%] left-[48%] text-center z-13">
-                  <div className="text-xl animate-bounce">📍</div>
-                  <div className={`mt-1 text-[8.5px] px-2 py-0.5 rounded border ${mapLayer === "contour" ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-black/90 border-slate-800 text-emerald-400 font-mono"}`}>
-                    {toLocalizedDigits((typeof property.latitude === "number" ? property.latitude : (c.center?.lat || 35.6892)).toFixed(5), lang)}, {toLocalizedDigits((typeof property.longitude === "number" ? property.longitude : (c.center?.lng || 51.3890)).toFixed(5), lang)}
+                <div className="w-full bg-slate-900/60 border border-slate-850/50 rounded-xl p-3 flex flex-col sm:flex-row gap-3 items-center justify-between text-[11px] font-sans">
+                  <div className="flex items-center gap-2 text-slate-400 font-mono">
+                    <Compass className="w-4 h-4 text-indigo-400 animate-spin" style={{ animationDuration: "12s" }} />
+                    <span className="text-[11px] font-bold">
+                      {lang === "fa" ? "مختصات ثبتی جی‌پی‌اس:" : "GPS REGISTRY:"}{" "}
+                      <span className="text-slate-200 font-mono">
+                        {toLocalizedDigits((parseFloat(String(property.latitude)) || (c.center?.lat || 35.6892)).toFixed(5), lang)}, {toLocalizedDigits((parseFloat(String(property.longitude)) || (c.center?.lng || 51.3890)).toFixed(5), lang)}
+                      </span>
+                    </span>
                   </div>
-                </div>
 
-                {/* Map Grid Metadata overlays */}
-                <div className="relative text-[8px] font-mono text-slate-500 flex justify-between items-start pointer-events-none">
-                  <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded border border-slate-850">
-                    <Compass className="w-3 h-3 animate-spin" style={{ animationDuration: "12s" }} />
-                    <span>HDOP: 1.02 | COORD: WGS84</span>
-                  </div>
-                  <div className="bg-slate-950/80 p-0.5 rounded border border-slate-850">
-                    FPS: 60 | DATUM: KABUL-UTC
-                  </div>
-                </div>
-
-                <div className="relative text-[8px] font-mono text-slate-500 flex justify-between items-end pointer-events-none mt-auto">
-                  <div className="bg-slate-950/80 px-1.5 py-0.5 rounded border border-slate-850 text-indigo-400">
-                    SATELLITE BEAM ACTIVE [{(zoomLevel * 3.4).toFixed(0)}m ALT]
-                  </div>
-                  
-                  {/* Coords text copy buttons */}
                   <button 
                     onClick={handleCopyCoords}
-                    pointer-events="auto"
-                    className="flex items-center gap-1.5 bg-indigo-650/45 hover:bg-indigo-650 text-[8.5px] text-white px-2 py-1 rounded border border-indigo-500/30 transition-all pointer-events-auto"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3.5 py-1.5 rounded-lg border border-indigo-500/30 transition shadow cursor-pointer text-[10px]"
                   >
-                    <Copy className="w-2.5 h-2.5" />
-                    <span>{isCopied ? (lang === "fa" ? "کپی شد!" : "Copied!") : (lang === "fa" ? "کپی مختصات" : "Copy GPS")}</span>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{isCopied ? (lang === "fa" ? "کپی شد!" : "Copied!") : (lang === "fa" ? "کپی مختصات GPS" : "Copy GPS Coordinates")}</span>
                   </button>
                 </div>
               </div>
@@ -2196,12 +2172,22 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
               </span>
             </div>
             
-            <a
-              href={`tel:${property.phone}`}
-              className="w-full sm:w-auto text-center bg-indigo-600 hover:bg-indigo-750 text-white font-black py-3 px-8 rounded-2xl text-xs transition active:scale-95 shadow-lg shadow-indigo-650/10 flex items-center justify-center gap-1.5"
-            >
-              📞 {getTranslation(lang, "callRepresentative", "Call Representative")}
-            </a>
+            <div className="flex gap-2 w-full sm:w-auto">
+              {onStartChat && (
+                <button
+                  onClick={() => onStartChat(property)}
+                  className="flex-1 sm:flex-initial text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 hover:text-white font-black py-3 px-5 rounded-2xl text-xs transition active:scale-95 shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  💬 {lang === "fa" ? "چت درون‌برنامه‌ای" : "In-App Chat"}
+                </button>
+              )}
+              <a
+                href={`tel:${property.phone}`}
+                className="flex-1 sm:w-auto text-center bg-indigo-650 hover:bg-indigo-600 text-white font-black py-3 px-8 rounded-2xl text-xs transition active:scale-95 shadow-lg shadow-indigo-650/10 flex items-center justify-center gap-1.5"
+              >
+                📞 {getTranslation(lang, "callRepresentative", "Call Representative")}
+              </a>
+            </div>
           </div>
 
         </div>
@@ -2210,7 +2196,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
       {/* FULLSCREEN CADASTRAL IMAGE LIGHTBOX THEATRE */}
       {isFullscreenLightboxOpen && (() => {
         const imagesList = property.images && property.images.length > 0 ? property.images : [
-          "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600"
+          "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"
         ];
         const clampedIndex = activeImageIndex >= imagesList.length ? 0 : activeImageIndex;
         const currentImage = imagesList[clampedIndex] || imagesList[0];

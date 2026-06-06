@@ -343,9 +343,16 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "خیابان الهیه، برج باغ مجلل مریم، تهران",
     latitude: 35.7951,
     longitude: 51.4232,
-    images: ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.pexels.com/photos/1571439/pexels-photo-1571439.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/2062426/pexels-photo-2062426.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/2724749/pexels-photo-2724749.jpeg?auto=compress&cs=tinysrgb&w=800"
+    ],
     createdAt: "2026-06-01T12:00:00Z",
-    isApproved: true
+    isApproved: true,
+    isBrokerVerified: true,
+    isLocalTrustEndorsed: true
   },
   {
     id: "prop-ir-2",
@@ -362,9 +369,16 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "لواسان بزرگ، محله لاکچری باستی هیلز، پلاک ۱۲",
     latitude: 35.8239,
     longitude: 51.6210,
-    images: ["https://images.unsplash.com/photo-1613977257363-707ba9348227?w=600&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/1080721/pexels-photo-1080721.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=800"
+    ],
     createdAt: "2026-06-01T15:30:00Z",
-    isApproved: true
+    isApproved: true,
+    isBrokerVerified: true,
+    isLocalTrustEndorsed: true
   },
   {
     id: "prop-ir-3",
@@ -381,9 +395,15 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "خیابان فرشته، خیابان تختی، برج باغ فرشته، تهران",
     latitude: 35.7928,
     longitude: 51.4172,
-    images: ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.pexels.com/photos/1454806/pexels-photo-1454806.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/262048/pexels-photo-262048.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/2082087/pexels-photo-2082087.jpeg?auto=compress&cs=tinysrgb&w=800"
+    ],
     createdAt: "2026-06-01T18:00:00Z",
-    isApproved: true
+    isApproved: true,
+    isBrokerVerified: true,
+    isLocalTrustEndorsed: true
   },
   {
     id: "prop-1",
@@ -400,7 +420,10 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "Presnenskaya Naberezhnaya, 12, Moscow",
     latitude: 55.7485,
     longitude: 37.5376,
-    images: ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&auto=format&fit=crop&q=60"],
+    images: [
+      "https://images.pexels.com/photos/2724748/pexels-photo-2724748.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/271816/pexels-photo-271816.jpeg?auto=compress&cs=tinysrgb&w=800"
+    ],
     createdAt: "2026-05-20T10:00:00Z",
     isApproved: true
   },
@@ -419,7 +442,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "Street 15, Wazir Akbar Khan, Kabul",
     latitude: 34.5381,
     longitude: 69.1895,
-    images: ["https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&auto=format&fit=crop&q=60"],
+    images: ["https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"],
     createdAt: "2026-05-22T08:30:00Z",
     isApproved: true
   },
@@ -438,7 +461,10 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "F-7 Sector Main Boulevard, Islamabad",
     latitude: 33.7225,
     longitude: 73.0560,
-    images: ["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&auto=format&fit=crop&q=60"],
+    images: [
+      "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/37347/pexels-photo-37347.jpeg?auto=compress&cs=tinysrgb&w=800"
+    ],
     createdAt: "2026-05-24T12:00:00Z",
     isApproved: true
   },
@@ -457,7 +483,10 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "Frond D, Palm Jumeirah, Dubai",
     latitude: 25.1124,
     longitude: 55.1390,
-    images: ["https://images.unsplash.com/photo-1613977257363-707ba9348227?w=600&auto=format&fit=crop&q=60"],
+    images: [
+      "https://images.pexels.com/photos/221540/pexels-photo-221540.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "https://images.pexels.com/photos/2079234/pexels-photo-2079234.jpeg?auto=compress&cs=tinysrgb&w=800"
+    ],
     createdAt: "2026-05-25T14:45:00Z",
     isApproved: true
   },
@@ -476,7 +505,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "BG Kher Marg, Malabar Hill, Mumbai",
     latitude: 18.9548,
     longitude: 72.7985,
-    images: ["https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=60"],
+    images: ["https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800"],
     createdAt: "2026-05-26T09:15:00Z",
     isApproved: true
   },
@@ -495,7 +524,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "Cevdet Pasa Caddesi, Bebek, Istanbul",
     latitude: 41.0772,
     longitude: 29.0435,
-    images: ["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=60"],
+    images: ["https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg?auto=compress&cs=tinysrgb&w=800"],
     createdAt: "2026-05-27T11:00:00Z",
     isApproved: true
   },
@@ -514,7 +543,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "Friedrichstrasse 105, 10117 Berlin",
     latitude: 52.5206,
     longitude: 13.3889,
-    images: ["https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&auto=format&fit=crop&q=60"],
+    images: ["https://images.pexels.com/photos/584399/pexels-photo-584399.jpeg?auto=compress&cs=tinysrgb&w=800"],
     createdAt: "2026-05-27T16:20:00Z",
     isApproved: true
   },
@@ -533,7 +562,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "Marina Gate Tower A, Dubai Marina, Dubai",
     latitude: 25.0851,
     longitude: 55.1432,
-    images: ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&auto=format&fit=crop&q=60"],
+    images: ["https://images.pexels.com/photos/1571470/pexels-photo-1571470.jpeg?auto=compress&cs=tinysrgb&w=800"],
     createdAt: "2026-05-28T02:10:00Z",
     isApproved: true
   },
@@ -552,7 +581,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "Krestovsky Prospekt, 24, St. Petersburg",
     latitude: 59.9715,
     longitude: 30.2520,
-    images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&auto=format&fit=crop&q=60"],
+    images: ["https://images.pexels.com/photos/2599537/pexels-photo-2599537.jpeg?auto=compress&cs=tinysrgb&w=800"],
     createdAt: "2026-05-28T04:20:00Z",
     isApproved: true
   },
@@ -571,7 +600,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "Bagh-e-Dahna Boulevard, Herat",
     latitude: 34.3416,
     longitude: 62.2031,
-    images: ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&auto=format&fit=crop&q=60"],
+    images: ["https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=800"],
     createdAt: "2026-05-28T06:15:00Z",
     isApproved: true
   },
@@ -590,7 +619,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     address: "Marine Drive Promenade, Block 4, Clifton, Karachi",
     latitude: 24.8138,
     longitude: 67.0336,
-    images: ["https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=60"],
+    images: ["https://images.pexels.com/photos/1444416/pexels-photo-1444416.jpeg?auto=compress&cs=tinysrgb&w=800"],
     createdAt: "2026-05-28T08:45:00Z",
     isApproved: true
   },

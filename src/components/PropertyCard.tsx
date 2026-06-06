@@ -10,6 +10,7 @@ interface PropertyCardProps {
   lang: Language;
   onViewDetails: (property: Property) => void;
   onDelete?: (id: string) => void;
+  onEdit?: (property: Property) => void;
   showAdminControls?: boolean;
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
@@ -22,6 +23,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   lang,
   onViewDetails,
   onDelete,
+  onEdit,
   showAdminControls = false,
   isFavorite = false,
   onToggleFavorite,
@@ -173,22 +175,44 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
 
           {/* Pricing Row */}
-          <div className="flex items-center justify-between pb-1">
+          <div className="flex items-center justify-between pb-1 gap-2">
             <div className="text-sm font-black text-white">{formatPrice()}</div>
-            <button
-              onClick={() => onViewDetails(property)}
-              className="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-white px-3 py-1.5 rounded-xl transition font-medium"
-            >
-              {getTranslation(lang, "viewDetailsText", "View Details")}
-            </button>
+            <div className="flex gap-1.5">
+              {onEdit && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(property);
+                  }}
+                  className="text-xs bg-indigo-950/40 hover:bg-indigo-900 border border-indigo-900/30 text-indigo-400 hover:text-white px-2.5 py-1.5 rounded-xl transition font-medium cursor-pointer"
+                  title={lang === "fa" ? "ویرایش آگهی" : "Edit Listing"}
+                >
+                  ✏️
+                </button>
+              )}
+              <button
+                onClick={() => onViewDetails(property)}
+                className="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-white px-3 py-1.5 rounded-xl transition font-medium cursor-pointer"
+              >
+                {getTranslation(lang, "viewDetailsText", "View Details")}
+              </button>
+            </div>
           </div>
 
           {/* Admin Tools banner */}
           {showAdminControls && onDelete && (
-            <div className="flex justify-end gap-2 border-t border-slate-800 pt-3 mt-3">
+            <div className="flex justify-end gap-2 border-t border-slate-850 pt-3 mt-3">
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(property)}
+                  className="text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg font-bold cursor-pointer"
+                >
+                  ✏️ {lang === "fa" ? "ویرایش" : "Edit"}
+                </button>
+              )}
               <button
                 onClick={() => onDelete(property.id)}
-                className="text-[10px] bg-rose-950/60 hover:bg-rose-900 border border-rose-900/50 text-rose-300 px-3 py-1.5 rounded-lg font-bold"
+                className="text-[10px] bg-rose-950/60 hover:bg-rose-900 border border-rose-900/50 text-rose-300 px-3 py-1.5 rounded-lg font-bold cursor-pointer"
               >
                 ✕ {t.btnDelete}
               </button>

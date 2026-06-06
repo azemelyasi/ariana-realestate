@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { 
   Search, 
   Plus, 
@@ -10,20 +10,24 @@ import { COUNTRIES, INITIAL_PROPERTIES } from "./data";
 import { TRANSLATIONS, LANGUAGES_LIST, getTranslation } from "./i18n";
 
 import { LocalCalendar, toLocalizedDigits } from "./components/LocalCalendar";
-import { CadastralCalculator } from "./components/CadastralCalculator";
 import { AIConsultant } from "./components/AIConsultant";
 import { AboutView } from "./components/AboutView";
 import { ContactView } from "./components/ContactView";
 import { PropertyCard } from "./components/PropertyCard";
 import { PropertyDetailsModal } from "./components/PropertyDetailsModal";
 import { AddPropertyModal } from "./components/AddPropertyModal";
-import { SiteSettingsModal } from "./components/SiteSettingsModal";
-import { V2LiveCurrencyTerminal } from "./components/V2LiveCurrencyTerminal";
-import { DistrictIntelligence } from "./components/DistrictIntelligence";
-import { FavoritesManager } from "./components/FavoritesManager";
-import { ClientExportModal } from "./components/ClientExportModal";
-import { AIAndAutomationTab } from "./components/AIAndAutomationTab";
-import { SEOInspectorTab } from "./components/SEOInspectorTab";
+
+// Dynamic Code Splitting (Lazy-Loading) for Heavy Dashboard Tabs and Overlay Panels
+const CadastralCalculator = lazy(() => import("./components/CadastralCalculator").then(m => ({ default: m.CadastralCalculator })));
+const SiteSettingsModal = lazy(() => import("./components/SiteSettingsModal").then(m => ({ default: m.SiteSettingsModal })));
+const V2LiveCurrencyTerminal = lazy(() => import("./components/V2LiveCurrencyTerminal").then(m => ({ default: m.V2LiveCurrencyTerminal })));
+const DistrictIntelligence = lazy(() => import("./components/DistrictIntelligence").then(m => ({ default: m.DistrictIntelligence })));
+const FavoritesManager = lazy(() => import("./components/FavoritesManager").then(m => ({ default: m.FavoritesManager })));
+const ClientExportModal = lazy(() => import("./components/ClientExportModal").then(m => ({ default: m.ClientExportModal })));
+const AIAndAutomationTab = lazy(() => import("./components/AIAndAutomationTab").then(m => ({ default: m.AIAndAutomationTab })));
+const SEOInspectorTab = lazy(() => import("./components/SEOInspectorTab").then(m => ({ default: m.SEOInspectorTab })));
+const VisitorAnalyticsTab = lazy(() => import("./components/VisitorAnalyticsTab").then(m => ({ default: m.VisitorAnalyticsTab })));
+
 import arianaLogo from "./assets/images/ariana_premium_logo_1780405823718.png";
 
 const REGIONS = [
@@ -239,7 +243,7 @@ export default function App() {
   }, []);
 
   // Admin section state controllers
-  const [adminSubTab, setAdminSubTab] = useState<"property" | "site" | "disputes" | "automation" | "seo">("property");
+  const [adminSubTab, setAdminSubTab] = useState<"property" | "site" | "disputes" | "automation" | "seo" | "analytics">("property");
   
   // Disputes Filters and Selected IDs to prevent React Hook violations
   const [disputeFilterStatus, setDisputeFilterStatus] = useState<string>("all");
@@ -330,6 +334,105 @@ export default function App() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  // Secure In-App Chat system logic states
+  const [activeChatProperty, setActiveChatProperty] = useState<Property | null>(null);
+  const [showInboxModal, setShowInboxModal] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatRooms, setChatRooms] = useState<any[]>([]);
+  const [chatInputValue, setChatInputValue] = useState("");
+  const [visitorUserId] = useState(() => {
+    const saved = localStorage.getItem("melkban_visitor_user_id");
+    if (saved) return saved;
+    const newId = "visitor-" + Math.floor(Math.random() * 900000 + 100000);
+    localStorage.setItem("melkban_visitor_user_id", newId);
+    return newId;
+  });
+  const [visitorUserName] = useState(() => {
+    return localStorage.getItem("melkban_verified_broker_name") || "Kariene";
+  });
+
+  // Poll current room chat messages
+  useEffect(() => {
+    if (!activeChatProperty) return;
+    
+    let isMounted = true;
+    const fetchMsgs = async () => {
+      try {
+        const res = await fetch(`/api/chats?propertyId=${activeChatProperty.id}&userId=${visitorUserId}`);
+        const data = await res.json();
+        if (data && data.success && isMounted) {
+          setChatMessages(data.messages || []);
+        }
+      } catch (err) {
+        console.error("Error fetching chats:", err);
+      }
+    };
+    
+    fetchMsgs();
+    const interval = setInterval(fetchMsgs, 4000);
+    
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [activeChatProperty, visitorUserId]);
+
+  // Poll inbox chat rooms
+  useEffect(() => {
+    if (!showInboxModal) return;
+    let isMounted = true;
+    const fetchRooms = async () => {
+      try {
+        const res = await fetch(`/api/chats/rooms?userId=${visitorUserId}`);
+        const data = await res.json();
+        if (data && data.success && isMounted) {
+          setChatRooms(data.rooms || []);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchRooms();
+    const interval = setInterval(fetchRooms, 5000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [showInboxModal, visitorUserId]);
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!chatInputValue.trim() || !activeChatProperty) return;
+
+    const textToSend = chatInputValue.trim();
+    setChatInputValue("");
+
+    try {
+      const res = await fetch("/api/chats/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId: activeChatProperty.id,
+          propertyName: activeChatProperty.title,
+          senderId: visitorUserId,
+          senderName: visitorUserName || "Buyer Client",
+          text: textToSend
+        })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        // Fetch up-to-date conversation thread
+        const refreshRes = await fetch(`/api/chats?propertyId=${activeChatProperty.id}&userId=${visitorUserId}`);
+        const refreshData = await refreshRes.json();
+        if (refreshData && refreshData.success) {
+          setChatMessages(refreshData.messages || []);
+        }
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+  };
 
   // Progressive Web App (PWA) Install states and event listener
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -497,6 +600,60 @@ export default function App() {
     }
   }, [selectedProperty, searchQuery, properties]);
 
+  // Real-time visitor log tracker (script.js mock function)
+  useEffect(() => {
+    try {
+      if (!searchQuery && !selectedProperty) return;
+
+      const timer = setTimeout(() => {
+        const stored = localStorage.getItem("melkban_visitor_logs");
+        let parsed: any[] = [];
+        if (stored) {
+          try { parsed = JSON.parse(stored); } catch(e) {}
+        }
+
+        const newLog = {
+          id: `realtime-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          ip: "185.120.44.112", // Your simulated IP for development
+          countryCode: "IR",
+          countryName: "Iran (Local Web User)",
+          flag: "🇮🇷",
+          device: "Desktop",
+          os: "Windows 11",
+          browser: "Chrome",
+          searchText: searchQuery ? searchQuery : undefined,
+          viewedPropertyId: selectedProperty ? selectedProperty.id : undefined,
+          viewedPropertyTitle: selectedProperty ? selectedProperty.title : undefined,
+          durationSeconds: 0, // ACTIVE
+          referral: "Local Developer Interface",
+          isRealTime: true
+        };
+
+        // Avoid adding near duplicates too fast
+        const lastLog = parsed[0];
+        if (lastLog && (
+          (lastLog.searchText === newLog.searchText && lastLog.viewedPropertyId === newLog.viewedPropertyId)
+        )) {
+          return;
+        }
+
+        parsed.unshift(newLog);
+        if (parsed.length > 50) parsed.pop(); // Keep within limits
+        localStorage.setItem("melkban_visitor_logs", JSON.stringify(parsed));
+        // Dispatch simple storage event to notify other modules
+        window.dispatchEvent(new StorageEvent("storage", {
+          key: "melkban_visitor_logs",
+          newValue: JSON.stringify(parsed)
+        }));
+      }, 1500); // 1.5s delay to avoid too many writes
+
+      return () => clearTimeout(timer);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [searchQuery, selectedProperty]);
+
   // Disputes filtering
   const filteredDisputes = disputes.filter((d) => {
     const matchStatus = disputeFilterStatus === "all" || d.status === disputeFilterStatus;
@@ -631,59 +788,169 @@ export default function App() {
     return matchSearch && matchCountry && matchRegion && matchType && matchBeds;
   });
 
-  const handleAddProperty = (propData: Partial<Property>) => {
-    const newProp: Property = {
-      id: "prop-" + Date.now(),
-      title: propData.title || "Custom Residence",
-      description: propData.description || "",
-      type: propData.type || "sale",
-      pricePerSqm: propData.pricePerSqm,
-      totalPrice: propData.totalPrice,
-      rent: propData.rent,
-      deposit: propData.deposit,
-      area: propData.area || 100,
-      country: propData.country || "AE",
-      district: propData.district || "Dubai Marina",
-      bedrooms: propData.bedrooms !== undefined ? propData.bedrooms : 2,
-      phone: propData.phone || "+971501234567",
-      address: propData.address || "Main Blvd",
-      latitude: propData.latitude || 25.2048,
-      longitude: propData.longitude || 55.2708,
-      images: propData.images ?? ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&auto=format&fit=crop&q=60"],
-      heating: propData.heating,
-      cabinets: propData.cabinets,
-      cooling: propData.cooling,
-      deed: propData.deed,
-      brokerName: propData.brokerName,
-      brokerEmail: propData.brokerEmail,
-      brokerLicense: propData.brokerLicense,
-      brokerCardPhoto: propData.brokerCardPhoto,
-      agencyLogo: propData.agencyLogo,
-      isBrokerVerified: propData.isBrokerVerified ?? true,
-      isLocalTrustEndorsed: propData.isLocalTrustEndorsed,
-      createdAt: new Date().toISOString(),
-      isApproved: !settings.requireApproval
-    };
+  const [propertyToEdit, setPropertyToEdit] = useState<Property | null>(null);
 
-    setProperties([newProp, ...properties]);
+  // Load properties and synchronize dynamically on mount
+  useEffect(() => {
+    async function loadProperties() {
+      try {
+        const res = await fetch("/api/properties");
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.properties)) {
+          if (data.properties.length > 0) {
+            setProperties(data.properties);
+          } else {
+            // Seed disk initially from local storage or INITIAL_PROPERTIES
+            const source = localStorage.getItem("melkban_properties") 
+              ? JSON.parse(localStorage.getItem("melkban_properties") || "[]") 
+              : INITIAL_PROPERTIES;
+            
+            if (Array.isArray(source) && source.length > 0) {
+              setProperties(source);
+              // Save to backend disk persistent DB immediately so it is seeded
+              for (const prop of source) {
+                await fetch("/api/properties", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(prop)
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error synchronizing cloud properties with disk DB:", err);
+      }
+    }
+    loadProperties();
+  }, [settings.requireApproval]);
+
+  const handleAddProperty = async (propData: Partial<Property>) => {
+    try {
+      const isEdit = !!propData.id;
+      
+      const payload = {
+        ...propData,
+        // If it's not an edit, set isApproved, otherwise retain previous approval value
+        isApproved: isEdit ? propData.isApproved : !settings.requireApproval,
+        createdAt: propData.createdAt || new Date().toISOString()
+      };
+
+      const res = await fetch("/api/properties", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.properties)) {
+        setProperties(data.properties);
+        console.log("Synchronized persistent properties successfully!");
+      } else {
+        // Fallback locally
+        if (isEdit) {
+          setProperties(prev => prev.map(p => p.id === propData.id ? { ...p, ...propData } as Property : p));
+        } else {
+          const newId = "prop-" + Date.now();
+          const newProp: Property = {
+            id: newId,
+            title: propData.title || "Custom Residence",
+            description: propData.description || "",
+            type: propData.type || "sale",
+            pricePerSqm: propData.pricePerSqm,
+            totalPrice: propData.totalPrice,
+            rent: propData.rent,
+            deposit: propData.deposit,
+            area: propData.area || 100,
+            country: propData.country || "AE",
+            district: propData.district || "Dubai Marina",
+            bedrooms: propData.bedrooms !== undefined ? propData.bedrooms : 2,
+            phone: propData.phone || "+971501234567",
+            address: propData.address || "Main Blvd",
+            latitude: propData.latitude || 25.2048,
+            longitude: propData.longitude || 55.2708,
+            images: propData.images ?? ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&auto=format&fit=crop&q=60"],
+            heating: propData.heating,
+            cabinets: propData.cabinets,
+            cooling: propData.cooling,
+            deed: propData.deed,
+            brokerName: propData.brokerName,
+            brokerEmail: propData.brokerEmail,
+            brokerLicense: propData.brokerLicense,
+            brokerCardPhoto: propData.brokerCardPhoto,
+            agencyLogo: propData.agencyLogo,
+            isBrokerVerified: propData.isBrokerVerified ?? true,
+            isLocalTrustEndorsed: propData.isLocalTrustEndorsed,
+            createdAt: new Date().toISOString(),
+            isApproved: !settings.requireApproval
+          };
+          setProperties(prev => [newProp, ...prev]);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to post to properties database API, saving locally:", e);
+    }
+    
     setShowAddModal(false);
+    setPropertyToEdit(null); // Clear edit selection on close
   };
 
   const handleAddCalendarEvent = (newEvent: CalendarEvent) => {
     setCalendarEvents([newEvent, ...calendarEvents]);
   };
 
-  const handleDeleteProperty = (id: string) => {
+  const handleDeleteProperty = async (id: string) => {
+    try {
+      const res = await fetch("/api/properties/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.properties)) {
+        setProperties(data.properties);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
     setProperties(properties.filter((p) => p.id !== id));
   };
 
-  const handleApproveProperty = (id: string) => {
+  const handleApproveProperty = async (id: string) => {
+    try {
+      const res = await fetch("/api/properties/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.properties)) {
+        setProperties(data.properties);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
     setProperties(
       properties.map((p) => (p.id === id ? { ...p, isApproved: true } : p))
     );
   };
 
-  const handleRejectProperty = (id: string) => {
+  const handleRejectProperty = async (id: string) => {
+    try {
+      const res = await fetch("/api/properties/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.properties)) {
+        setProperties(data.properties);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
     setProperties(
       properties.map((p) => (p.id === id ? { ...p, isApproved: false } : p))
     );
@@ -845,6 +1112,12 @@ export default function App() {
             >
               📞 {t.navContact}
             </button>
+            <button
+              onClick={() => setShowInboxModal(true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold tracking-wide transition-all text-slate-400 hover:text-white hover:bg-slate-850 flex items-center gap-1 cursor-pointer"
+            >
+              💬 {lang === "fa" ? "گفتگوها" : "Inbox Chats"}
+            </button>
             {isAdminAuthenticated && (
               <button
                 onClick={() => setActiveTab("admin")}
@@ -957,7 +1230,9 @@ export default function App() {
             </div>
 
             {settings.appVersionMode === "v2" && (
-              <V2LiveCurrencyTerminal lang={lang} />
+              <Suspense fallback={<div className="h-24 bg-slate-900/40 rounded-3xl border border-slate-850 animate-pulse"></div>}>
+                <V2LiveCurrencyTerminal lang={lang} />
+              </Suspense>
             )}
 
             {/* GLOBAL REYAB REGION CATEGORIES (ZERO-CONFUSION GLOBAL DECK) */}
@@ -1146,6 +1421,10 @@ export default function App() {
                         onToggleFavorite={handleToggleFavorite}
                         isInClientBasket={clientBasket.includes(p.id)}
                         onToggleClientBasket={handleToggleClientBasket}
+                        onEdit={(prop) => {
+                          setPropertyToEdit(prop);
+                          setShowAddModal(true);
+                        }}
                       />
                     ))}
                   </div>
@@ -1155,7 +1434,9 @@ export default function App() {
               {/* Sidebar with Live AI consultation & Quick Calculator (Col span 4) */}
               <div className="lg:col-span-4 space-y-6">
                 <AIConsultant lang={lang} />
-                <CadastralCalculator lang={lang} isSidebar={true} />
+                <Suspense fallback={<div className="h-44 bg-slate-900/60 rounded-3xl border border-slate-850 animate-pulse"></div>}>
+                  <CadastralCalculator lang={lang} isSidebar={true} />
+                </Suspense>
               </div>
 
             </div>
@@ -1176,14 +1457,18 @@ export default function App() {
         {/* ------------------ VIEW 3: INTEGRATED APPRAISER FORM ------------------ */}
         {activeTab === "appraisal" && (
           <div className="animate-fade-in max-w-3xl mx-auto">
-            <CadastralCalculator lang={lang} />
+            <Suspense fallback={<div className="h-96 bg-slate-900/60 rounded-3xl border border-slate-850 animate-pulse"></div>}>
+              <CadastralCalculator lang={lang} />
+            </Suspense>
           </div>
         )}
 
         {/* ------------------ VIEW 7: DISTRICT INTELLIGENCE ANALYSIS ------------------ */}
         {activeTab === "intelligence" && (
           <div className="animate-fade-in max-w-5xl mx-auto">
-            <DistrictIntelligence lang={lang} />
+            <Suspense fallback={<div className="h-96 bg-slate-900/60 rounded-3xl border border-slate-850 animate-pulse"></div>}>
+              <DistrictIntelligence lang={lang} />
+            </Suspense>
           </div>
         )}
 
@@ -1395,6 +1680,17 @@ export default function App() {
                     }`}
                   >
                     🔍 {lang === "fa" ? "بررسی سئو و شبیه‌ساز گوگل" : "5. Google SEO & Crawl"}
+                  </button>
+                  <button
+                    onClick={() => setAdminSubTab("analytics")}
+                    className={`flex-1 min-w-[130px] py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer relative ${
+                      adminSubTab === "analytics" 
+                        ? "bg-indigo-600 text-white shadow" 
+                        : "text-violet-400 hover:text-white hover:bg-slate-850"
+                    }`}
+                  >
+                    📊 {lang === "fa" ? "آمار بازدید هوشمند" : "6. Visitor Analytics"}
+                    <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse"></span>
                   </button>
                 </div>
 
@@ -2203,6 +2499,14 @@ export default function App() {
                   </div>
                 )}
 
+                {adminSubTab === "analytics" && (
+                  <div className="space-y-6 animate-fade-in" id="cadastral-visitor-analytics-tab">
+                    <VisitorAnalyticsTab
+                      lang={lang}
+                    />
+                  </div>
+                )}
+
 
               </div>
             )}
@@ -2231,16 +2535,24 @@ export default function App() {
           lang={lang}
           onClose={() => setSelectedProperty(null)}
           onSubmitComplaint={handleAddDispute}
+          onStartChat={(p) => {
+            setSelectedProperty(null);
+            setActiveChatProperty(p);
+          }}
         />
       )}
 
       {showAddModal && (
         <AddPropertyModal
           lang={lang}
-          onClose={() => setShowAddModal(false)}
+          onClose={() => {
+            setShowAddModal(false);
+            setPropertyToEdit(null);
+          }}
           onAddProperty={handleAddProperty}
           settings={settings}
           userRole={userRole}
+          propertyToEdit={propertyToEdit || undefined}
         />
       )}
 
@@ -2251,6 +2563,165 @@ export default function App() {
           onClose={() => setShowSettingsModal(false)}
           onSaveSettings={handleSaveSettings}
         />
+      )}
+
+      {/* SECURE DIRECT CHAT SESSION DRAWER */}
+      {activeChatProperty && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative flex flex-col h-[75vh] sm:h-[65vh]">
+            {/* Chat Heading Banner */}
+            <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-indigo-900/60 rounded-xl flex items-center justify-center border border-indigo-500/20 text-lg">
+                  💬
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-indigo-400 max-w-[200px] truncate">{activeChatProperty.title}</h4>
+                  <p className="text-[10px] text-slate-400 font-semibold">
+                    {lang === "fa" ? `گفتگوی کاداستر با ${activeChatProperty.brokerName || 'مشاور معتبر'}` : `Chat with ${activeChatProperty.brokerName || 'Official Appraiser'}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveChatProperty(null)}
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-xl text-slate-400 transition cursor-pointer active:scale-95"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Chats List Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900/35 scrollbar-thin">
+              {chatMessages.length === 0 ? (
+                <div className="h-full flex flex-col justify-center items-center text-center p-6 text-slate-500">
+                  <span className="text-3xl mb-2">🤝</span>
+                  <p className="text-xs font-bold text-slate-300">{lang === 'fa' ? 'شروع گفتگوی با واسطه امن' : 'Secure In-App Chat Initiated'}</p>
+                  <p className="text-[10px] text-slate-400 italic max-w-xs mt-1">
+                    {lang === 'fa' ? 'مکالمات شما رمزگذاری شده و شماره تلفن با مالک به اشتراک گذاشته نمی‌شود.' : 'Your identity is fully masked. No personal tracking or numbers are shared.'}
+                  </p>
+                </div>
+              ) : (
+                chatMessages.map((msg: any) => {
+                  const isMe = msg.senderId === visitorUserId;
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isMe ? "items-end" : "items-start animate-fade-in"}`}
+                    >
+                      <div className="text-[9px] text-slate-500 mb-0.5 px-1 font-mono">{msg.senderName}</div>
+                      <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed font-bold tracking-wide ${
+                        isMe 
+                          ? "bg-indigo-650 text-white rounded-tr-none" 
+                          : "bg-slate-800 text-slate-200 rounded-tl-none border border-slate-750"
+                      }`}>
+                        {msg.text}
+                      </div>
+                      <div className="text-[8px] text-slate-600 px-1 mt-0.5 font-mono">
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Chat message input form */}
+            <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-800 bg-slate-950/40 flex gap-2">
+              <input
+                type="text"
+                value={chatInputValue}
+                onChange={(e) => setChatInputValue(e.target.value)}
+                placeholder={lang === "fa" ? "سوال خود را بنویسید..." : "Write your inquiry code..."}
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-bold"
+              />
+              <button
+                type="submit"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-4 py-2 rounded-xl text-xs transition cursor-pointer active:scale-95 shadow-md shadow-indigo-650/10"
+              >
+                {lang === "fa" ? "ارسال" : "Send"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* SECURE CHAT INBOX DRAWER DISPLAY */}
+      {showInboxModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative flex flex-col h-[60vh]">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📥</span>
+                <span className="text-sm font-black text-slate-200">
+                  {lang === "fa" ? "صندوق پیام‌های کاداستر" : "Secure In-App Inbox"}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowInboxModal(false)}
+                className="p-1.5 bg-slate-850 hover:bg-slate-850 hover:text-white rounded-xl text-slate-400 transition cursor-pointer active:scale-95"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* List of active rooms */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {chatRooms.length === 0 ? (
+                <div className="h-full flex flex-col justify-center items-center text-center p-6 text-slate-500">
+                  <span className="text-3xl mb-2">💬</span>
+                  <p className="text-xs font-bold text-slate-300">{lang === "fa" ? "هیچ گفتگویی آغاز نشده است" : "Your Secure Inbox is Empty"}</p>
+                  <p className="text-[10px] text-slate-400 max-w-xs mt-1">
+                    {lang === "fa"
+                      ? "جزییات هر آگهی را باز کرده و دکمه چت درون‌برنامه‌ای را بفشارید تا مکالمه فعال شود."
+                      : "Open any cadastre listing registry details card and press the direct in-app chat button to open."}
+                  </p>
+                </div>
+              ) : (
+                chatRooms.map((room: any) => (
+                  <button
+                    key={`${room.propertyId}-${room.visitorId}`}
+                    onClick={() => {
+                      const propObj = properties.find(pro => pro.id === room.propertyId);
+                      if (propObj) {
+                        setActiveChatProperty(propObj);
+                        setShowInboxModal(false);
+                      } else {
+                        // Create property placeholder if deleted
+                        setActiveChatProperty({
+                          id: room.propertyId,
+                          title: room.propertyName,
+                          description: "",
+                          type: "sale",
+                          pricePerSqm: 0,
+                          area: 0,
+                          country: "IR",
+                          district: "Tehran",
+                          bedrooms: 0,
+                          phone: "+9890000",
+                          address: "",
+                          images: [],
+                          createdAt: new Date().toISOString()
+                        });
+                        setShowInboxModal(false);
+                      }
+                    }}
+                    className="w-full text-right flex items-center justify-between p-3.5 bg-slate-950/40 hover:bg-slate-850 border border-slate-850 hover:border-slate-800 rounded-2xl transition cursor-pointer active:scale-[0.99] flex-row-reverse"
+                  >
+                    <span className="text-slate-500 text-xs text-left">➔</span>
+                    <div className="space-y-1 text-right">
+                      <div className="text-xs font-black text-indigo-400">{room.propertyName}</div>
+                      <div className="text-[10.5px] text-slate-350 truncate max-w-[280px] font-medium">{room.lastMessage}</div>
+                      <div className="text-[8.5px] text-slate-500 font-mono">
+                        {new Date(room.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(room.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Progressive Web App (PWA) Interactive Installation Guide Modal */}

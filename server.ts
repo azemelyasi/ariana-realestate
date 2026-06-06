@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import compression from "compression";
 import { GoogleGenAI } from "@google/genai";
 
 const app = express();
+app.use(compression()); // Ultra-high speed compression for fast loads on 3G/4G/5G mobile networks
 app.use(cors());
 app.use(express.json());
 
@@ -669,6 +671,451 @@ app.post("/api/automation/trigger-alert", (req, res) => {
   res.json({ status: "success", logMsg });
 });
 
+// ==========================================
+// PERSISTENT DATABASE & ACTIVE CHAT SYSTEM & SMS/OTP
+// ==========================================
+import fs from "fs";
+
+// 1. Properties persistence
+const propertiesFilePath = path.join(process.cwd(), "properties.json");
+const chatsFilePath = path.join(process.cwd(), "chats.json");
+
+// Helper to read properties safely
+function readPropertiesFromDisk(): any[] {
+  try {
+    if (fs.existsSync(propertiesFilePath)) {
+      const raw = fs.readFileSync(propertiesFilePath, "utf8");
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error("Error reading properties.json:", e);
+  }
+  return [];
+}
+
+// Helper to save properties safely
+function writePropertiesToDisk(properties: any[]) {
+  try {
+    fs.writeFileSync(propertiesFilePath, JSON.stringify(properties, null, 2), "utf8");
+  } catch (e) {
+    console.error("Error writing properties.json:", e);
+  }
+}
+
+// Helper to read chats safely
+function readChatsFromDisk(): any[] {
+  try {
+    if (fs.existsSync(chatsFilePath)) {
+      const raw = fs.readFileSync(chatsFilePath, "utf8");
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error("Error reading chats.json:", e);
+  }
+  return [];
+}
+
+// Helper to save chats safely
+function writeChatsToDisk(chats: any[]) {
+  try {
+    fs.writeFileSync(chatsFilePath, JSON.stringify(chats, null, 2), "utf8");
+  } catch (e) {
+    console.error("Error writing chats.json:", e);
+  }
+}
+
+// In-Memory map for active OTP codes to simulate SMS
+const activeOTPs = new Map<string, { code: string; expires: number }>();
+
+// APIs:
+// GET list of active properties
+app.get("/api/properties", (req, res) => {
+  const list = readPropertiesFromDisk();
+  res.json({ success: true, properties: list });
+});
+
+// POST add or edit a property listing
+app.post("/api/properties", (req, res) => {
+  const clientProp = req.body;
+  if (!clientProp || !clientProp.title) {
+    return res.status(400).json({ error: "Property title is mandatory" });
+  }
+
+  const list = readPropertiesFromDisk();
+  let updatedProp: any = { ...clientProp };
+
+  if (clientProp.id) {
+    // Edit flow
+    const index = list.findIndex((p: any) => p.id === clientProp.id);
+    if (index !== -1) {
+      updatedProp = {
+        ...list[index],
+        ...clientProp,
+        updatedAt: new Date().toISOString()
+      };
+      list[index] = updatedProp;
+      console.log(`Server: Modified existing listing ID: ${clientProp.id}`);
+    } else {
+      // If it has an ID but not found in the file, we treat it as new or restore it
+      list.unshift(updatedProp);
+    }
+  } else {
+    // Add new listing flow
+    updatedProp.id = "prop-" + Math.floor(Math.random() * 900000 + 100000);
+    updatedProp.createdAt = new Date().toISOString();
+    updatedProp.isApproved = false; // Requiring admin approval before general release
+    list.unshift(updatedProp);
+    console.log(`Server: Added a brand new listing ID: ${updatedProp.id}`);
+  }
+
+  writePropertiesToDisk(list);
+  res.json({ success: true, property: updatedProp, properties: list });
+});
+
+// POST delete listing
+app.post("/api/properties/delete", (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ error: "Property ID required" });
+
+  let list = readPropertiesFromDisk();
+  list = list.filter((p: any) => p.id !== id);
+  writePropertiesToDisk(list);
+
+  console.log(`Server: Deleted listing ID: ${id}`);
+  res.json({ success: true, properties: list });
+});
+
+// POST approve listing
+app.post("/api/properties/approve", (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ error: "Property ID required" });
+
+  const list = readPropertiesFromDisk();
+  const index = list.findIndex((p: any) => p.id === id);
+  if (index !== -1) {
+    list[index].isApproved = true;
+    writePropertiesToDisk(list);
+    console.log(`Server: Approved listing ID ${id}`);
+    return res.json({ success: true, property: list[index], properties: list });
+  }
+  res.status(404).json({ error: "Property ID not found" });
+});
+
+// POST reject listing
+app.post("/api/properties/reject", (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ error: "Property ID required" });
+
+  const list = readPropertiesFromDisk();
+  const index = list.findIndex((p: any) => p.id === id);
+  if (index !== -1) {
+    list[index].isApproved = false;
+    writePropertiesToDisk(list);
+    console.log(`Server: Rejected listing ID ${id}`);
+    return res.json({ success: true, property: list[index], properties: list });
+  }
+  res.status(404).json({ error: "Property ID not found" });
+});
+
+// GET rooms associated with a user
+app.get("/api/chats/rooms", (req, res) => {
+  const userId = req.query.userId as string;
+  if (!userId) return res.status(400).json({ error: "userId required" });
+
+  const chats = readChatsFromDisk();
+  
+  // Group chats into conversation threads based on (propertyId + participant)
+  const roomsMap = new Map<string, any>();
+
+  chats.forEach((msg: any) => {
+    // Thread key can be propertyId + visitorId
+    const isVisitor = msg.senderId.startsWith("visitor-") || msg.senderId === userId;
+    const visitorId = isVisitor ? (msg.senderId === "broker" ? "visitor-trial" : msg.senderId) : "visitor-trial";
+    const key = `${msg.propertyId}-${visitorId}`;
+
+    if (!roomsMap.has(key)) {
+      roomsMap.set(key, {
+        propertyId: msg.propertyId,
+        propertyName: msg.propertyName || "Property Inquiry",
+        visitorId: visitorId,
+        lastMessage: msg.text,
+        timestamp: msg.timestamp
+      });
+    } else {
+      const room = roomsMap.get(key);
+      if (new Date(msg.timestamp) > new Date(room.timestamp)) {
+        room.lastMessage = msg.text;
+        room.timestamp = msg.timestamp;
+      }
+    }
+  });
+
+  res.json({ success: true, rooms: Array.from(roomsMap.values()) });
+});
+
+// GET messages of a chat room
+app.get("/api/chats", (req, res) => {
+  const propertyId = req.query.propertyId as string;
+  const userId = req.query.userId as string;
+
+  if (!propertyId || !userId) {
+    return res.status(400).json({ error: "propertyId and userId required" });
+  }
+
+  const chats = readChatsFromDisk();
+  
+  // Filter messages for this specific property
+  const filtered = chats.filter((msg: any) => {
+    return msg.propertyId === propertyId;
+  });
+
+  res.json({ success: true, messages: filtered });
+});
+
+// POST send message
+app.post("/api/chats/send", async (req, res) => {
+  const { propertyId, propertyName, senderId, senderName, text } = req.body;
+  if (!propertyId || !senderId || !text) {
+    return res.status(400).json({ error: "Missing parameters" });
+  }
+
+  const chats = readChatsFromDisk();
+  const newMsg = {
+    id: "msg-" + Date.now() + Math.floor(Math.random() * 1000),
+    propertyId,
+    propertyName: propertyName || "Property listing inquiry",
+    senderId,
+    senderName: senderName || "Visitor",
+    text,
+    timestamp: new Date().toISOString()
+  };
+
+  chats.push(newMsg);
+
+  // If the message is from a visitor (not from broker), trigger Gemini AI Appraiser / Broker response
+  if (senderId !== "broker" && !senderId.startsWith("broker-")) {
+    const propertiesList = readPropertiesFromDisk();
+    const property = propertiesList.find((p: any) => p.id === propertyId);
+    
+    let aiResponseText = "";
+    if (ai) {
+      try {
+        const propDetails = property 
+          ? `عنوان ملک: ${property.title}
+             توضیحات: ${property.description}
+             نوع قرارداد: ${property.type === "rent" ? "اجاره یا رهن" : "فروشی"}
+             قیمت کل: ${property.totalPrice ? property.totalPrice.toLocaleString() + " افغانی / تومان / دلار" : "توافقی"}
+             قیمت هر متر مربع: ${property.pricePerSqm ? property.pricePerSqm.toLocaleString() : "ثبت نشده"}
+             منطقه/محله: ${property.district}
+             مساحت: ${property.area} متر مربع
+             تعداد اتاق خواب: ${property.bedrooms}
+             تلفن تماس مستقیم مالک: ${property.phone}
+             آدرس دقیق: ${property.address}
+             کشور: ${property.country}`
+          : `عنوان ملک: ${propertyName || "ملک سفارشی"}`;
+
+        const prompt = `یک خریدار یا مشتری ملک‌بان سوالی مطرح کرده است.
+سند مشخصات ملک برای ارجاع سیستم:
+${propDetails}
+
+سوال کاربر: "${text}"
+
+لطفاً از جایگاه «کارشناس رسمی کاداستر» (یا مشاور معتبر این ملک) پاسخی مستقیم، بسیار مودبانه، حرفه‌ای و دقیق (حداکثر در ۳ جمله) به زبان فارسی سلیس بنویسید.
+حتماً مستقیماً به ابهام کارشناسانه کاربر پاسخ دهید. مثلاً اگر مکان ملک، سند، متراژ، یا قیمت را پرسیده، جزئیات ملکی را ممیزی و بازگو کنید.
+از کلی‌گویی یا قالب‌های آماده پرهیز کنید. لحن تان به عنوان کارشناس رسمی ملک‌بان گرم باشد. از ستاره (*) یا بولد کردن در قالب چت استفاده نکنید.`;
+
+        const geminiRes = await ai.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: prompt,
+          config: {
+            systemInstruction: "You are the Official Real Estate Appraiser / Broker in Melkban (ملک‌بان). Provide direct, highly precise, helpful answers in elegant and professional Persian matching the property metadata. Maintain absolute confidentiality but explain properties accurately.",
+            temperature: 0.7,
+          }
+        });
+
+        if (geminiRes.text) {
+          aiResponseText = geminiRes.text.trim();
+        }
+      } catch (err) {
+        console.error("Error during real-time chats Gemini generation:", err);
+      }
+    }
+
+    // Fallback if AI was unavailable or had an error
+    if (!aiResponseText) {
+      const brokerReplyTemplates = [
+        `سلام و احترام! سند کاداستر و عریضه ملک شماره ${propertyId} کاملاً معتبر سنجش شده است. آیا تمایل به هماهنگی جهت بازدید حضوری دارید؟`,
+        `درود بر شما! اطلاعات محله ${property ? property.district : 'مورد نظر'} دقیقاً تایید شده است. برای اطلاعات ثبتی بیشتر در خدمت تان هستم.`,
+        `سلام بزرگوار! این ملک کاداستری دارای پتانسیل سرمایه‌گذاری فوق‌العاده است. آیا تمایل دارید مستقیم اطلاعات تماسی مالک را تقدیم تان کنم؟`
+      ];
+      aiResponseText = brokerReplyTemplates[Math.floor(Math.random() * brokerReplyTemplates.length)];
+    }
+
+    const brokerReplyMsg = {
+      id: "msg-broker-" + Date.now() + Math.floor(Math.random() * 1000),
+      propertyId,
+      propertyName: propertyName || "Property listing inquiry",
+      senderId: "broker",
+      senderName: (property && property.brokerName) ? property.brokerName : "Official Appraiser",
+      text: aiResponseText,
+      timestamp: new Date().toISOString()
+    };
+
+    chats.push(brokerReplyMsg);
+  }
+
+  writeChatsToDisk(chats);
+
+  console.log(`Server Chat: Message processed from ${senderName} (${senderId}) for ${propertyName}`);
+  res.json({ success: true, message: newMsg, chats: chats.filter((m: any) => m.propertyId === propertyId) });
+});
+
+// POST send SMS OTP code simulator
+app.post("/api/otp/send", (req, res) => {
+  const { phone } = req.body;
+  if (!phone) return res.status(400).json({ error: "Phone number is required" });
+
+  // Generate a random 6-digit verification code
+  const code = String(Math.floor(Math.random() * 900000 + 100000));
+  const expires = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
+
+  activeOTPs.set(phone, { code, expires });
+
+  const alertLogMsg = `📲 [SMS GATEWAY SIMULATION] Sent OTP code "${code}" to phone: ${phone}. Expires at ${new Date(expires).toLocaleTimeString()}`;
+  systemDiagnostics.emailAlertLogs.unshift(alertLogMsg);
+  console.log(alertLogMsg);
+
+  res.json({
+    success: true,
+    code,
+    message: `Verification code SMS sent successfully to ${phone} (Simulated)`
+  });
+});
+
+// POST verify SMS OTP code
+app.post("/api/otp/verify", (req, res) => {
+  const { phone, code } = req.body;
+  if (!phone || !code) {
+    return res.status(400).json({ error: "Phone and code required" });
+  }
+
+  const otpData = activeOTPs.get(phone);
+  if (!otpData) {
+    return res.status(400).json({ error: "No verification code sent for this number" });
+  }
+
+  if (Date.now() > otpData.expires) {
+    activeOTPs.delete(phone);
+    return res.status(400).json({ error: "Verification code expired. Please request a new one." });
+  }
+
+  if (otpData.code !== String(code).trim()) {
+    return res.status(400).json({ error: "Invalid verification code" });
+  }
+
+  // Clear OTP on successful verification
+  activeOTPs.delete(phone);
+  console.log(`Verification Server: Successfully verified phone number ${phone}`);
+  res.json({ success: true, verified: true });
+});
+
+// Centralized Dynamic SEO metadata dictionary for server-side HTML pre-rendering
+function injectDynamicSEO(html: string, propertyId: string | undefined): string {
+  if (!propertyId) return html;
+
+  const seoData: Record<string, { title: string, description: string, image?: string }> = {
+    "prop-ir-1": {
+      title: "پنت‌‌هاوس مجلل کلاسیک الهیه - آریانا رهنما | کاداستر رسمی شش‌دانگ ثبتی",
+      description: "یک شاهکار معماری لوکس در الهیه تهران. دارای مشاعات تمام هتلینگ، استخر معلق شیشه‌ای، روف گاردن اختصاصی ۳۶۰ درجه با دید ابدی کل پایتخت و تاییدیه کاداستر.",
+      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&auto=format&fit=crop&q=80"
+    },
+    "prop-ir-2": {
+      title: "ویلا مدرن استخردار لواسان - آریانا رهنما | نشان کاداستر طلایی کاتب",
+      description: "ویلا مسکونی فوق‌العاده مدرن با سند تک‌برگ کاداستر شش‌دانگ آماده انتقال در بهترین نقطه باستی هیلز لواسان بزرگ. دارای چهار خواب مستر، شاه‌نشین، سالن سینمای خصوصی و استخر آب‌گرم.",
+      image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&auto=format&fit=crop&q=80"
+    },
+    "prop-ir-3": {
+      title: "آپارتمان هوشمند برج باغ فرشته - آریانا رهنما | سند رسمی ثبتی کدرهگیری کاتب",
+      description: "آپارتمان ۳ خوابه مستر لوکس در برج باغ رویایی فرشته تهران. مجهز به متریال تمام برند وارداتی، تراس بزرگ بدون مشرف و روف گاردن هلندی با دید ابدی پارک و کوهستان.",
+      image: "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=600&auto=format&fit=crop&q=80"
+    },
+    "prop-1": {
+      title: "Sovereign Penthouse Presnensky Moscow - Ariana Rahnuma",
+      description: "Elite high-rise luxurious penthouse in Presnensky District with breathtaking Moscow horizon view.",
+      image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&auto=format&fit=crop&q=60"
+    },
+    "prop-2": {
+      title: "Wazir Akbar Khan Diplomatic Villa Kabul - Ariana Rahnuma",
+      description: "Secure premier diplomatic property located in Wazir Akbar Khan, Kabul. Perfect for international organizations.",
+      image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&auto=format&fit=crop&q=60"
+    },
+    "prop-3": {
+      title: "Bebek Bosphorus Waterfront Mansion Istanbul - Ariana Rahnuma",
+      description: "Magnificent historical waterside mansion overlooking the Bosphorus strait in elite Bebek, Istanbul.",
+      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=60"
+    }
+  };
+
+  const meta = seoData[propertyId];
+  if (!meta) return html;
+
+  let modifiedHtml = html;
+
+  // Replace default title
+  modifiedHtml = modifiedHtml.replace(
+    /<title>.*?<\/title>/gi,
+    `<title>${meta.title}</title>`
+  );
+
+  // Replace description meta tag
+  modifiedHtml = modifiedHtml.replace(
+    /<meta\s+name=["']description["']\s+content=["'].*?["']\s*\/?>/gi,
+    `<meta name="description" content="${meta.description}" />`
+  );
+
+  // Replace og:title
+  modifiedHtml = modifiedHtml.replace(
+    /<meta\s+property=["']og:title["']\s+content=["'].*?["']\s*\/?>/gi,
+    `<meta property="og:title" content="${meta.title}" />`
+  );
+
+  // Replace og:description
+  modifiedHtml = modifiedHtml.replace(
+    /<meta\s+property=["']og:description["']\s+content=["'].*?["']\s*\/?>/gi,
+    `<meta property="og:description" content="${meta.description}" />`
+  );
+
+  // Replace og:image if custom image exists
+  if (meta.image) {
+    modifiedHtml = modifiedHtml.replace(
+      /<meta\s+property=["']og:image["']\s+content=["'].*?["']\s*\/?>/gi,
+      `<meta property="og:image" content="${meta.image}" />`
+    );
+  }
+
+  // Inject a real JSON-LD Structured Data Schema dynamically as well
+  const schemaMarkup = `
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SingleFamilyResidence",
+    "name": "${meta.title}",
+    "description": "${meta.description}",
+    "url": "https://arianarahnuma.com/?property=${propertyId}",
+    "image": "${meta.image || ''}",
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "USD",
+      "price": "Contact Agent"
+    }
+  }
+  </script>
+  `;
+
+  modifiedHtml = modifiedHtml.replace("</head>", `${schemaMarkup}\n</head>`);
+  return modifiedHtml;
+}
+
 // Serve frontend assets or integrate Vite middleware based on environment
 async function setupFrontend() {
   const fs = await import("fs");
@@ -681,9 +1128,20 @@ async function setupFrontend() {
       if (req.url.startsWith("/api/")) {
         return res.status(404).json({ error: "Endpoint not found" });
       }
-      res.sendFile(path.join(distPath, "index.html"));
+      try {
+        const templatePath = path.join(distPath, "index.html");
+        let html = fs.readFileSync(templatePath, "utf-8");
+        
+        // Dynamic server-side SEO meta-tag insertion based on routing
+        const propertyId = req.query.property as string | undefined;
+        html = injectDynamicSEO(html, propertyId);
+        
+        res.status(200).set({ "Content-Type": "text/html" }).send(html);
+      } catch (e) {
+        res.sendFile(path.join(distPath, "index.html"));
+      }
     });
-    console.log("Ariana Server: Production static assets routing configured.");
+    console.log("Ariana Server: Production static assets routing configured with SSR-level Dynamic SEO Meta injection.");
   } else {
     try {
       // Use dynamic string literal to prevent bundlers (like esbuild) from resolving 'vite' in production setups
@@ -704,13 +1162,18 @@ async function setupFrontend() {
           const templatePath = path.join(process.cwd(), "index.html");
           let template = fs.readFileSync(templatePath, "utf-8");
           template = await vite.transformIndexHtml(url, template);
+          
+          // Dynamic server-side SEO pre-rendering/injection in development environment too
+          const propertyId = req.query.property as string | undefined;
+          template = injectDynamicSEO(template, propertyId);
+          
           res.status(200).set({ "Content-Type": "text/html" }).end(template);
         } catch (e) {
           next(e);
         }
       });
 
-      console.log("Ariana Server: Vite development middleware and SPA fallback mounted successfully.");
+      console.log("Ariana Server: Vite development middleware and SPA fallback mounted successfully with Dynamic SEO parsing.");
     } catch (e) {
       console.error("Ariana Server: Failed to mount Vite middleware: ", e);
       // Absolute fallback if everything else fails
