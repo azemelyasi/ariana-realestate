@@ -1411,22 +1411,31 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {filteredProperties.map((p) => (
-                      <PropertyCard
-                        key={p.id}
-                        property={p}
-                        lang={lang}
-                        onViewDetails={(prop) => setSelectedProperty(prop)}
-                        isFavorite={favorites.includes(p.id)}
-                        onToggleFavorite={handleToggleFavorite}
-                        isInClientBasket={clientBasket.includes(p.id)}
-                        onToggleClientBasket={handleToggleClientBasket}
-                        onEdit={(prop) => {
-                          setPropertyToEdit(prop);
-                          setShowAddModal(true);
-                        }}
-                      />
-                    ))}
+                    {filteredProperties.map((p) => {
+                      const storedEmail = localStorage.getItem("melkban_verified_broker_email");
+                      const storedName = localStorage.getItem("melkban_verified_broker_name");
+                      
+                      const canEdit = isAdminAuthenticated || 
+                        (storedEmail && p.brokerEmail && p.brokerEmail.trim().toLowerCase() === storedEmail.trim().toLowerCase()) ||
+                        (storedName && p.brokerName && p.brokerName.trim().toLowerCase() === storedName.trim().toLowerCase());
+
+                      return (
+                        <PropertyCard
+                          key={p.id}
+                          property={p}
+                          lang={lang}
+                          onViewDetails={(prop) => setSelectedProperty(prop)}
+                          isFavorite={favorites.includes(p.id)}
+                          onToggleFavorite={handleToggleFavorite}
+                          isInClientBasket={clientBasket.includes(p.id)}
+                          onToggleClientBasket={handleToggleClientBasket}
+                          onEdit={canEdit ? (prop) => {
+                            setPropertyToEdit(prop);
+                            setShowAddModal(true);
+                          } : undefined}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -2482,28 +2491,34 @@ export default function App() {
 
                 {adminSubTab === "automation" && (
                   <div className="space-y-6 animate-fade-in" id="cadastral-automation-agent-tab">
-                    <AIAndAutomationTab
-                      lang={lang}
-                      properties={properties}
-                      onPropertiesUpdated={(updated) => setProperties(updated)}
-                    />
+                    <Suspense fallback={<div className="h-44 bg-slate-900/60 rounded-3xl border border-slate-850 animate-pulse flex items-center justify-center text-slate-400 font-mono text-xs">Loading Autopilot Module...</div>}>
+                      <AIAndAutomationTab
+                        lang={lang}
+                        properties={properties}
+                        onPropertiesUpdated={(updated) => setProperties(updated)}
+                      />
+                    </Suspense>
                   </div>
                 )}
 
                 {adminSubTab === "seo" && (
                   <div className="space-y-6 animate-fade-in" id="cadastral-seo-inspector-tab">
-                    <SEOInspectorTab
-                      lang={lang}
-                      properties={properties}
-                    />
+                    <Suspense fallback={<div className="h-44 bg-slate-900/60 rounded-3xl border border-slate-850 animate-pulse flex items-center justify-center text-slate-400 font-mono text-xs">Loading SEO Module...</div>}>
+                      <SEOInspectorTab
+                        lang={lang}
+                        properties={properties}
+                      />
+                    </Suspense>
                   </div>
                 )}
 
                 {adminSubTab === "analytics" && (
                   <div className="space-y-6 animate-fade-in" id="cadastral-visitor-analytics-tab">
-                    <VisitorAnalyticsTab
-                      lang={lang}
-                    />
+                    <Suspense fallback={<div className="h-44 bg-slate-900/60 rounded-3xl border border-slate-850 animate-pulse flex items-center justify-center text-slate-400 font-mono text-xs">Loading Analytics Module...</div>}>
+                      <VisitorAnalyticsTab
+                        lang={lang}
+                      />
+                    </Suspense>
                   </div>
                 )}
 
@@ -2557,12 +2572,14 @@ export default function App() {
       )}
 
       {showSettingsModal && (
-        <SiteSettingsModal
-          lang={lang}
-          settings={settings}
-          onClose={() => setShowSettingsModal(false)}
-          onSaveSettings={handleSaveSettings}
-        />
+        <Suspense fallback={null}>
+          <SiteSettingsModal
+            lang={lang}
+            settings={settings}
+            onClose={() => setShowSettingsModal(false)}
+            onSaveSettings={handleSaveSettings}
+          />
+        </Suspense>
       )}
 
       {/* SECURE DIRECT CHAT SESSION DRAWER */}
@@ -2863,21 +2880,25 @@ export default function App() {
 
 
       {/* Persistent global bookmark manager & side-by-side matrices comparison tool */}
-      <FavoritesManager
-        favoriteIds={favorites}
-        properties={properties}
-        lang={lang}
-        onViewDetails={(prop) => setSelectedProperty(prop)}
-        onToggleFavorite={handleToggleFavorite}
-      />
+      <Suspense fallback={null}>
+        <FavoritesManager
+          favoriteIds={favorites}
+          properties={properties}
+          lang={lang}
+          onViewDetails={(prop) => setSelectedProperty(prop)}
+          onToggleFavorite={handleToggleFavorite}
+        />
+      </Suspense>
 
       {showClientExportModal && (
-        <ClientExportModal
-          lang={lang}
-          onClose={() => setShowClientExportModal(false)}
-          selectedProperties={properties.filter(p => clientBasket.includes(p.id))}
-          onRemoveFromBasket={handleToggleClientBasket}
-        />
+        <Suspense fallback={null}>
+          <ClientExportModal
+            lang={lang}
+            onClose={() => setShowClientExportModal(false)}
+            selectedProperties={properties.filter(p => clientBasket.includes(p.id))}
+            onRemoveFromBasket={handleToggleClientBasket}
+          />
+        </Suspense>
       )}
 
       {/* Floating Client Proposal / Export Basket Studio Activation Trigger */}
