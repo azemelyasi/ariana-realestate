@@ -7,38 +7,48 @@ interface V2LiveCurrencyTerminalProps {
   lang: Language;
   subscriptionTier: "free" | "pro";
   onUpgradeClick: () => void;
+  rates?: Record<string, number>;
 }
 
 export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
   lang,
   subscriptionTier,
-  onUpgradeClick
+  onUpgradeClick,
+  rates: passedRates
 }) => {
-  const [rates, setRates] = useState<Record<string, number>>({
-    USD: 1,
-    AED: 3.673,
-    SAR: 3.75,
-    QAR: 3.64,
-    KWD: 0.307,
-    BHD: 0.376,
-    OMR: 0.385,
-    IQD: 1310,
-    EGP: 47.85,
-    SYP: 13000,
-    LBP: 89500,
-    JOD: 0.709,
-    MAD: 10.02,
-    YER: 250,
-    LYD: 4.84,
-    SDG: 601,
-    TND: 3.12,
-    DZD: 134.2,
-    RUB: 91.45,
-    AFN: 70.80,
-    PKR: 278.10,
-    INR: 83.35,
-    TRY: 32.42,
-    EUR: 0.922,
+  const [rates, setRates] = useState<Record<string, number>>(() => {
+    if (passedRates) return passedRates;
+    return {
+      USD: 1,
+      USDT: 1,
+      IRR: 1375125,
+      TMN: 137512,
+      AED: 3.673,
+      SAR: 3.75,
+      QAR: 3.64,
+      KWD: 0.307,
+      BHD: 0.376,
+      OMR: 0.385,
+      IQD: 1310,
+      EGP: 47.85,
+      SYP: 13000,
+      LBP: 89500,
+      JOD: 0.709,
+      MAD: 10.02,
+      YER: 250,
+      LYD: 4.84,
+      SDG: 601,
+      TND: 3.12,
+      DZD: 134.2,
+      RUB: 91.45,
+      AFN: 62.50,
+      PKR: 278.10,
+      INR: 83.35,
+      TRY: 33.50,
+      EUR: 0.922,
+      CNY: 7.24,
+      JPY: 156.40,
+    };
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +56,12 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
   const [lastUpdated, setLastUpdated] = useState<string>("");
 
   useEffect(() => {
+    if (passedRates) {
+      setRates(passedRates);
+      setIsLive(true);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     fetch("/api/currency/rates")
       .then((res) => res.json())
@@ -54,12 +70,19 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
           setRates((prev) => ({
             ...prev,
             ...data.rates,
-            // Ensure Toman gets processed correctly relative to USD custom rate
             USD: 1,
+            USDT: 1,
+            IRR: data.rates.IRR || 638000,
+            TMN: data.rates.TMN || (data.rates.IRR ? Math.round(data.rates.IRR / 10) : 63800),
           }));
           setIsLive(true);
           const now = new Date();
           setLastUpdated(now.toLocaleTimeString());
+          try {
+            localStorage.setItem("melkban_rates", JSON.stringify(data.rates));
+          } catch (e) {
+            // ignore
+          }
         }
         setIsLoading(false);
       })
@@ -67,7 +90,7 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         console.error("Live OpenExchange rates failed:", err);
         setIsLoading(false);
       });
-  }, []);
+  }, [passedRates]);
 
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
 
@@ -129,13 +152,14 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
       };
     }
     
-    if (currencyCode === "IRR") {
+    if (currencyCode === "IRR" || currencyCode === "TMN") {
+      const freeMarketRate = rates["TMN"] || (rates["IRR"] ? Math.round(rates["IRR"] / 10) : 63800);
       return {
         isDual: true,
-        centralBank: 42000,
-        freeMarket: standardRate || 615000,
-        cbLabel: lang === "fa" ? "نرخ دستوری دولتی (پایه ۴۲,۰۰۰)" : "Official Pegged Rate",
-        fmLabel: lang === "fa" ? "نرخ صرافی آزاد (تومان ایران)" : "Free Market Toman Rate",
+        centralBank: 4200, // 42000 IRR = 4200 Toman
+        freeMarket: freeMarketRate,
+        cbLabel: lang === "fa" ? "نرخ کاذب دولتی (۴,۲۰۰ تومان)" : "Official Peg Rate (4,200 Toman)",
+        fmLabel: lang === "fa" ? "نرخ واقعی صرافی آزاد (تومان)" : "Free Market Toman Rate",
       };
     }
     

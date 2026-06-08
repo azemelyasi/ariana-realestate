@@ -7,9 +7,10 @@ import { CALC_TRANSLATIONS } from "./calculatorTranslations";
 interface CadastralCalculatorProps {
   lang: Language;
   isSidebar?: boolean;
+  rates?: Record<string, number>;
 }
 
-export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, isSidebar = false }) => {
+export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, isSidebar = false, rates: passedRates }) => {
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
   const tc = CALC_TRANSLATIONS[lang] || CALC_TRANSLATIONS.en!;
 
@@ -68,15 +69,20 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
   const estimatedTotal = estimatedPerSqm * area;
 
   // --- Tab 2: Live Forex States ---
-  const [rates, setRates] = useState<Record<string, number>>({
-    USD: 1,
-    AED: 3.673,
-    RUB: 91.45,
-    AFN: 70.80,
-    PKR: 278.10,
-    INR: 83.35,
-    TRY: 32.42,
-    EUR: 0.922,
+  const [rates, setRates] = useState<Record<string, number>>(() => {
+    if (passedRates) return passedRates;
+    return {
+      USD: 1,
+      AED: 3.673,
+      RUB: 91.45,
+      AFN: 62.50,
+      PKR: 278.10,
+      INR: 83.35,
+      TRY: 33.50,
+      EUR: 0.922,
+      IRR: 1375125,
+      TMN: 137512,
+    };
   });
   const [isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +93,12 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
 
   // Fetch Live Rates
   useEffect(() => {
+    if (passedRates) {
+      setRates(passedRates);
+      setIsLive(true);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     fetch("/api/currency/rates")
       .then((res) => res.json())
@@ -96,12 +108,13 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
             USD: 1,
             AED: data.rates.AED || 3.67,
             RUB: data.rates.RUB || 91.5,
-            AFN: data.rates.AFN || 70.8,
+            AFN: data.rates.AFN || 62.50,
             PKR: data.rates.PKR || 278.2,
             INR: data.rates.INR || 83.3,
-            TRY: data.rates.TRY || 32.4,
+            TRY: data.rates.TRY || 33.5,
             EUR: data.rates.EUR || 0.92,
-            IRR: data.rates.IRR || 615000,
+            IRR: data.rates.IRR || 1375125,
+            TMN: data.rates.TMN || (data.rates.IRR ? Math.round(data.rates.IRR / 10) : 137512),
           });
           setIsLive(true);
         }
@@ -111,7 +124,7 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
         console.error("Fallback registry rates active:", err);
         setIsLoading(false);
       });
-  }, []);
+  }, [passedRates]);
 
   // Sync country code district on country change
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

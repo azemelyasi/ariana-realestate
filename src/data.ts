@@ -319,8 +319,8 @@ export const COUNTRIES: CountryConfig[] = [
     nameFa: "ایران",
     nameLocal: "ایران",
     flag: "🇮🇷",
-    currency: "IRR",
-    currencySymbol: "ریال",
+    currency: "TMN",
+    currencySymbol: "تومان",
     baseExchangeRate: 1,
     center: { lat: 35.6892, lng: 51.3890 },
     districts: ["الهیه (Elahiyeh)", "فرشته (Fereshteh)", "نیاوران (Niavaran)", "زعفرانیه (Zaferanieh)", "لواسان (Lavasan)", "کمرانیه (Kamranieh)"]

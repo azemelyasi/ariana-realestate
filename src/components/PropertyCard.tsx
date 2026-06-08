@@ -16,6 +16,7 @@ interface PropertyCardProps {
   onToggleFavorite?: (id: string) => void;
   isInClientBasket?: boolean;
   onToggleClientBasket?: (id: string) => void;
+  rates?: Record<string, number>;
 }
 
 export const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -29,27 +30,133 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   onToggleFavorite,
   isInClientBasket = false,
   onToggleClientBasket,
+  rates: passedRates,
 }) => {
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
   const c = COUNTRIES.find((cnt) => cnt.code === property.country) || COUNTRIES[0];
 
+  const DEFAULT_RATES: Record<string, number> = {
+    USD: 1,
+    USDT: 1,
+    AED: 3.673,
+    SAR: 3.75,
+    QAR: 3.64,
+    KWD: 0.307,
+    BHD: 0.376,
+    OMR: 0.385,
+    IQD: 1310,
+    EGP: 47.85,
+    SYP: 13000,
+    LBP: 89500,
+    JOD: 0.709,
+    MAD: 10.02,
+    YER: 250,
+    LYD: 4.84,
+    SDG: 601,
+    TND: 3.12,
+    DZD: 134.2,
+    RUB: 91.45,
+    AFN: 62.50,
+    PKR: 278.10,
+    INR: 83.35,
+    TRY: 33.50,
+    EUR: 0.922,
+    CNY: 7.24,
+    JPY: 156.40,
+    IRR: 1375125,
+    TMN: 137512,
+  };
+
+  const getFidelityRates = (): Record<string, number> => {
+    if (passedRates) {
+      return { ...DEFAULT_RATES, ...passedRates };
+    }
+    try {
+      const saved = localStorage.getItem("melkban_rates");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") {
+          return { ...DEFAULT_RATES, ...parsed };
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    return DEFAULT_RATES;
+  };
+
   const formatPrice = () => {
+    const ratesList = getFidelityRates();
+    const isIran = property.country === "IR" || c.currency === "TMN" || c.currency === "IRR";
+
     if (property.type === "sale") {
-      const priceVal = property.totalPrice || ((property.pricePerSqm || 0) * property.area);
-      return `${toLocalizedDigits(priceVal.toLocaleString(), lang)} ${c.currency}`;
+      const priceValUSD = property.totalPrice || ((property.pricePerSqm || 0) * property.area);
+      
+      if (isIran) {
+        const rateToman = ratesList["TMN"] || (ratesList["IRR"] / 10) || 63800;
+        const priceValToman = priceValUSD * rateToman;
+        if (lang === "fa") {
+          return `${toLocalizedDigits(Math.round(priceValToman).toLocaleString(), lang)} تومان (معادل ${toLocalizedDigits(priceValUSD.toLocaleString(), lang)} $)`;
+        } else {
+          return `${Math.round(priceValToman).toLocaleString()} Toman (Equiv ${priceValUSD.toLocaleString()} $)`;
+        }
+      } else {
+        const rateLocal = ratesList[c.currency] || c.baseExchangeRate || 1;
+        const priceValLocal = priceValUSD * rateLocal;
+        return `${toLocalizedDigits(Math.round(priceValLocal).toLocaleString(), lang)} ${c.currencySymbol} (${toLocalizedDigits(priceValUSD.toLocaleString(), lang)} $)`;
+      }
     } else if (property.type === "rent") {
-      return `${t.labelRent || "Rent"}: ${toLocalizedDigits((property.rent || 0).toLocaleString(), lang)} ${c.currency}`;
+      const rentUSD = property.rent || 0;
+      if (isIran) {
+        const rateToman = ratesList["TMN"] || (ratesList["IRR"] / 10) || 63800;
+        const rentToman = rentUSD * rateToman;
+        if (lang === "fa") {
+          return `${t.labelRent || "اجاره"}: ${toLocalizedDigits(Math.round(rentToman).toLocaleString(), lang)} تومان/ماه (معادل ${toLocalizedDigits(rentUSD.toLocaleString(), lang)} $)`;
+        } else {
+          return `${t.labelRent || "Rent"}: ${Math.round(rentToman).toLocaleString()} Toman/m (Equiv ${rentUSD.toLocaleString()} $)`;
+        }
+      } else {
+        const rateLocal = ratesList[c.currency] || c.baseExchangeRate || 1;
+        const rentLocal = rentUSD * rateLocal;
+        return `${t.labelRent || "Rent"}: ${toLocalizedDigits(Math.round(rentLocal).toLocaleString(), lang)} ${c.currencySymbol} (${toLocalizedDigits(rentUSD.toLocaleString(), lang)} $)`;
+      }
     } else {
       // mortgage or rent_mortgage
-      return `${t.labelDeposit || "Deposit"}: ${toLocalizedDigits((property.deposit || 0).toLocaleString(), lang)} ${c.currency} ${
-        property.rent ? `+ ${toLocalizedDigits(property.rent.toLocaleString(), lang)}/m` : ""
-      }`;
+      const depositUSD = property.deposit || 0;
+      const rentUSD = property.rent || 0;
+      if (isIran) {
+        const rateToman = ratesList["TMN"] || (ratesList["IRR"] / 10) || 63800;
+        const depositToman = depositUSD * rateToman;
+        const rentToman = rentUSD * rateToman;
+        if (lang === "fa") {
+          return `${t.labelDeposit || "رهن"}: ${toLocalizedDigits(Math.round(depositToman).toLocaleString(), lang)} تومان ${
+            rentUSD ? `+ اجاره: ${toLocalizedDigits(Math.round(rentToman).toLocaleString(), lang)} تومان` : ""
+          } (${toLocalizedDigits(depositUSD.toLocaleString(), lang)} $ ${rentUSD ? `+ ${toLocalizedDigits(rentUSD.toLocaleString(), lang)} $/m` : ""})`;
+        } else {
+          return `${t.labelDeposit || "Deposit"}: ${Math.round(depositToman).toLocaleString()} Toman ${
+            rentUSD ? `+ Rent: ${Math.round(rentToman).toLocaleString()}/m` : ""
+          } (Equiv ${depositUSD.toLocaleString()} $ ${rentUSD ? `+ ${rentUSD.toLocaleString()}/m` : ""})`;
+        }
+      } else {
+        const rateLocal = ratesList[c.currency] || c.baseExchangeRate || 1;
+        const depositLocal = depositUSD * rateLocal;
+        const rentLocal = rentUSD * rateLocal;
+        return `${t.labelDeposit || "Deposit"}: ${toLocalizedDigits(Math.round(depositLocal).toLocaleString(), lang)} ${c.currencySymbol} ${
+          rentUSD ? `+ ${toLocalizedDigits(Math.round(rentLocal).toLocaleString(), lang)}/m` : ""
+        } (${toLocalizedDigits(depositUSD.toLocaleString(), lang)} $ ${rentUSD ? `+ ${toLocalizedDigits(rentUSD.toLocaleString(), lang)} $/m` : ""})`;
+      }
     }
   };
 
   const getSqmPriceText = () => {
     if (property.pricePerSqm) {
-      return `${toLocalizedDigits(property.pricePerSqm.toLocaleString(), lang)} ${c.currency}/${getTranslation(lang, "perSqmText", "sqm")}`;
+      const ratesList = getFidelityRates();
+      const isIran = property.country === "IR" || c.currency === "TMN" || c.currency === "IRR";
+      const rateLocal = isIran ? (ratesList["TMN"] || (ratesList["IRR"] / 10) || 63800) : (ratesList[c.currency] || c.baseExchangeRate || 1);
+      const valLocal = property.pricePerSqm * rateLocal;
+      const currencyLabel = isIran ? (lang === "fa" ? "تومان" : "Toman") : c.currencySymbol;
+      
+      return `${toLocalizedDigits(Math.round(valLocal).toLocaleString(), lang)} ${currencyLabel}/${getTranslation(lang, "perSqmText", "sqm")} (${toLocalizedDigits(property.pricePerSqm.toLocaleString(), lang)} $/${getTranslation(lang, "perSqmText", "sqm")})`;
     }
     return "";
   };

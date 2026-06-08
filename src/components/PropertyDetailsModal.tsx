@@ -12,40 +12,49 @@ interface PropertyDetailsModalProps {
   onClose: () => void;
   onSubmitComplaint?: (report: DisputeReport) => void;
   onStartChat?: (property: Property) => void;
+  rates?: Record<string, number>;
 }
 
-export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ property, lang, onClose, onSubmitComplaint, onStartChat }) => {
+export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ property, lang, onClose, onSubmitComplaint, onStartChat, rates: passedRates }) => {
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
   const c = COUNTRIES.find((cnt) => cnt.code === property.country) || COUNTRIES[0];
 
   const calculatedTotalPrice = property.totalPrice || ((property.pricePerSqm || 0) * (property.area || 0));
 
   // States for Live Currencies
-  const [rates, setRates] = useState<Record<string, number>>({
-    USD: 1,
-    AED: 3.673,
-    SAR: 3.75,
-    QAR: 3.64,
-    KWD: 0.307,
-    BHD: 0.376,
-    OMR: 0.385,
-    IQD: 1310,
-    EGP: 47.85,
-    SYP: 13000,
-    LBP: 89500,
-    JOD: 0.709,
-    MAD: 10.02,
-    YER: 250,
-    LYD: 4.84,
-    SDG: 601,
-    TND: 3.12,
-    DZD: 134.2,
-    RUB: 91.45,
-    AFN: 70.80,
-    PKR: 278.10,
-    INR: 83.35,
-    TRY: 32.42,
-    EUR: 0.922,
+  const [rates, setRates] = useState<Record<string, number>>(() => {
+    if (passedRates) return passedRates;
+    return {
+      USD: 1,
+      USDT: 1,
+      IRR: 1375125,
+      TMN: 137512,
+      AED: 3.673,
+      SAR: 3.75,
+      QAR: 3.64,
+      KWD: 0.307,
+      BHD: 0.376,
+      OMR: 0.385,
+      IQD: 1310,
+      EGP: 47.85,
+      SYP: 13000,
+      LBP: 89500,
+      JOD: 0.709,
+      MAD: 10.02,
+      YER: 250,
+      LYD: 4.84,
+      SDG: 601,
+      TND: 3.12,
+      DZD: 134.2,
+      RUB: 91.45,
+      AFN: 62.50,
+      PKR: 278.10,
+      INR: 83.35,
+      TRY: 33.50,
+      EUR: 0.922,
+      CNY: 7.24,
+      JPY: 156.40,
+    };
   });
 
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(false);
@@ -137,6 +146,11 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
   };
 
   useEffect(() => {
+    if (passedRates) {
+      setRates(passedRates);
+      setIsLoadingCurrencies(false);
+      return;
+    }
     setIsLoadingCurrencies(true);
     fetch("/api/currency/rates")
       .then((res) => res.json())
@@ -146,7 +160,15 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
             ...prev,
             ...data.rates,
             USD: 1,
+            USDT: 1,
+            IRR: data.rates.IRR || 638000,
+            TMN: data.rates.TMN || (data.rates.IRR ? Math.round(data.rates.IRR / 10) : 63800),
           }));
+          try {
+            localStorage.setItem("melkban_rates", JSON.stringify(data.rates));
+          } catch (e) {
+            // ignore
+          }
         }
         setIsLoadingCurrencies(false);
       })
@@ -154,22 +176,14 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
         console.error("Live OpenExchange rates failed in Details:", err);
         setIsLoadingCurrencies(false);
       });
-  }, []);
+  }, [passedRates]);
 
   // Calculate dynamic conversions for this property's total price
   const propertyCurrency = c.currency;
-  let priceInUSD = 1;
-  const rateToUSD = rates[propertyCurrency] || c.baseExchangeRate || 1;
-  priceInUSD = calculatedTotalPrice / (rateToUSD === 15300 ? 3.673 : rateToUSD); // Safely normalize AED/SAR etc
-  
-  // Quick override handle for common country-base calculations to keep it flawless
-  if (propertyCurrency === "AED") priceInUSD = calculatedTotalPrice / 3.673;
-  else if (propertyCurrency === "SAR") priceInUSD = calculatedTotalPrice / 3.750;
-  else if (propertyCurrency === "AFN") priceInUSD = calculatedTotalPrice / 70.80;
-  else if (propertyCurrency === "RUB") priceInUSD = calculatedTotalPrice / 91.45;
+  const priceInUSD = calculatedTotalPrice; // Database listings reside in USD/USDT baseline scales
 
   const getConvertedPriceValue = (targetCode: string) => {
-    if (targetCode === "USDT") {
+    if (targetCode === "USDT" || targetCode === "USD") {
       return priceInUSD;
     }
     const targetRate = rates[targetCode] || 1;
@@ -178,8 +192,9 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
 
   const exchangeMatrix = [
     { code: "USD", flag: "🇺🇸", nameFa: "دلار آمریکا", nameEn: "US Dollar", symbol: "$" },
-    { code: "AFN", flag: "🇦🇫", nameFa: "افغانی افغانستان", nameEn: "Afghan Afghani", symbol: "؋" },
+    { code: "TMN", flag: "🇮🇷", nameFa: "تومان ایران (TMN)", nameEn: "Iranian Toman", symbol: "تومان" },
     { code: "USDT", flag: "🟢", nameFa: "تتر تتر (USDT)", nameEn: "Tether (USDT)", symbol: "USDT" },
+    { code: "AFN", flag: "🇦🇫", nameFa: "افغانی افغانستان", nameEn: "Afghan Afghani", symbol: "؋" },
     { code: "AED", flag: "🇦🇪", nameFa: "درهم امارات", nameEn: "UAE Dirham", symbol: "د.إ" },
     { code: "SAR", flag: "🇸🇦", nameFa: "ریال سعودی", nameEn: "Saudi Riyal", symbol: "ر.س" },
     { code: "QAR", flag: "🇶🇦", nameFa: "ریال قطر", nameEn: "Qatari Riyal", symbol: "ر.ق" },
@@ -332,8 +347,23 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
               <span className="text-[9px] text-slate-500 uppercase font-black tracking-widest font-mono">
                 {getTranslation(lang, "totalEvaluation", "Total Price")}
               </span>
-              <span className="text-base font-black text-indigo-400 font-mono mt-1">
-                {toLocalizedDigits(calculatedTotalPrice.toLocaleString(), lang)} {c.currency}
+              <span className="text-base font-black text-indigo-400 font-mono mt-1 leading-normal">
+                {(() => {
+                  const isIran = property.country === "IR" || c.currency === "TMN" || c.currency === "IRR";
+                  if (isIran) {
+                    const rateToman = rates["TMN"] || (rates["IRR"] / 10) || 63800;
+                    const priceValToman = calculatedTotalPrice * rateToman;
+                    if (lang === "fa") {
+                      return `${toLocalizedDigits(Math.round(priceValToman).toLocaleString(), lang)} تومان (معادل ${toLocalizedDigits(calculatedTotalPrice.toLocaleString(), lang)} $)`;
+                    } else {
+                      return `${Math.round(priceValToman).toLocaleString()} Toman (Equiv ${calculatedTotalPrice.toLocaleString()} $)`;
+                    }
+                  } else {
+                    const rateLocal = rates[c.currency] || c.baseExchangeRate || 1;
+                    const priceValLocal = calculatedTotalPrice * rateLocal;
+                    return `${toLocalizedDigits(Math.round(priceValLocal).toLocaleString(), lang)} ${c.currencySymbol} (${toLocalizedDigits(calculatedTotalPrice.toLocaleString(), lang)} $)`;
+                  }
+                })()}
               </span>
             </div>
 

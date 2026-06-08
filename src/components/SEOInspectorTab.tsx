@@ -79,7 +79,7 @@ export const SEOInspectorTab: React.FC<SEOInspectorTabProps> = ({
       "offers": {
         "@type": "Offer",
         "price": p.totalPrice,
-        "priceCurrency": p.country === "IR" ? "IRR" : "AED"
+        "priceCurrency": p.country === "IR" ? "TMN" : "AED"
       },
       "image": p.images[0]
     };

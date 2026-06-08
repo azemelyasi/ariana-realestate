@@ -18,10 +18,11 @@ import { PropertyDetailsModal } from "./components/PropertyDetailsModal";
 import { AddPropertyModal } from "./components/AddPropertyModal";
 import { GoldUpgradeModal } from "./components/GoldUpgradeModal";
 
+import { CadastralCalculator } from "./components/CadastralCalculator";
+import { V2LiveCurrencyTerminal } from "./components/V2LiveCurrencyTerminal";
+
 // Dynamic Code Splitting (Lazy-Loading) for Heavy Dashboard Tabs and Overlay Panels
-const CadastralCalculator = lazy(() => import("./components/CadastralCalculator").then(m => ({ default: m.CadastralCalculator })));
 const SiteSettingsModal = lazy(() => import("./components/SiteSettingsModal").then(m => ({ default: m.SiteSettingsModal })));
-const V2LiveCurrencyTerminal = lazy(() => import("./components/V2LiveCurrencyTerminal").then(m => ({ default: m.V2LiveCurrencyTerminal })));
 const DistrictIntelligence = lazy(() => import("./components/DistrictIntelligence").then(m => ({ default: m.DistrictIntelligence })));
 const FavoritesManager = lazy(() => import("./components/FavoritesManager").then(m => ({ default: m.FavoritesManager })));
 const ClientExportModal = lazy(() => import("./components/ClientExportModal").then(m => ({ default: m.ClientExportModal })));
@@ -98,6 +99,57 @@ export default function App() {
   };
 
   // Persistent States
+  // Central Exchange Rates State for Unified Currency Conversion (Anti-Flicker & Perfect Sync)
+  const [rates, setRates] = useState<Record<string, number>>(() => {
+    const DEFAULT_RATES: Record<string, number> = {
+      USD: 1,
+      USDT: 1,
+      AED: 3.673,
+      SAR: 3.75,
+      QAR: 3.64,
+      KWD: 0.307,
+      BHD: 0.376,
+      OMR: 0.385,
+      IQD: 1310,
+      EGP: 47.85,
+      SYP: 13000,
+      LBP: 89500,
+      JOD: 0.709,
+      MAD: 10.02,
+      YER: 250,
+      LYD: 4.84,
+      SDG: 601,
+      TND: 3.12,
+      DZD: 134.2,
+      RUB: 91.45,
+      AFN: 62.50,
+      PKR: 278.10,
+      INR: 83.35,
+      TRY: 33.50,
+      EUR: 0.922,
+      CNY: 7.24,
+      JPY: 156.40,
+      IRR: 1375125,
+      TMN: 137512,
+    };
+    try {
+      const saved = localStorage.getItem("melkban_rates");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object" && parsed.IRR && parsed.IRR > 1000000) {
+          return {
+            ...DEFAULT_RATES,
+            ...parsed,
+            TMN: parsed.TMN || (parsed.IRR ? Math.round(parsed.IRR / 10) : 137512)
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return DEFAULT_RATES;
+  });
+
   const [properties, setProperties] = useState<Property[]>(() => {
     const saved = localStorage.getItem("melkban_properties");
     if (saved) {
@@ -263,8 +315,16 @@ export default function App() {
         const res = await fetch("/api/automation/status");
         if (res.ok) {
           const json = await res.json();
-          setGlobalVeto(json.globalVetoLevel || "none");
-          setActiveModulesList(json.supremeModules || []);
+          const nextVeto = json.globalVetoLevel || "none";
+          setGlobalVeto((prev) => (prev === nextVeto ? prev : nextVeto));
+          
+          const nextModules = json.supremeModules || [];
+          setActiveModulesList((prev) => {
+            if (JSON.stringify(prev) === JSON.stringify(nextModules)) {
+              return prev;
+            }
+            return nextModules;
+          });
         }
       } catch (err) {
         console.error("Veto check error", err);
@@ -490,6 +550,17 @@ export default function App() {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
+  }, []);
+
+  // Auto-trigger installation guide if landing from a Google frame redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("pwa_install") === "true") {
+      setShowInstallGuide(true);
+      // Clean up search param to keep URL clean and professional
+      const newUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, newUrl);
+    }
   }, []);
 
   const handleInstallPWA = async () => {
@@ -816,7 +887,12 @@ export default function App() {
         const data = await res.json();
         if (data && data.success && Array.isArray(data.properties)) {
           if (data.properties.length > 0) {
-            setProperties(data.properties);
+            setProperties((prev) => {
+              if (JSON.stringify(prev) === JSON.stringify(data.properties)) {
+                return prev;
+              }
+              return data.properties;
+            });
           } else {
             // Seed disk initially from local storage or INITIAL_PROPERTIES
             const source = localStorage.getItem("melkban_properties") 
@@ -842,6 +918,30 @@ export default function App() {
     }
     loadProperties();
   }, [settings.requireApproval]);
+
+  // Load live currency rates on mount and sync to central state
+  useEffect(() => {
+    async function loadExchangeRates() {
+      try {
+        const res = await fetch("/api/currency/rates");
+        const data = await res.json();
+        if (data && data.rates) {
+          setRates((prev) => ({
+            ...prev,
+            ...data.rates,
+            USD: 1,
+            USDT: 1,
+            IRR: data.rates.IRR || 1375125,
+            TMN: data.rates.TMN || (data.rates.IRR ? Math.round(data.rates.IRR / 10) : 137512),
+          }));
+          localStorage.setItem("melkban_rates", JSON.stringify(data.rates));
+        }
+      } catch (err) {
+        console.error("Failed to load central exchange rates on mount:", err);
+      }
+    }
+    loadExchangeRates();
+  }, []);
 
   const handleAddProperty = async (propData: Partial<Property>) => {
     try {
@@ -1267,13 +1367,12 @@ export default function App() {
             </div>
 
             {settings.appVersionMode === "v2" && (
-              <Suspense fallback={<div className="h-24 bg-slate-900/40 rounded-3xl border border-slate-850 animate-pulse"></div>}>
-                <V2LiveCurrencyTerminal 
-                  lang={lang} 
-                  subscriptionTier={subscriptionTier}
-                  onUpgradeClick={() => setShowGoldUpgradeModal(true)}
-                />
-              </Suspense>
+              <V2LiveCurrencyTerminal 
+                lang={lang} 
+                subscriptionTier={subscriptionTier}
+                onUpgradeClick={() => setShowGoldUpgradeModal(true)}
+                rates={rates}
+              />
             )}
 
             {/* GLOBAL REYAB REGION CATEGORIES (ZERO-CONFUSION GLOBAL DECK) */}
@@ -1474,6 +1573,7 @@ export default function App() {
                             setPropertyToEdit(prop);
                             setShowAddModal(true);
                           } : undefined}
+                          rates={rates}
                         />
                       );
                     })}
@@ -1484,9 +1584,7 @@ export default function App() {
               {/* Sidebar with Live AI consultation & Quick Calculator (Col span 4) */}
               <div className="lg:col-span-4 space-y-6">
                 <AIConsultant lang={lang} />
-                <Suspense fallback={<div className="h-44 bg-slate-900/60 rounded-3xl border border-slate-850 animate-pulse"></div>}>
-                  <CadastralCalculator lang={lang} isSidebar={true} />
-                </Suspense>
+                <CadastralCalculator lang={lang} isSidebar={true} rates={rates} />
               </div>
 
             </div>
@@ -1507,9 +1605,7 @@ export default function App() {
         {/* ------------------ VIEW 3: INTEGRATED APPRAISER FORM ------------------ */}
         {activeTab === "appraisal" && (
           <div className="animate-fade-in max-w-3xl mx-auto">
-            <Suspense fallback={<div className="h-96 bg-slate-900/60 rounded-3xl border border-slate-850 animate-pulse"></div>}>
-              <CadastralCalculator lang={lang} />
-            </Suspense>
+            <CadastralCalculator lang={lang} rates={rates} />
           </div>
         )}
 
@@ -2701,6 +2797,7 @@ export default function App() {
             setSelectedProperty(null);
             setActiveChatProperty(p);
           }}
+          rates={rates}
         />
       )}
 
@@ -3128,6 +3225,40 @@ export default function App() {
               </p>
             </div>
 
+            {/* Google Dev Preview Iframe Smart Interceptor */}
+            {(() => {
+              const isIframe = window.self !== window.top;
+              if (isIframe) {
+                return (
+                  <div className="bg-emerald-950/20 border border-emerald-500/25 p-3.5 rounded-xl space-y-2.5 animate-pulse-subtle">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">🛡️</span>
+                      <p className="text-[10px] text-emerald-400 font-black uppercase tracking-wider">
+                        {lang === "fa" ? "محیط امن شبیه‌ساز گوگل فعال است" : "Google Sandbox Frame Active"}
+                      </p>
+                    </div>
+                    <p className="text-[9.5px] text-slate-300 leading-normal">
+                      {lang === "fa" 
+                        ? "به دلیل محدودیت‌های امنیتی مرورگر کروم درون فریم پیش‌نمایش، امکان نصب مستقیم از اینجا وجود ندارد. لطفاً دکمه طلایی زیر را کلیک کنید تا برنامه در یک تب مستقل باز شود و بلافاصله با زدن همین کلید سبز نصب شود!" 
+                        : "Direct PWA install handles are disabled inside nested sandboxed frames. Press the button below to launch an independent browser context to install."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetUrl = window.location.origin + window.location.pathname + "?pwa_install=true";
+                        window.open(targetUrl, "_blank");
+                        setShowInstallGuide(false);
+                      }}
+                      className="w-full py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black rounded-lg transition shadow-lg shadow-amber-500/10 cursor-pointer active:scale-95 text-center"
+                    >
+                      🚀 {lang === "fa" ? "باز کردن در تب مستقل و نصب فوری" : "Launch Standalone & Install Easily"}
+                    </button>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             {/* OS Tab Selector Links */}
             <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-850 gap-1">
               <button
@@ -3197,6 +3328,19 @@ export default function App() {
                       {lang === "fa" 
                         ? "فرآیند بارگیری را تایید کنید تا میانبر با آیکون آریانا رهنما بارگذاری شود." 
                         : "Confirm the prompt. The operating system will complete setup as a standalone tool!"}
+                    </p>
+                  </div>
+
+                  {/* Windows 11 & Chrome Shortcut Help box */}
+                  <div className="mt-3 p-2.5 bg-indigo-950/40 border border-indigo-500/20 rounded-xl space-y-1">
+                    <p className="text-[10px] text-indigo-300 font-bold flex items-center gap-1">
+                      <span>💡</span>
+                      {lang === "fa" ? "عدم نمایش آیکون در دسکتاپ ویندوز ۱۱؟" : "No Desktop Shortcut on Windows 11?"}
+                    </p>
+                    <p className="text-[9.5px] text-slate-400 leading-normal">
+                      {lang === "fa"
+                        ? "مرورگر کروم ممکن است آیکون دسکتاپ را خودکار نسازد. برای ایجاد آن: آدرس chrome://apps را در کروم باز کرده، روی ملک‌بان راست‌کلیک کنید و گزینه Create shortcut را انتخاب و دسکتاپ را تیک بزنید. همچنین می‌توانید نام ملک‌بان را در منوی استارت ویندوز جستجو کنید."
+                        : "Windows Chrome installs PWAs quietly. If missing on desktop: open chrome://apps in Chrome, right-click 'Melkban' -> 'Create shortcut' -> check 'Desktop'. Or simply search for 'Melkban' in your Windows Start Menu."}
                     </p>
                   </div>
                 </div>

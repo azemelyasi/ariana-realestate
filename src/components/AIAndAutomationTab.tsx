@@ -767,13 +767,13 @@ export const AIAndAutomationTab: React.FC<AIAndAutomationTabProps> = ({
                 <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.SAR || "3.75"}</span>
               </div>
 
-              {/* IRR Conversion */}
+              {/* TMN Conversion */}
               <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-1">
-                <span className="text-[9px] font-mono text-slate-500 uppercase block">IRR - Iranian Rial (IRR)</span>
+                <span className="text-[9px] font-mono text-slate-500 uppercase block">TMN - Iranian Toman (تومان)</span>
                 <strong className="text-md text-rose-400 font-black font-mono">
-                  {exchangeRates.IRR ? (Number(customPriceUSD) * exchangeRates.IRR).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "---"} IRR
+                  {exchangeRates.TMN ? (Number(customPriceUSD) * exchangeRates.TMN).toLocaleString(undefined, { maximumFractionDigits: 0 }) : (exchangeRates.IRR ? (Number(customPriceUSD) * Math.round(exchangeRates.IRR / 10)).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "---")} TMN
                 </strong>
-                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.IRR || "42000"}</span>
+                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.TMN || (exchangeRates.IRR ? Math.round(exchangeRates.IRR / 10) : "63800")}</span>
               </div>
 
             </div>
