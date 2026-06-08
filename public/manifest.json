@@ -4,16 +4,16 @@
   "description": "Smart Cadastral Real Estate Platform and AI consultation ecosystem.",
   "icons": [
     {
-      "src": "/src/assets/images/ariana_new_logo_1780405216507.png",
+      "src": "/logo512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "/src/assets/images/ariana_new_logo_1780405216507.png",
+      "src": "/logo192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "maskable"
+      "purpose": "any"
     }
   ],
   "start_url": "/",
