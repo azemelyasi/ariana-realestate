@@ -1,6 +1,6 @@
 {
   "name": "Ariana Rahnuma",
   "description": "Ariana Rahnuma: Real-Time Smart Cadastral Property Management & AI Consultation Ecosystem in Afghanistan with high-fidelity filtering, secure independent uploads, and multi-currency localized stats.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
