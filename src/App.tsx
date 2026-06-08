@@ -926,15 +926,19 @@ export default function App() {
         const res = await fetch("/api/currency/rates");
         const data = await res.json();
         if (data && data.rates) {
-          setRates((prev) => ({
-            ...prev,
+          const refinedRates = {
             ...data.rates,
             USD: 1,
             USDT: 1,
-            IRR: data.rates.IRR || 1375125,
-            TMN: data.rates.TMN || (data.rates.IRR ? Math.round(data.rates.IRR / 10) : 137512),
+            AFN: 62.50, // Always enforce real street market rate of 62.50 AFN
+            IRR: 1375125, // Always enforce parallel market rate of 1,375,125 IRR
+            TMN: 137512,  // Always enforce parallel market rate of 137,512 Toman
+          };
+          setRates((prev) => ({
+            ...prev,
+            ...refinedRates,
           }));
-          localStorage.setItem("melkban_rates", JSON.stringify(data.rates));
+          localStorage.setItem("melkban_rates", JSON.stringify(refinedRates));
         }
       } catch (err) {
         console.error("Failed to load central exchange rates on mount:", err);

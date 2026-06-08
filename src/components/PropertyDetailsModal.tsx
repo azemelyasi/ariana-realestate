@@ -200,6 +200,9 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
     { code: "QAR", flag: "🇶🇦", nameFa: "ریال قطر", nameEn: "Qatari Riyal", symbol: "ر.ق" },
     { code: "EUR", flag: "🇪🇺", nameFa: "یورو اروپا", nameEn: "Euro", symbol: "€" },
     { code: "TRY", flag: "🇹🇷", nameFa: "لیر ترکیه", nameEn: "Turkish Lira", symbol: "₺" },
+    { code: "RUB", flag: "🇷🇺", nameFa: "روبل روسیه", nameEn: "Russian Ruble", symbol: "₽" },
+    { code: "CNY", flag: "🇨🇳", nameFa: "یوان چین", nameEn: "Chinese Yuan", symbol: "¥" },
+    { code: "JPY", flag: "🇯🇵", nameFa: "ین ژاپن", nameEn: "Japanese Yen", symbol: "🇯🇵 ¥" },
     { code: "KWD", flag: "🇰🇼", nameFa: "دینار کویت", nameEn: "Kuwaiti Dinar", symbol: "د.ك" },
   ];
 

@@ -67,19 +67,23 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
       .then((res) => res.json())
       .then((data) => {
         if (data && data.rates) {
-          setRates((prev) => ({
-            ...prev,
+          const refinedRates = {
             ...data.rates,
             USD: 1,
             USDT: 1,
-            IRR: data.rates.IRR || 638000,
-            TMN: data.rates.TMN || (data.rates.IRR ? Math.round(data.rates.IRR / 10) : 63800),
+            AFN: 62.50, // Street exchange rate of AFN
+            IRR: 1375125, // True market value of IRR in Rials
+            TMN: 137512,  // True market value of IRR in Tomans
+          };
+          setRates((prev) => ({
+            ...prev,
+            ...refinedRates,
           }));
           setIsLive(true);
           const now = new Date();
           setLastUpdated(now.toLocaleTimeString());
           try {
-            localStorage.setItem("melkban_rates", JSON.stringify(data.rates));
+            localStorage.setItem("melkban_rates", JSON.stringify(refinedRates));
           } catch (e) {
             // ignore
           }

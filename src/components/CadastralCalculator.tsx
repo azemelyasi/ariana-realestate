@@ -104,17 +104,25 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
       .then((res) => res.json())
       .then((data) => {
         if (data && data.rates) {
+          // Guarantee that specified market-clearing rates are exact and never pegged to official wrong government bank rates
           setRates({
             USD: 1,
             AED: data.rates.AED || 3.67,
             RUB: data.rates.RUB || 91.5,
-            AFN: data.rates.AFN || 62.50,
+            AFN: 62.50, // Always lock real street market rate of 1 USD = 62.50 AFN
             PKR: data.rates.PKR || 278.2,
             INR: data.rates.INR || 83.3,
             TRY: data.rates.TRY || 33.5,
             EUR: data.rates.EUR || 0.92,
-            IRR: data.rates.IRR || 1375125,
-            TMN: data.rates.TMN || (data.rates.IRR ? Math.round(data.rates.IRR / 10) : 137512),
+            SAR: data.rates.SAR || 3.75,
+            CNY: data.rates.CNY || 7.24,
+            JPY: data.rates.JPY || 156.40,
+            CAD: data.rates.CAD || 1.37,
+            AUD: data.rates.AUD || 1.51,
+            KWD: data.rates.KWD || 0.31,
+            QAR: data.rates.QAR || 3.64,
+            IRR: 1375125, // Locked Parallel market Rial base (as specified)
+            TMN: 137512,  // Locked Parallel market Toman base (as specified)
           });
           setIsLive(true);
         }
@@ -148,14 +156,33 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
   const currenciesList = [
     { code: "USDT", flag: "🟢", nameFa: "تتر تتر", nameEn: "Tether USDT", desc: "دلار دیجیتال پایدار", symbol: "USDT" },
     { code: "USD", flag: "🇺🇸", nameFa: "دلار آمریکا", nameEn: "US Dollar", desc: "مبنای جهانی مقتدر", symbol: "$" },
+    { code: "TMN", flag: "🇮🇷", nameFa: "تومان ایران", nameEn: "Iranian Toman", desc: "بازار آزاد صرافی‌ها", symbol: "تومان" },
+    { code: "IRR", flag: "🇮🇷", nameFa: "ریال ایران", nameEn: "Iranian Rial", desc: "ریال دولتی و رسمی", symbol: "ریال" },
+    { code: "AFN", flag: "🇦🇫", nameFa: "افغانی افغانستان", nameEn: "Afghan Afghani", desc: "کابل و هبات کاداستر", symbol: "؋" },
     { code: "AED", flag: "🇦🇪", nameFa: "درهم امارات", nameEn: "UAE Dirham", desc: "دبی و ابوظبی", symbol: "د.إ" },
-    { code: "EUR", flag: "🇩🇪", nameFa: "یورو اروپا", nameEn: "Euro", desc: "آلمان و شنگن", symbol: "€" },
+    { code: "SAR", flag: "🇸🇦", nameFa: "ریال سعودی", nameEn: "Saudi Riyal", desc: "ریاض و مکه", symbol: "ر.س" },
+    { code: "EUR", flag: "🇪🇺", nameFa: "یورو اروپا", nameEn: "Euro", desc: "آلمان و شنگن", symbol: "€" },
     { code: "TRY", flag: "🇹🇷", nameFa: "لیر ترکیه", nameEn: "Turkish Lira", desc: "استانبول و آنکارا", symbol: "₺" },
     { code: "RUB", flag: "🇷🇺", nameFa: "روبل روسیه", nameEn: "Russian Ruble", desc: "مسکو کاداستر", symbol: "₽" },
-    { code: "AFN", flag: "🇦🇫", nameFa: "افغانی افغانستان", nameEn: "Afghan Afghani", desc: "کابل و هرات", symbol: "؋" },
-    { code: "PKR", flag: "🇵🇰", nameFa: "روپیه پاکستان", nameEn: "Pakistani Rupee", desc: "اسلام‌آباد", symbol: "₨" },
-    { code: "INR", flag: "🇮🇳", nameFa: "روپیه هند", nameEn: "Indian Rupee", desc: "بمبئی و دهلی", symbol: "₹" },
+    { code: "CNY", flag: "🇨🇳", nameFa: "یوان چین", nameEn: "Chinese Yuan", desc: "پکن و شانگهای", symbol: "¥" },
+    { code: "JPY", flag: "🇯🇵", nameFa: "ین ژاپن", nameEn: "Japanese Yen", desc: "توکیو کاداستر", symbol: "¥" },
+    { code: "GBP", flag: "🇬🇧", nameFa: "پوند بریتانیا", nameEn: "British Pound", desc: "لندن و منچستر", symbol: "£" },
+    { code: "CAD", flag: "🇨🇦", nameFa: "دلار کانادا", nameEn: "Canadian Dollar", desc: "تورنتو کاداستر", symbol: "C$" },
+    { code: "AUD", flag: "🇦🇺", nameFa: "دلار استرالیا", nameEn: "Australian Dollar", desc: "سیدنی کاداستر", symbol: "A$" },
+    { code: "KWD", flag: "🇰🇼", nameFa: "دینار کویت", nameEn: "Kuwaiti Dinar", desc: "کویت سیتی", symbol: "د.ك" },
+    { code: "QAR", flag: "🇶🇦", nameFa: "ریال قطر", nameEn: "Qatari Riyal", desc: "دوحه کشور قطر", symbol: "ر.ق" },
   ];
+
+  // Helper inside conversion panel to render precise Google-like live decimal fractions
+  const formatConvertedValue = (val: number, code: string): string => {
+    if (["IRR", "TMN", "IQD", "SYP", "LBP", "SDG", "YER", "PKR"].includes(code)) {
+      return Math.round(val).toLocaleString();
+    }
+    if (val === 0) return "0";
+    if (val < 0.01) return val.toFixed(4);
+    if (val < 10) return val.toFixed(3);
+    return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   // Conversion rates reference inside tab 1
   const priceInUsdEquivalent = estimatedTotal / (rates[activeCountry.currency] || 1);
@@ -447,7 +474,7 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
 
                     <div className="mt-2.5">
                       <div className="text-[13px] font-extrabold font-mono text-white tracking-tight truncate" title={originalValue.toLocaleString()}>
-                        {toLocalizedDigits(Math.round(originalValue).toLocaleString(), lang)}
+                        {toLocalizedDigits(formatConvertedValue(originalValue, curr.code), lang)}
                       </div>
                       <div className="text-[9px] text-slate-500 font-medium flex justify-between mt-0.5">
                         <span>{curr.desc}</span>
