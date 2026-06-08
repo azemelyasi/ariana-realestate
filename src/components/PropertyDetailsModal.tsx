@@ -138,7 +138,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
 
   useEffect(() => {
     setIsLoadingCurrencies(true);
-    fetch("https://open.er-api.com/v6/latest/USD")
+    fetch("/api/currency/rates")
       .then((res) => res.json())
       .then((data) => {
         if (data && data.rates) {

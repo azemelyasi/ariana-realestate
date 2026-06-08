@@ -4,24 +4,16 @@ import { Analytics } from "@vercel/analytics/react";
 import App from "./App.tsx";
 import "./index.css";
 
-// Self-healing mechanism: Automatically unregister any stale service workers and purge caches to prevent black screens
+// PWA Installation & Service Worker Register
 if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      registration.unregister().then((success) => {
-        if (success) console.log("✓ Stale service worker successfully unregistered to prevent blank screens.");
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then((registration) => {
+        console.log("✓ Ariana PWA Service Worker registered successfully with scope:", registration.scope);
+      })
+      .catch((error) => {
+        console.error("✕ Service Worker registration failed:", error);
       });
-    }
-  });
-}
-
-if (typeof window !== "undefined" && "caches" in window) {
-  window.caches.keys().then((names) => {
-    for (const name of names) {
-      window.caches.delete(name).then(() => {
-        console.log(`✓ Purged cache index: ${name}`);
-      });
-    }
   });
 }
 

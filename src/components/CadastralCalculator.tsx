@@ -88,7 +88,7 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
   // Fetch Live Rates
   useEffect(() => {
     setIsLoading(true);
-    fetch("https://open.er-api.com/v6/latest/USD")
+    fetch("/api/currency/rates")
       .then((res) => res.json())
       .then((data) => {
         if (data && data.rates) {
@@ -101,6 +101,7 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
             INR: data.rates.INR || 83.3,
             TRY: data.rates.TRY || 32.4,
             EUR: data.rates.EUR || 0.92,
+            IRR: data.rates.IRR || 615000,
           });
           setIsLive(true);
         }

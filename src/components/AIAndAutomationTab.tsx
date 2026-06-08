@@ -27,12 +27,14 @@ interface AIAndAutomationTabProps {
   lang: Language;
   properties: Property[];
   onPropertiesUpdated: (updated: Property[]) => void;
+  onViewReceipt?: (receipt: any) => void;
 }
 
 export const AIAndAutomationTab: React.FC<AIAndAutomationTabProps> = ({ 
   lang,
   properties,
-  onPropertiesUpdated 
+  onPropertiesUpdated,
+  onViewReceipt
 }) => {
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
 
@@ -1447,6 +1449,23 @@ CREATE TABLE blockchain_transactions_ledgers (
                         <span className="text-[9px] text-slate-500 block">{tx.walletAddress === "TR7NHqdjwmJZGZ86HnEpv842bC78e146vD" ? "Standard Cold" : "Temp Escrow"}</span>
                       </div>
                       <div className="flex items-center gap-2">
+                        {tx.receiptFile && onViewReceipt && (
+                          <button
+                            type="button"
+                            onClick={() => onViewReceipt({
+                              title: tx.agencyName,
+                              receiptFile: tx.receiptFile,
+                              receiptFileName: tx.receiptFileName,
+                              paymentMethod: tx.paymentMethod || "crypto",
+                              paymentCardNum: tx.paymentCardNum,
+                              paymentCardCVC: tx.paymentCardCVC,
+                              email: tx.email || tx.agencyName || "کاربر فرستنده"
+                            })}
+                            className="bg-indigo-950 hover:bg-indigo-900 border border-indigo-900/40 text-indigo-400 text-[10px] font-bold px-2.5 py-1 rounded-xl cursor-pointer flex items-center gap-1 transition-colors"
+                          >
+                            📄 فیش واریز
+                          </button>
+                        )}
                         {tx.status === "confirmed" ? (
                           <span className="bg-emerald-950 text-emerald-400 border border-emerald-900/30 text-[9px] font-black tracking-wider px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
                             <Check className="w-3 h-3" />

@@ -47,7 +47,7 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
 
   useEffect(() => {
     setIsLoading(true);
-    fetch("https://open.er-api.com/v6/latest/USD")
+    fetch("/api/currency/rates")
       .then((res) => res.json())
       .then((data) => {
         if (data && data.rates) {
@@ -126,6 +126,16 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         freeMarket: Number((standardRate * 1.045).toFixed(3)), // Commercial spread
         cbLabel: lang === "fa" ? "نرخ رسمی مسکو" : "CBR Official Rate",
         fmLabel: lang === "fa" ? "بازار آزاد صرافی روسیه" : "OTC Free Market",
+      };
+    }
+    
+    if (currencyCode === "IRR") {
+      return {
+        isDual: true,
+        centralBank: 42000,
+        freeMarket: standardRate || 615000,
+        cbLabel: lang === "fa" ? "نرخ دستوری دولتی (پایه ۴۲,۰۰۰)" : "Official Pegged Rate",
+        fmLabel: lang === "fa" ? "نرخ صرافی آزاد (تومان ایران)" : "Free Market Toman Rate",
       };
     }
     

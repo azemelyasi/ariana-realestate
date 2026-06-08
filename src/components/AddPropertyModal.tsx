@@ -1607,7 +1607,7 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                         {receiptFile ? (
                           <div className="flex flex-col items-center gap-1">
                             {receiptFile.startsWith("data:image/") ? (
-                              <img src={receiptFile} className="w-12 h-12 object-cover rounded-lg border border-slate-800 shadow-md mb-1" alt="Receipt preview" referrerpolicy="no-referrer" />
+                              <img src={receiptFile} className="w-12 h-12 object-cover rounded-lg border border-slate-800 shadow-md mb-1" alt="Receipt preview" referrerPolicy="no-referrer" />
                             ) : (
                               <FileText className="w-8 h-8 text-indigo-400 mb-1" />
                             )}

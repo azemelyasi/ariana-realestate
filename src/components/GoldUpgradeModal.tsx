@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Language } from "../types";
-import { Sparkles, CheckCircle, CreditCard, Coins, Upload, Image, FileText } from "lucide-react";
+import { Sparkles, CheckCircle, CreditCard, Coins, Upload, FileText } from "lucide-react";
 import { toLocalizedDigits } from "./LocalCalendar";
 
 interface GoldUpgradeModalProps {
@@ -485,7 +485,7 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                           {receiptFile ? (
                             <div className="flex flex-col items-center gap-1">
                               {receiptFile.startsWith("data:image/") ? (
-                                <img src={receiptFile} className="w-12 h-12 object-cover rounded-lg border border-slate-800 shadow-md mb-1" alt="Receipt preview" referrerpolicy="no-referrer" />
+                                <img src={receiptFile} className="w-12 h-12 object-cover rounded-lg border border-slate-800 shadow-md mb-1" alt="Receipt preview" referrerPolicy="no-referrer" />
                               ) : (
                                 <FileText className="w-8 h-8 text-indigo-400 mb-1" />
                               )}

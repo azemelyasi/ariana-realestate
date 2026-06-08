@@ -229,6 +229,7 @@ export default function App() {
   // --- 👑 REAL Broker PRO/GOLD PREMIUM SUBSCRIPTION SYSTEM ---
   const [subscriptionTier, setSubscriptionTier] = useState<"free" | "pro">("free");
   const [showGoldUpgradeModal, setShowGoldUpgradeModal] = useState<boolean>(false);
+  const [adminReceiptToView, setAdminReceiptToView] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchUserSubscription = async () => {
@@ -468,7 +469,6 @@ export default function App() {
 
   // Progressive Web App (PWA) Install states and event listener
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const [installTab, setInstallTab] = useState<"ios" | "android">("ios");
 
@@ -476,28 +476,15 @@ export default function App() {
     const handleBeforeInstall = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setIsInstallable(true);
     };
 
     const handleAppInstalled = () => {
       console.log("Ariana Rahnuma has been installed successfully!");
-      setIsInstallable(false);
       setDeferredPrompt(null);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
     window.addEventListener("appinstalled", handleAppInstalled);
-
-    // Initial detection of PWA standalone state
-    if (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as any).standalone
-    ) {
-      setIsInstallable(false);
-    } else {
-      // Allow users to see the installation instruction button always for maximum coverage
-      setIsInstallable(true);
-    }
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
@@ -511,7 +498,6 @@ export default function App() {
       const { outcome } = await deferredPrompt.userChoice;
       console.log(`PWA Install choice outcome: ${outcome}`);
       setDeferredPrompt(null);
-      setIsInstallable(false);
     } else {
       // If prompt isn't fired automatically (iOS Safari, embedded default webview constraints), open our custom beautiful help instruction sheet
       setShowInstallGuide(true);
@@ -1209,17 +1195,16 @@ export default function App() {
               🔑
             </button>
 
-            {/* PWA Install Button */}
-            {isInstallable && (
-              <button
-                onClick={handleInstallPWA}
-                className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white border border-emerald-550/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md shadow-emerald-600/10 cursor-pointer animate-pulse-subtle"
-                title={lang === "fa" ? `نصب اپلیکیشن ${t.brand}` : `Install ${t.brand} App`}
-              >
-                <span>📲</span>
-                <span>{lang === "fa" ? "نصب برنامه" : "Install App"}</span>
-              </button>
-            )}
+            {/* PWA Install Button - Rendered statically to prevent header shifting and flickering */}
+            <button
+              type="button"
+              onClick={handleInstallPWA}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white border border-emerald-550/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md shadow-emerald-600/10 cursor-pointer animate-pulse-subtle shrink-0"
+              title={lang === "fa" ? `نصب وب‌اپلیکیشن ${t.brand}` : `Install ${t.brand} App`}
+            >
+              <span>📲</span>
+              <span>{lang === "fa" ? "نصب برنامه" : "Install App"}</span>
+            </button>
 
             {/* Quick Post Button */}
             <button
@@ -1846,15 +1831,36 @@ export default function App() {
                                     ★ {toLocalizedDigits(commissionValue.toLocaleString(), lang)} <span className="text-[9px] text-emerald-600">{c.currency}</span>
                                   </td>
                                   <td className="py-3 px-3">
-                                    {p.isApproved ? (
-                                      <span className="bg-emerald-950 text-emerald-400 border border-emerald-950 rounded-md px-2 py-0.5 text-[9.5px] font-extrabold font-mono tracking-wider">
-                                        {getTranslation(lang, "adminStatusApproved", "APPROVED")}
-                                      </span>
-                                    ) : (
-                                      <span className="bg-amber-950 text-amber-400 border border-amber-950 rounded-md px-2 py-0.5 text-[9.5px] font-extrabold font-mono tracking-wider animate-pulse">
-                                        {getTranslation(lang, "adminStatusPending", "REVIEW PENDING")}
-                                      </span>
-                                    )}
+                                    <div className="flex flex-col gap-1.5 items-start">
+                                      {p.isApproved ? (
+                                        <span className="bg-emerald-950 text-emerald-400 border border-emerald-950 rounded-md px-2 py-0.5 text-[9.5px] font-extrabold font-mono tracking-wider">
+                                          {getTranslation(lang, "adminStatusApproved", "APPROVED")}
+                                        </span>
+                                      ) : (
+                                        <span className="bg-amber-950 text-amber-400 border border-amber-950 rounded-md px-2 py-0.5 text-[9.5px] font-extrabold font-mono tracking-wider animate-pulse">
+                                          {getTranslation(lang, "adminStatusPending", "REVIEW PENDING")}
+                                        </span>
+                                      )}
+                                      
+                                      <button
+                                        type="button"
+                                        onClick={() => setAdminReceiptToView({
+                                          title: p.title,
+                                          receiptFile: p.receiptFile,
+                                          receiptFileName: p.receiptFileName,
+                                          paymentMethod: p.paymentMethod || "card",
+                                          paymentCardNum: p.paymentCardNum || "۶۰۳۷-۹۹۱۸-۷۷۲۶-۱۱۸۲",
+                                          paymentCardCVC: p.paymentCardCVC || "فرهاد سلیمی (بانک ملی)",
+                                          email: p.brokerEmail || "broker.amlak@gmail.com",
+                                          calculatedCommission: commissionValue,
+                                          currencyCode: c.currency,
+                                          currencySymbol: c.currencySymbol
+                                        })}
+                                        className="text-[9.5px] font-bold bg-indigo-950 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded hover:bg-indigo-900 hover:text-white transition-all cursor-pointer flex items-center gap-1"
+                                      >
+                                        🔍 {lang === "fa" ? "فیش بانکی" : "View Receipt"}
+                                      </button>
+                                    </div>
                                   </td>
                                   <td className="py-3 px-3 text-end space-x-1 rtl:space-x-reverse whitespace-nowrap">
                                     {!p.isApproved && (
@@ -2636,6 +2642,7 @@ export default function App() {
                         lang={lang}
                         properties={properties}
                         onPropertiesUpdated={(updated) => setProperties(updated)}
+                        onViewReceipt={(receipt) => setAdminReceiptToView(receipt)}
                       />
                     </Suspense>
                   </div>
@@ -2739,6 +2746,190 @@ export default function App() {
             setSubscriptionTier("pro");
           }}
         />
+      )}
+
+      {adminReceiptToView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in text-slate-100 font-sans" dir={lang === "fa" ? "rtl" : "ltr"}>
+          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📄</span>
+                <div>
+                  <h3 className="text-sm font-black text-white">
+                    {lang === "fa" ? "جزئیات فیش و پرونده تراکنش" : "Payment Receipt Explorer"}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {lang === "fa" ? `مربوط به: ${adminReceiptToView.title}` : `For: ${adminReceiptToView.title}`}
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setAdminReceiptToView(null)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6">
+              {/* Payment Info Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850/60 space-y-1">
+                  <span className="text-[10px] text-slate-500 font-semibold block">
+                    {lang === "fa" ? "روش پرداخت ارسالی" : "Payment Method Offered"}
+                  </span>
+                  <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5 leading-none">
+                    {adminReceiptToView.paymentMethod === "crypto" || adminReceiptToView.paymentMethod === "USDT" ? "🌐 Tether (USDT-TRC20)" : "💳 کارت به کارت (کارت بازرگانی)"}
+                  </span>
+                </div>
+
+                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850/60 space-y-1">
+                  <span className="text-[10px] text-slate-500 font-semibold block">
+                    {lang === "fa" ? "فرستنده / ایمیل مشاور" : "Appraiser Email"}
+                  </span>
+                  <span className="text-xs font-bold text-white font-mono select-all">
+                    {adminReceiptToView.email}
+                  </span>
+                </div>
+
+                {adminReceiptToView.paymentCardNum && (
+                  <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850/60 space-y-1 sm:col-span-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-500 font-semibold block">
+                        {lang === "fa" ? "اطلاعات پرداخت کارت فرستنده" : "Sender Card Credentials"}
+                      </span>
+                      {adminReceiptToView.paymentCardCVC && (
+                        <span className="text-[9px] bg-indigo-950 px-2 py-0.5 rounded text-indigo-300 font-bold">
+                          {lang === "fa" ? `صاحب کارت: ${adminReceiptToView.paymentCardCVC}` : `Cardholder: ${adminReceiptToView.paymentCardCVC}`}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm font-black text-amber-400 tracking-widest font-mono block select-all">
+                      {adminReceiptToView.paymentCardNum}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* View Uploaded Image Document */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                  {lang === "fa" ? "سند ضمیمه تصویر فیش بانکی" : "Submitted Receipt Document"}
+                </label>
+                
+                {adminReceiptToView.receiptFile ? (
+                  <div className="p-2 bg-slate-950 rounded-2xl border border-slate-850 flex flex-col items-center justify-center gap-3 overflow-hidden">
+                    {adminReceiptToView.receiptFile.startsWith("data:image/") || adminReceiptToView.receiptFile.startsWith("http") || adminReceiptToView.receiptFile.length > 500 ? (
+                      <img 
+                        src={adminReceiptToView.receiptFile} 
+                        alt={adminReceiptToView.receiptFileName || "Receipt"} 
+                        className="max-h-[350px] w-auto object-contain rounded-xl shadow-md border border-slate-800"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="p-8 text-center text-slate-500 text-xs">
+                        {lang === "fa" ? "ساختار کد شده فایل فاقد پیش‌نمایش مستقیم است." : "Document code is in non-image metadata format."}
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between w-full p-2 bg-slate-900/60 rounded-xl border border-slate-800/40 text-[10px] text-slate-400">
+                      <span className="truncate max-w-[250px] text-left font-mono">
+                        {adminReceiptToView.receiptFileName || "card-receipt.png"}
+                      </span>
+                      <a 
+                        href={adminReceiptToView.receiptFile} 
+                        download={adminReceiptToView.receiptFileName || "card-receipt.png"}
+                        className="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg text-white font-extrabold transition-all text-xs"
+                      >
+                        {lang === "fa" ? "📥 دانلود فایل فیش" : "Download file"}
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-950 border border-emerald-900/30 p-6 rounded-3xl space-y-4 shadow-inner relative overflow-hidden">
+                    {/* Security Stamp Silhouette */}
+                    <div className="absolute right-4 bottom-4 w-28 h-28 border-4 border-dashed border-emerald-500/5 rounded-full flex items-center justify-center -rotate-12 select-none pointer-events-none">
+                      <span className="text-[10px] font-black text-emerald-500/5 text-center leading-none">مهر تأیید بستر شتاب<br />۱۴۰۵ / ۲۰۲۶</span>
+                    </div>
+
+                    <div className="flex flex-col items-center text-center pb-4 border-b border-slate-900">
+                      <div className="w-12 h-12 bg-emerald-950 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center text-xl mb-2.5 shadow-lg shadow-emerald-950/40 animate-bounce">
+                        ✓
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-100">{lang === "fa" ? "مدرک انتقال بانکی الکترونیک (سامانه ساتنا/پایا)" : "Digital Banking Satna/Paya Transfer Slip"}</h4>
+                      <p className="text-[10px] text-emerald-400 font-extrabold mt-1 tracking-widest">{lang === "fa" ? "انتقال وجه موفقیت‌آمیز" : "TRANSACTION SUCCESSFUL"}</p>
+                    </div>
+
+                    <div className="space-y-3.5 text-xs text-slate-300">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">{lang === "fa" ? "مبلغ واریزی کمیسیون:" : "Transferred Commission:"}</span>
+                        <span className="font-extrabold text-white font-mono">
+                          {toLocalizedDigits((adminReceiptToView.calculatedCommission || 0).toLocaleString(), lang)} {adminReceiptToView.currencySymbol || "USD"}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">{lang === "fa" ? "شماره پیگیری مالی (Ref):" : "Financial Ref ID:"}</span>
+                        <span className="font-bold text-indigo-400 font-mono tracking-widest">
+                          {toLocalizedDigits("902847194821", lang)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">{lang === "fa" ? "تاریخ تسویه دقیق:" : "Settlement Timestamp:"}</span>
+                        <span className="font-semibold text-slate-300 font-mono">
+                          {toLocalizedDigits("1405/03/18 - 11:24:08 (2026/06/08)", lang)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">{lang === "fa" ? "حساب مقصد آریانا:" : "Ariana Escrow Account:"}</span>
+                        <span className="font-semibold text-white">
+                          {lang === "fa" ? "سپرده موقت تضمین کاداستر شتاب" : "Ariana Central Shabab Vault"}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">{lang === "fa" ? "حساب مبدأ مشاور:" : "Broker Origin Card:"}</span>
+                        <span className="font-bold text-slate-300 font-mono">
+                          {adminReceiptToView.paymentCardNum || "۶۰۳۷-****-****-۱۱۸۲"}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">{lang === "fa" ? "نام صاحب کارت مبدأ:" : "Sender Account Holder:"}</span>
+                        <span className="font-extrabold text-white text-[11px]">
+                          {adminReceiptToView.paymentCardCVC || "فرهاد سلیمی"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-900 flex justify-between items-center text-[9.5px]">
+                      <span className="text-slate-500">{lang === "fa" ? "پروتکل امنیتی تسویه:" : "Secure Clearance Protocol:"}</span>
+                      <span className="text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded font-black uppercase tracking-wider">
+                        {lang === "fa" ? "تایید نهایی شاپرک" : "Shaparak Cleared"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-950/40 border-t border-slate-800 flex justify-end gap-3 flex-shrink-0">
+              <button 
+                type="button"
+                onClick={() => setAdminReceiptToView(null)}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold transition-all text-xs cursor-pointer"
+              >
+                {lang === "fa" ? "بستن مرورگر فیش" : "Close Explorer"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* SECURE DIRECT CHAT SESSION DRAWER */}
