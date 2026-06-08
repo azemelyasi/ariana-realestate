@@ -5,9 +5,15 @@ import { toLocalizedDigits } from "./LocalCalendar";
 
 interface V2LiveCurrencyTerminalProps {
   lang: Language;
+  subscriptionTier: "free" | "pro";
+  onUpgradeClick: () => void;
 }
 
-export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({ lang }) => {
+export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
+  lang,
+  subscriptionTier,
+  onUpgradeClick
+}) => {
   const [rates, setRates] = useState<Record<string, number>>({
     USD: 1,
     AED: 3.673,
@@ -168,6 +174,34 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({ 
           </div>
         </div>
       </div>
+
+      {/* PERSUASIVE CONVERSION BANNER FOR FREE USERS (PROMOTION CORE) */}
+      {subscriptionTier === "free" && (
+        <div className="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-amber-600/5 to-slate-950 border border-amber-500/20 rounded-2xl p-4 mb-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="absolute -right-10 -bottom-10 w-28 h-28 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="flex items-start gap-3 relative z-10">
+            <span className="text-xl">💎</span>
+            <div className="space-y-1">
+              <h4 className="text-xs font-black text-amber-400">
+                {lang === "fa" ? "اشتراک طلایی کاداستر: اسعار تمام‌جهان و ابزار هوشمند پیشرفته" : "Gold Cadastre Subscription: Live Global Forex & AI Suite"}
+              </h4>
+              <p className="text-[10.5px] text-slate-300 leading-relaxed max-w-2xl">
+                {lang === "fa" 
+                  ? "جهت قفل‌گشایی تبدیل خودکار فرمول کاداستر ملکی به درهم امارات، لیر ترکیه، یورو و افغانی با نرخ موازی صرافی‌ها، ثبت نامحدود آگهی (بدون کارمزد تکی) و ۴ موتور هوش مصنوعی پیشرفته، عضو طلا شوید." 
+                  : "Unlock automatic in-app conversion to Lira, Euro, Dirham & Ruble with active exchange rates, remove the 2-listing quota & deploy 4 specialized AI modules."}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onUpgradeClick}
+            className="cursor-pointer relative z-10 shrink-0 px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 text-[10.5px] font-black rounded-xl transition shadow-md shadow-amber-500/10 active:scale-95 flex items-center gap-1"
+          >
+            <span>💎</span>
+            <span>{lang === "fa" ? "ارتقای فوری به پنل طلایی" : "Upgrade to Gold Pro Now"}</span>
+          </button>
+        </div>
+      )}
 
       {/* Scrollable grid for all currencies */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[340px] overflow-y-auto pr-1">

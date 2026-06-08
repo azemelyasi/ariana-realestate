@@ -16,6 +16,7 @@ import { ContactView } from "./components/ContactView";
 import { PropertyCard } from "./components/PropertyCard";
 import { PropertyDetailsModal } from "./components/PropertyDetailsModal";
 import { AddPropertyModal } from "./components/AddPropertyModal";
+import { GoldUpgradeModal } from "./components/GoldUpgradeModal";
 
 // Dynamic Code Splitting (Lazy-Loading) for Heavy Dashboard Tabs and Overlay Panels
 const CadastralCalculator = lazy(() => import("./components/CadastralCalculator").then(m => ({ default: m.CadastralCalculator })));
@@ -158,10 +159,14 @@ export default function App() {
       promoCode: "AFG20",
       promoDiscountPct: 20,
       tetherWalletAddress: "TR7NHqdjwmJZGZ86HnEpv842bC78e146vD",
+      adminShetabCard: "6037991823456789",
       freeListingsLimit: 1,
       feeType: "fixed",
       listingFeeUSDT: 5,
-      feeRatePct: 0.05
+      feeRatePct: 0.05,
+      goldPriceToman: 800,
+      goldPriceUSDT: 10,
+      fiatCurrencyName: "AFN"
     };
 
     const saved = localStorage.getItem("melkban_settings");
@@ -181,10 +186,14 @@ export default function App() {
             promoCode: parsed.promoCode || "MELK20",
             promoDiscountPct: parsed.promoDiscountPct !== undefined ? parsed.promoDiscountPct : 20,
             tetherWalletAddress: parsed.tetherWalletAddress || "TR7NHqdjwmJZGZ86HnEpv842bC78e146vD",
+            adminShetabCard: parsed.adminShetabCard || "6037991823456789",
             freeListingsLimit: parsed.freeListingsLimit !== undefined ? parsed.freeListingsLimit : 1,
             feeType: parsed.feeType || "fixed",
             listingFeeUSDT: parsed.listingFeeUSDT !== undefined ? parsed.listingFeeUSDT : 5,
-            feeRatePct: parsed.feeRatePct !== undefined ? parsed.feeRatePct : 0.05
+            feeRatePct: parsed.feeRatePct !== undefined ? parsed.feeRatePct : 0.05,
+            goldPriceToman: parsed.goldPriceToman !== undefined ? parsed.goldPriceToman : 800,
+            goldPriceUSDT: parsed.goldPriceUSDT !== undefined ? parsed.goldPriceUSDT : 10,
+            fiatCurrencyName: parsed.fiatCurrencyName || "AFN"
           };
         }
       } catch {
@@ -216,6 +225,29 @@ export default function App() {
     const isAuth = localStorage.getItem("melkban_admin_authenticated") === "true";
     return isAuth ? "admin" : "client";
   });
+
+  // --- 👑 REAL Broker PRO/GOLD PREMIUM SUBSCRIPTION SYSTEM ---
+  const [subscriptionTier, setSubscriptionTier] = useState<"free" | "pro">("free");
+  const [showGoldUpgradeModal, setShowGoldUpgradeModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchUserSubscription = async () => {
+      try {
+        const email = localStorage.getItem("melkban_verified_broker_email") || "amirkachaloooo65@gmail.com";
+        const res = await fetch(`/api/subscription?email=${encodeURIComponent(email)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSubscriptionTier(data.tier || "free");
+        }
+      } catch (err) {
+        console.error("Failed to load subscription tier:", err);
+      }
+    };
+    fetchUserSubscription();
+    // Poll subscription status occasionally to keep synced with any simulation toggles
+    const subInterval = setInterval(fetchUserSubscription, 4000);
+    return () => clearInterval(subInterval);
+  }, [showGoldUpgradeModal]);
 
   // --- 👑 SYSTEM VETO LAW PARAMETERS ---
   const [globalVeto, setGlobalVeto] = useState<"none" | "partial" | "full">("none");
@@ -1118,14 +1150,34 @@ export default function App() {
             >
               💬 {lang === "fa" ? "گفتگوها" : "Inbox Chats"}
             </button>
+
+            {/* GOLD PREMIUM ACTIVE CTA FOR REAL ESTATE AGENCIES */}
+            <button
+              type="button"
+              onClick={() => setShowGoldUpgradeModal(true)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-black tracking-wide transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                subscriptionTier === "pro"
+                  ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-md shadow-amber-500/2"
+                  : "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-450 text-slate-950 font-extrabold border-transparent shadow shadow-amber-500/10 animate-pulse-subtle"
+              }`}
+              title={lang === "fa" ? "عضویت در کانون بنگاه‌های برتر کاداستر" : "Join Supreme Cadastral Network"}
+            >
+              <span>💎</span>
+              <span>
+                {subscriptionTier === "pro"
+                  ? (lang === "fa" ? "کارگزاری طلایی کاداستر" : "Active Gold Agency")
+                  : (lang === "fa" ? "ارتقا به پنل طلایی" : "Upgrade to Gold Pro")}
+              </span>
+            </button>
+
             {isAdminAuthenticated && (
               <button
                 onClick={() => setActiveTab("admin")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
-                  activeTab === "admin" ? "bg-indigo-600 text-white shadow shadow-indigo-600/10" : "text-emerald-400 hover:text-white hover:bg-slate-850"
+                  activeTab === "admin" ? "bg-indigo-600 text-white shadow shadow-indigo-600/10 animate-pulse border border-indigo-400/30" : "text-emerald-400 hover:bg-slate-850 border border-emerald-500/10"
                 }`}
               >
-                👑 {t.navAdmin}
+                👑 {t.navAdmin || (lang === "fa" ? "مدیریت فنی سامانه" : "Technical Webmaster")}
               </button>
             )}
           </nav>
@@ -1231,7 +1283,11 @@ export default function App() {
 
             {settings.appVersionMode === "v2" && (
               <Suspense fallback={<div className="h-24 bg-slate-900/40 rounded-3xl border border-slate-850 animate-pulse"></div>}>
-                <V2LiveCurrencyTerminal lang={lang} />
+                <V2LiveCurrencyTerminal 
+                  lang={lang} 
+                  subscriptionTier={subscriptionTier}
+                  onUpgradeClick={() => setShowGoldUpgradeModal(true)}
+                />
               </Suspense>
             )}
 
@@ -2042,6 +2098,90 @@ export default function App() {
 
                           <div className="border-t border-slate-900/80 pt-3">
                             <label className="block text-slate-400 mb-1 font-bold">
+                              🎁 {lang === "fa" ? "تعداد آگهی‌های رایگان اولیه اهدایی به هر کاربر جدید جهت شروع:" : "Initial Free Listings Limit Given to New Users:"}
+                            </label>
+                            <input
+                              type="number"
+                              required
+                              min="0"
+                              max="500"
+                              className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-2.5 py-1.5 text-white font-mono font-bold text-center text-xs"
+                              value={settings.freeListingsLimit !== undefined ? settings.freeListingsLimit : 1}
+                              onChange={(e) => setSettings({ ...settings, freeListingsLimit: Math.max(0, parseInt(e.target.value) || 0) })}
+                            />
+                            <p className="text-[9.5px] text-slate-500 mt-1 leading-normal">
+                              {lang === "fa" 
+                                ? "💡 مشخص کنید هر مشاور/املاک جدید بدون نیاز به پرداخت، چند عدد آگهی آزمایشی یا اولیه می‌تواند ثبت کند (مثلاً می‌توانید این مقدار را روی ۵، ۱۰ یا حتی ۱۰۰ بگذارید)."
+                                : "💡 Set how many listings a new agency can submit for free before triggering billing (e.g. 5, 10 or 100)."}
+                            </p>
+                          </div>
+
+                          <div className="border-t border-slate-900/80 pt-3">
+                            <label className="block text-slate-400 mb-1 font-bold">
+                              {lang === "fa" ? "💳 شماره ۱۶ رقمی کارت بانکی شتاب مقصد مدیریت:" : "💳 Destination Admin Shetab Bank Card (16-digit):"}
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              maxLength={16}
+                              className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-2.5 py-1.5 text-white font-mono font-bold text-center tracking-widest text-xs"
+                              value={settings.adminShetabCard || "6037991823456789"}
+                              onChange={(e) => setSettings({ ...settings, adminShetabCard: e.target.value.replace(/\s?/g, '').trim() })}
+                              placeholder="6037991823456789"
+                            />
+                          </div>
+
+                          <div className="border-t border-slate-900/80 pt-3 space-y-3">
+                            <span className="text-[10px] uppercase font-black text-amber-500 font-mono block">
+                              💎 {lang === "fa" ? "تعرفه عضویت طلایی ویژه" : "Gold Premium Tariff Settings"}
+                            </span>
+                            
+                            <div>
+                              <label className="block text-slate-400 mb-1 font-bold text-xs">
+                                {lang === "fa" ? "نام/عنوان ارز محلی شما (مثال: AFN یا تومان):" : "Your Local Currency Name (e.g. AFN or Toman):"}
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-2.5 py-1.5 text-white font-bold text-center font-mono text-xs"
+                                value={settings.fiatCurrencyName || "AFN"}
+                                onChange={(e) => setSettings({ ...settings, fiatCurrencyName: e.target.value })}
+                                placeholder="AFN"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-slate-400 mb-1 font-bold text-xs">
+                                  {lang === "fa" ? `هزینه ماهانه (${settings.fiatCurrencyName || "AFN"}):` : `Monthly Price (${settings.fiatCurrencyName || "AFN"}):`}
+                                </label>
+                                <input
+                                  type="number"
+                                  required
+                                  min="0"
+                                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-2.5 py-1.5 text-amber-450 font-mono font-bold text-center text-xs"
+                                  value={settings.goldPriceToman !== undefined ? settings.goldPriceToman : 800}
+                                  onChange={(e) => setSettings({ ...settings, goldPriceToman: Math.max(0, parseInt(e.target.value) || 0) })}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-slate-400 mb-1 font-bold text-xs">
+                                  {lang === "fa" ? "هزینه ماهانه (USDT):" : "Monthly Price (USDT):"}
+                                </label>
+                                <input
+                                  type="number"
+                                  required
+                                  min="0"
+                                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-2.5 py-1.5 text-amber-450 font-mono font-bold text-center text-xs"
+                                  value={settings.goldPriceUSDT !== undefined ? settings.goldPriceUSDT : 10}
+                                  onChange={(e) => setSettings({ ...settings, goldPriceUSDT: Math.max(0, parseInt(e.target.value) || 0) })}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-slate-900/80 pt-3">
+                            <label className="block text-slate-400 mb-1 font-bold">
                               {getTranslation(lang, "settingsWalletAddress", "Personal Deposit Wallet Address (USDT-TRC20):")}
                             </label>
                             <input
@@ -2580,6 +2720,25 @@ export default function App() {
             onSaveSettings={handleSaveSettings}
           />
         </Suspense>
+      )}
+
+      {showGoldUpgradeModal && (
+        <GoldUpgradeModal
+          lang={lang}
+          currentEmail={localStorage.getItem("melkban_verified_broker_email") || "amirkachaloooo65@gmail.com"}
+          tetherWalletAddress={settings.tetherWalletAddress}
+          adminShetabCard={settings.adminShetabCard}
+          customPromoCode={settings.promoCode}
+          customPromoDiscount={settings.promoDiscountPct}
+          customGlobalDiscount={settings.globalDiscountPct}
+          goldPriceToman={settings.goldPriceToman}
+          goldPriceUSDT={settings.goldPriceUSDT}
+          fiatCurrencyName={settings.fiatCurrencyName}
+          onClose={() => setShowGoldUpgradeModal(false)}
+          onSubscriptionUpgraded={() => {
+            setSubscriptionTier("pro");
+          }}
+        />
       )}
 
       {/* SECURE DIRECT CHAT SESSION DRAWER */}

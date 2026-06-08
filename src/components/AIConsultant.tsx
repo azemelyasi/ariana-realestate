@@ -4,9 +4,7 @@ import { TRANSLATIONS, getTranslation } from "../i18n";
 import { 
   Sparkles, 
   Send, 
-  Bot,
-  Key,
-  Settings
+  Bot
 } from "lucide-react";
 
 interface Message {
@@ -34,17 +32,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = ({ lang }) => {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Custom User Key and Free Credits Storage
-  const [userApiKey, setUserApiKey] = useState<string>(() => {
-    return localStorage.getItem("user_gemini_key") || "";
-  });
-  const [creditsRemaining, setCreditsRemaining] = useState<number>(() => {
-    const stored = localStorage.getItem("ai_message_credits_rem");
-    return stored !== null ? Math.max(0, parseInt(stored, 10)) : 50;
-  });
-  const [showSettings, setShowSettings] = useState(false);
-  const [tempKey, setTempKey] = useState(userApiKey);
-
+  // Shared server infrastructure handles queries securely. No client-side credentials are exposed.
   const presets = [
     getTranslation(lang, "aiPreset1", "قیمت متوسط املاک مسکو چقدر است؟"),
     getTranslation(lang, "aiPreset2", "ارزش‌گذاری هوشمند کاداستر چگونه انجام می‌شود؟"),
@@ -55,45 +43,8 @@ export const AIConsultant: React.FC<AIConsultantProps> = ({ lang }) => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const handleSaveKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanKey = tempKey.trim();
-    localStorage.setItem("user_gemini_key", cleanKey);
-    setUserApiKey(cleanKey);
-    setShowSettings(false);
-    
-    const notificationTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
-    setMessages((prev) => [
-      ...prev,
-      {
-        sender: "ai",
-        text: cleanKey 
-          ? (lang === "fa" ? "🔑 کلید اختصاصی Gemini شما با موفقیت ثبت شد. ترافیک شما اکنون نامحدود است!" : "🔑 Your custom Gemini API key was saved successfully. Your queries are now unlimited!")
-          : (lang === "fa" ? "ℹ️ کلید اختصاصی حذف شد. برنامه مجدداً از اعتبار سهمیه عمومی رایگان استفاده می‌کند." : "ℹ️ Custom key removed. System is back to using standard shared credits."),
-        time: notificationTime
-      }
-    ]);
-  };
-
   const handleSendMessage = async (msgText: string) => {
     if (!msgText.trim() || loading) return;
-
-    // Check credits before sending, if there is no userApiKey
-    if (!userApiKey && creditsRemaining <= 0) {
-      const responseTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "ai",
-          text: lang === "fa" 
-            ? "⚠️ اعتبار سهمیه عمومی رایگان شما (۵۰ توکن آریانا) به پایان رسیده است. برای ادامه، دکمه چرخ‌دنده بالا را زده و کلید اختصاصی Gemini خود را ثبت کنید."
-            : "⚠️ Your free shared credit (50 Ariana tokens) has been exhausted. Please click the Settings gear icon above to provide your own Gemini API key to continue.",
-          time: responseTime
-        }
-      ]);
-      setShowSettings(true);
-      return;
-    }
 
     const currentTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
     setMessages((prev) => [...prev, { sender: "user", text: msgText, time: currentTime }]);
@@ -104,27 +55,18 @@ export const AIConsultant: React.FC<AIConsultantProps> = ({ lang }) => {
       const response = await fetch("/api/gemini/consult", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: msgText, lang, userApiKey }),
+        body: JSON.stringify({ prompt: msgText, lang, userApiKey: "" }),
       });
 
       const responseTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
       if (response.ok) {
         const data = await response.json();
         setMessages((prev) => [...prev, { sender: "ai", text: data.reply, time: responseTime }]);
-        
-        // Decrement credits only if not using custom user key
-        if (!userApiKey) {
-          setCreditsRemaining((prev) => {
-            const next = Math.max(0, prev - 1);
-            localStorage.setItem("ai_message_credits_rem", String(next));
-            return next;
-          });
-        }
       } else {
         throw new Error("API issue");
       }
     } catch {
-      // Elegant, rich offline assistant response when API key is missing or system offline
+      // Elegant, rich offline assistant response when system is offline
       setTimeout(() => {
         const responseTime = new Date().toLocaleTimeString(isRtl ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" });
         let fallbackReply = "";
@@ -141,15 +83,6 @@ export const AIConsultant: React.FC<AIConsultantProps> = ({ lang }) => {
         }
 
         setMessages((prev) => [...prev, { sender: "ai", text: fallbackReply, time: responseTime }]);
-        
-        // Decrement credits on fallback too
-        if (!userApiKey) {
-          setCreditsRemaining((prev) => {
-            const next = Math.max(0, prev - 1);
-            localStorage.setItem("ai_message_credits_rem", String(next));
-            return next;
-          });
-        }
       }, 700);
     } finally {
       setLoading(false);
@@ -168,7 +101,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = ({ lang }) => {
       {/* Decorative Golden Label / Visual Magnet */}
       <div className="absolute -top-3 left-4 right-4 flex justify-between items-center pointer-events-none px-2">
         <span className="bg-gradient-to-r from-amber-500 via-indigo-500 to-amber-500 text-[8px] font-black uppercase text-slate-950 px-3 py-1 rounded-full shadow-lg shadow-black/80 font-mono tracking-widest animate-pulse border border-amber-400/20">
-          ✨ {userApiKey ? (lang === "fa" ? "کلید اختصاصی فعال است" : "CUSTOM KEY ACTIVE") : (lang === "fa" ? "پردازشگر زنده جمینی فعال است" : "GEMINI ACTIVE INFRASTRUCTURE")}
+          ✨ {lang === "fa" ? "پردازشگر زنده جمینی فعال است" : "GEMINI ACTIVE INFRASTRUCTURE"}
         </span>
       </div>
 
@@ -201,105 +134,19 @@ export const AIConsultant: React.FC<AIConsultantProps> = ({ lang }) => {
             </div>
           </div>
 
-          {/* Settings & Token Status Controls */}
+          {/* Secure Status Indicator instead of settings */}
           <div className="flex items-center gap-2">
-            {/* Token Badge */}
-            <div className="flex items-center gap-1 px-2 py-1 bg-slate-950/85 border border-indigo-500/10 rounded-lg text-[9px] font-mono text-indigo-300">
-              <Key className="w-3 h-3 text-amber-500" />
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-[9px] font-mono font-bold text-emerald-400 animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
               <span>
-                {userApiKey ? "∞" : `${creditsRemaining}T`}
+                {lang === "fa" ? "سرویس فعال" : "ACTIVE"}
               </span>
             </div>
-
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-1.5 bg-slate-950/85 hover:bg-slate-900 border border-indigo-500/10 hover:border-indigo-500/35 text-indigo-400 hover:text-indigo-200 rounded-lg transition-all"
-              title={lang === "fa" ? "تنظیمات کلید API اختصاصی" : "API Key Settings"}
-            >
-              <Settings className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Settings Panel Drawer style inside the container */}
-      {showSettings ? (
-        <div className="flex-1 flex flex-col justify-between bg-slate-950/95 border border-indigo-500/25 rounded-2xl p-4 my-3 text-xs overflow-y-auto scrollbar-thin">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-indigo-300 font-bold">
-              <Key className="w-4 h-4 text-amber-400" />
-              <span>{lang === "fa" ? "تنظیم کلید اختصاصی جمینی" : "Gemini API Key Setup"}</span>
-            </div>
-            
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">
-              {lang === "fa" 
-                ? "جهت جلوگیری از هزینه‌های اشتراکی سهمیه عمومی، پس از ۵۰ درخواست رایگان، می‌توانید کلید API رایگان خود را از گوگل دریافت کرده و در زیر وارد کنید. هیچ مقداری در سرور ذخیره نشده و مستقیماً روی مرورگر شما کار می‌کند."
-                : "To maintain server security and respect fair use, after 50 queries you can input your personal free Gemini API key. It is saved only in your secure local browser space."}
-            </p>
-
-            {/* Quick 1-2-3 Guide for User key creation */}
-            <div className="bg-slate-900/80 border border-indigo-500/10 rounded-xl p-3 space-y-2 text-[10px] text-slate-300">
-              <div className="font-bold text-indigo-300 text-[10.5px]">
-                {lang === "fa" ? "🔍 راهنمای دریافت کلید رایگان:" : "🔍 How to get a free key:"}
-              </div>
-              <ul className="list-decimal list-inside space-y-1 text-slate-400">
-                {lang === "fa" ? (
-                  <>
-                    <li>به سایت <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Google AI Studio</a> مراجعه کنید.</li>
-                    <li>روی دکمه سبز رنگ <span className="text-amber-400 font-semibold">Get API key</span> کلیک کنید.</li>
-                    <li>کلید ساخته شده را کپی کرده و در کادر زیر قرار دهید.</li>
-                  </>
-                ) : (
-                  <>
-                    <li>Visit <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Google AI Studio</a>.</li>
-                    <li>Click the green <span className="text-amber-400 font-semibold">Get API key</span> button.</li>
-                    <li>Create key, copy and paste it into the input field below.</li>
-                  </>
-                )}
-              </ul>
-            </div>
-          </div>
-
-          <form onSubmit={handleSaveKey} className="space-y-3 pt-2 border-t border-slate-900">
-            <input
-              type="text"
-              placeholder="AIzaSy..."
-              className="w-full bg-slate-900 border border-slate-800 p-2 rounded-xl text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500"
-              value={tempKey}
-              onChange={(e) => setTempKey(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                className="flex-1 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold rounded-lg text-[11px] active:scale-95 cursor-pointer"
-              >
-                {lang === "fa" ? "ثبت کلید" : "Save Key"}
-              </button>
-              <button
-                type="button"
-                className="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded-lg text-[11px] cursor-pointer"
-                onClick={() => {
-                  setTempKey("");
-                  localStorage.removeItem("user_gemini_key");
-                  setUserApiKey("");
-                  setShowSettings(false);
-                }}
-              >
-                {lang === "fa" ? "پاک کردن" : "Clear"}
-              </button>
-            </div>
-            <button
-               type="button"
-               onClick={() => setShowSettings(false)}
-               className="w-full text-center text-indigo-400 hover:text-indigo-300 text-[10px] mt-1 cursor-pointer block"
-            >
-               {lang === "fa" ? "← بازگشت به چت" : "← Back to Chat"}
-            </button>
-          </form>
-        </div>
-      ) : (
-        <>
-          {/* Messages Feed */}
+      {/* Messages Feed */}
           <div 
             className="flex-1 overflow-y-auto my-3 space-y-3 px-1 py-1 text-xs border-b border-indigo-500/10 scrollbar-thin scrollbar-thumb-indigo-500/10 scrollbar-track-transparent" 
             id="chat-messages-container"
@@ -383,8 +230,6 @@ export const AIConsultant: React.FC<AIConsultantProps> = ({ lang }) => {
               </button>
             </form>
           </div>
-        </>
-      )}
     </div>
   );
 };

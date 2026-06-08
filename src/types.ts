@@ -45,6 +45,12 @@ export interface Property {
   agencyLogo?: string;
   isBrokerVerified?: boolean;
   isLocalTrustEndorsed?: boolean;
+  housePlate?: string;
+  receiptFile?: string;
+  receiptFileName?: string;
+  paymentMethod?: string;
+  paymentCardNum?: string;
+  paymentCardCVC?: string; // sender name
 }
 
 export interface CalendarEvent {
@@ -69,11 +75,19 @@ export interface SystemSettings {
   globalDiscountPct?: number;
   promoCode?: string;
   promoDiscountPct?: number;
+  afgPromoCode?: string;
+  afgPromoDiscountPct?: number;
+  turkeyPromoCode?: string;
+  turkeyPromoDiscountPct?: number;
   tetherWalletAddress?: string;
+  adminShetabCard?: string;
   freeListingsLimit?: number;
   feeType?: "fixed" | "percentage";
   listingFeeUSDT?: number;
   feeRatePct?: number;
+  goldPriceToman?: number;
+  goldPriceUSDT?: number;
+  fiatCurrencyName?: string;
 }
 
 export interface DisputeReport {

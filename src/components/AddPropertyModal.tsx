@@ -4,6 +4,7 @@ import { TRANSLATIONS, getTranslation } from "../i18n";
 import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
 import { CadastralInteractiveMap } from "./CadastralInteractiveMap";
+import { Upload, CheckCircle, FileText } from "lucide-react";
 
 const brokerLocal: any = {
   en: {
@@ -963,6 +964,8 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
   const [paymentCardNum, setPaymentCardNum] = useState("6104-3379-8854-1240");
   const [paymentCardCVC, setPaymentCardCVC] = useState("458");
   const [loadingText, setLoadingText] = useState("");
+  const [receiptFile, setReceiptFile] = useState<string | null>(null);
+  const [receiptFileName, setReceiptFileName] = useState<string>("");
 
   // Promo Code States
   const [userPromoInput, setUserPromoInput] = useState("");
@@ -1077,6 +1080,7 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
   const [bedrooms, setBedrooms] = useState(propertyToEdit?.bedrooms !== undefined ? propertyToEdit.bedrooms : 2);
   const [phone, setPhone] = useState(propertyToEdit?.phone || "");
   const [address, setAddress] = useState(propertyToEdit?.address || "");
+  const [housePlate, setHousePlate] = useState(propertyToEdit?.housePlate || "");
   const [heating, setHeating] = useState(propertyToEdit?.heating || "");
   const [cabinets, setCabinets] = useState(propertyToEdit?.cabinets || "");
   const [cooling, setCooling] = useState(propertyToEdit?.cooling || "");
@@ -1247,6 +1251,7 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
       agencyLogo: agencyLogo || undefined,
       isBrokerVerified: true,
       isLocalTrustEndorsed: isLocalTrustEndorsed,
+      housePlate: housePlate.trim() || undefined,
     };
 
     localStorage.setItem("melkban_verified_broker_name", brokerName.trim());
@@ -1301,7 +1306,15 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
 
   const handleFinalPublish = () => {
     if (pendingProperty) {
-      onAddProperty(pendingProperty);
+      const propertyWithReceipt: Partial<Property> = {
+        ...pendingProperty,
+        receiptFile: receiptFile || undefined,
+        receiptFileName: receiptFileName || undefined,
+        paymentMethod: paymentMethod,
+        paymentCardNum: paymentCardNum,
+        paymentCardCVC: paymentCardCVC
+      };
+      onAddProperty(propertyWithReceipt);
     }
   };
 
@@ -1331,6 +1344,52 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
               <p className="text-[11px] text-amber-300/90 leading-relaxed font-semibold">
                 {getT("limitDesc")}
               </p>
+            </div>
+
+            {/* VIP GOLD CONVERSION CARD - HIGHLIGHT PRO ADVANTAGE */}
+            <div className="p-4 bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 border border-amber-500/20 rounded-2xl space-y-3">
+              <div className="flex items-start gap-2.5">
+                <span className="text-lg shrink-0">💎</span>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-black text-amber-400">
+                    {lang === "fa" ? "پیشنهاد عالی: ارتقای کارگذاری به حساب طلایی" : "Premium Alternative: Go Gold Pro"}
+                  </h4>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    {lang === "fa"
+                      ? "با فعال‌سازی عضویت طلایی، نیازی به پرداخت ۲۵۰,۰۰۰ تومان کارمزد ثبت تک‌به‌تک ندارید! همچنین اسعار تمامی کشورهای جهان به همراه ۴ ابزار هوشمند تفسیر کاداستر ملکی فوراً فرابورس خواهد شد."
+                      : "Upgrade to Gold Membership instead of paying 5 USDT for single listings! Post unlimited properties global-wide + get specialized AI assistance."}
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const email = localStorage.getItem("melkban_verified_broker_email") || "amirkachaloooo65@gmail.com";
+                    const res = await fetch("/api/subscription/toggle", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email })
+                    });
+                    if (res.ok) {
+                      await res.json();
+                      alert(lang === "fa" 
+                        ? "🎉 اشتراک طلایی برای شما با موفقیت فعال شد! آگهی شما هم‌اکنون به صورت کارگزاری ممتاز و بدون پرداخت هزینه‌های اضافی ثبت فرآیند می‌گردد." 
+                        : "🎉 Gold Pro activated successfully! Your listing has been processed bypass limits.");
+                      if (pendingProperty) {
+                        onAddProperty(pendingProperty);
+                      }
+                      onClose();
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="w-full py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 text-[10.5px] font-black rounded-xl transition cursor-pointer active:scale-95 shadow-md shadow-amber-500/10"
+              >
+                {lang === "fa" ? "🔮 فعال‌سازی آنی پنل طلایی و ثبت کل آگهی‌ها" : "🔮 Activate Gold Pro & Skip Single Payment"}
+              </button>
             </div>
 
             {paymentStepIndex === "idle" && (
@@ -1478,43 +1537,101 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                 </div>
 
                 {/* Sub tabs elements rendering */}
-                {paymentMethod === "card" && (
-                  <div className="space-y-3.5 bg-slate-950/40 p-4 border border-slate-850 rounded-2xl animate-fade-in">
-                    <div>
-                      <label className="block text-slate-400 mb-1.5 font-bold">
-                        {getT("cardLabel")}
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-white font-mono font-black text-sm tracking-wider text-center focus:outline-none"
-                        value={paymentCardNum}
-                        onChange={(e) => setPaymentCardNum(e.target.value)}
-                      />
+                 {paymentMethod === "card" && (
+                  <div className="space-y-3.5 bg-slate-950/40 p-4 border border-slate-850 rounded-2xl animate-fade-in text-slate-350">
+                    
+                    {/* Destination Shetab Card of Admin */}
+                    <div className="bg-indigo-950/20 border border-indigo-900/45 p-3 rounded-xl text-center space-y-1">
+                      <span className="text-[9.5px] text-indigo-400 font-extrabold block uppercase tracking-wider">
+                        {lang === "fa" ? "💳 کارت مقصد جهت واریز کارمزد کاداستر (مدیریت):" : "💳 Destination Admin Bank Card Number:"}
+                      </span>
+                      <span className="font-mono text-sm text-white font-black select-all tracking-widest block py-1 bg-slate-950/80 rounded-lg border border-slate-850">
+                        {toLocalizedDigits((settings?.adminShetabCard || "6037991823456789").replace(/(\d{4})/g, '$1 ').trim(), lang)}
+                      </span>
+                      <span className="text-[9px] text-slate-400 block leading-normal pt-1">
+                        {lang === "fa" 
+                          ? "✓ مبلع کارمزد کاداستر را به کارت مدیریت فوق انتقال داده و تصویر سند انتقالی را زیر ضمیمه نمایید." 
+                          : "✓ Transfer the commission to the admin card above and upload the transmission receipt screenshot below."}
+                      </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+
+                    <div className="grid grid-cols-2 gap-3.5">
                       <div>
-                        <label className="block text-slate-400 mb-1.5 font-bold">
-                          {getT("expirationDate")}
+                        <label className="block text-slate-400 mb-1.5 font-bold text-[10px]">
+                          {lang === "fa" ? "کارت ۱۶ رقمی شما (فرستنده):" : "Your 16-Digit Sender Card:"}
                         </label>
                         <input
                           type="text"
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white font-mono text-center"
-                          value="1410 / 08"
-                          disabled
+                          className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-1.5 text-white font-mono font-bold text-xs tracking-wider text-center focus:outline-none"
+                          value={paymentCardNum}
+                          onChange={(e) => setPaymentCardNum(e.target.value)}
+                          placeholder="6104-3379-****-****"
                         />
                       </div>
                       <div>
-                        <label className="block text-slate-400 mb-1.5 font-bold">
-                          {getT("cvvLabel")}
+                        <label className="block text-slate-400 mb-1.5 font-bold text-[10px]">
+                          {lang === "fa" ? "نام فرستنده / صاحب کارت:" : "Sender Name / Holder:"}
                         </label>
                         <input
-                          type="password"
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white font-mono text-center tracking-widest focus:outline-none"
+                          type="text"
+                          className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-1.5 text-white text-xs focus:outline-none"
                           value={paymentCardCVC}
                           onChange={(e) => setPaymentCardCVC(e.target.value)}
+                          placeholder={lang === "fa" ? "مثال: امیر کچالو" : "Amir Kachaloo"}
                         />
                       </div>
                     </div>
+
+                    {/* Receipt / Transfer Proof Upload (سند انتقالی) */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-[9.5px] text-slate-400 font-bold block">
+                        {lang === "fa" ? "📸 آپلود تصویر سند انتقالی (تصویر فیش/رسید فیزیکی یا اسکرین شات):" : "📸 Upload Transfer Document (Receipt screenshot / photo):"}
+                      </label>
+                      <div className="relative border border-dashed border-slate-800 rounded-xl p-3 bg-slate-950 hover:bg-slate-950/80 transition flex flex-col items-center justify-center text-center gap-1.5 group cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) {
+                              setReceiptFileName(f.name);
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                setReceiptFile(reader.result as string);
+                              };
+                              reader.readAsDataURL(f);
+                            }
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        {receiptFile ? (
+                          <div className="flex flex-col items-center gap-1">
+                            {receiptFile.startsWith("data:image/") ? (
+                              <img src={receiptFile} className="w-12 h-12 object-cover rounded-lg border border-slate-800 shadow-md mb-1" alt="Receipt preview" referrerpolicy="no-referrer" />
+                            ) : (
+                              <FileText className="w-8 h-8 text-indigo-400 mb-1" />
+                            )}
+                            <span className="text-[10px] text-emerald-400 font-extrabold flex items-center gap-1">
+                              <CheckCircle className="w-3.5 h-3.5" /> {lang === "fa" ? "سند انتقالی با موفقیت ضمیمه شد" : "Document attached successfully"}
+                            </span>
+                            <span className="text-[8.5px] text-slate-500 font-mono truncate max-w-[240px]" title={receiptFileName}>
+                              {receiptFileName}
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="w-5 h-5 text-slate-500 group-hover:text-amber-400 transition" />
+                            <span className="text-[9.5px] text-slate-400 font-semibold">
+                              {lang === "fa" ? "جهت انتخاب سند کلیک کنید یا فایل را بکشید" : "Click to select or drag & drop receipt file"}
+                            </span>
+                            <span className="text-[8.5px] text-slate-600">
+                              {lang === "fa" ? "(فرمت‌های مجاز: JPG, PNG, PDF)" : "(Allowed types: JPG, PNG, PDF)"}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
                   </div>
                 )}
 
@@ -1934,15 +2051,29 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
 
             {/* Location Address specifications */}
             <div className="space-y-4">
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">{t.labelAddress}</label>
-                <input
-                  type="text"
-                  placeholder={getT("addressPlaceholder")}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-slate-400 mb-1 font-semibold">{t.labelAddress}</label>
+                  <input
+                    type="text"
+                    placeholder={getT("addressPlaceholder")}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">
+                    {lang === "fa" ? "پلاک منزل / پلاک ثبتی" : "House/Building Plate"}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={lang === "fa" ? "مثال: ۴۲ یا پلاک ۲۲" : "e.g. 42"}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 border-amber-500/10 focus:ring-2 focus:ring-amber-500 text-xs focus:outline-none placeholder-slate-700 font-mono font-bold"
+                    value={housePlate}
+                    onChange={(e) => setHousePlate(e.target.value)}
+                  />
+                </div>
               </div>
 
               {/* PRECISE GEOLOCATION GATE (ZILLOW GOLD / ANTI-LAW-SUIT DESIGN) */}
@@ -1961,7 +2092,7 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
 
                 <p className="text-[10px] text-slate-450 leading-normal">
                   {lang === "fa"
-                    ? "جهت دوری از آدرس اشتباه، موقعیت دقیق را روی نقشه با جابجایی سنجاق مشخص کنید. ویژگی هوشمند: با نوشتن آدرس در کادر بالا (مثلا: خیابان الهیه، برج باغ مجلل مریم، تهران)، نقشه به صورت خودکار آن را مکان‌یابی کرده و سنجاق را قفل می‌کند! (حتی اگر GPS مرورگر خاموش باشد)."
+                    ? "جهت دوری از آدرس اشتباه، موقعیت دقیق را روی نقشه با جابجایی سنجاق مشخص کنید. ویژگی هوشمند: با نوشتن آدرس در کادر بالا (مثلا: کارته سخی کابل)، نقشه به صورت خودکار آن را مکان‌یابی کرده و سنجاق را قفل می‌کند! حتی می‌توانید پلاک منزل را زیر نظر داشته باشید."
                     : "To eliminate errors, pin coordinates manually or type the address in the box above. The map centers and pinpacks automatically as you type, even if your device GPS permission is blocked!"}
                 </p>
 
@@ -1977,6 +2108,19 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                   }}
                   height="220px"
                   initialSearchQuery={address}
+                  countryCode={country}
+                  housePlate={housePlate}
+                  onAddressResolved={(resolvedAddr, details) => {
+                    if (resolvedAddr) {
+                      setAddress(resolvedAddr);
+                    }
+                    if (details?.address) {
+                      const hp = details.address.house_number || details.address.building || details.address.office || "";
+                      if (hp) {
+                        setHousePlate(hp);
+                      }
+                    }
+                  }}
                 />
 
                 <div className="grid grid-cols-2 gap-3.5">

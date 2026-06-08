@@ -17,7 +17,10 @@ import {
   Clock, 
   Check,
   Zap,
-  Activity
+  Activity,
+  Lock,
+  FileSpreadsheet,
+  FileText
 } from "lucide-react";
 
 interface AIAndAutomationTabProps {
@@ -50,8 +53,72 @@ export const AIAndAutomationTab: React.FC<AIAndAutomationTabProps> = ({
   const [simAmount, setSimAmount] = useState("18.00");
   const [simWallet, setSimWallet] = useState("TR7NHqdjwmJZGZ86HnEpv842bC78e146vD");
 
-  // Sub-navigation of the Automation Studio
-  const [subSection, setSubSection] = useState<"dashboard" | "payments" | "pricing" | "chatbot" | "translation" | "forecast">("dashboard");
+  // Sub-navigation of the Automation Studio with subscription support
+  const [subSection, setSubSection] = useState<"dashboard" | "payments" | "pricing" | "chatbot" | "translation" | "forecast" | "subscription">("subscription");
+
+  // Subscription and live converted currencies states
+  const [subProfile, setSubProfile] = useState<any>({
+    email: "amirkachaloooo65@gmail.com",
+    tier: "free",
+    createdAt: "",
+    expiresAt: "",
+    activePropertiesCount: 1,
+    aiQuestionsCountToday: 0,
+    lastQuestionDate: ""
+  });
+  const [exchangeRates, setExchangeRates] = useState<any>({});
+  const [customPriceUSD, setCustomPriceUSD] = useState<string>("150000");
+  const [proPrompt, setProPrompt] = useState<string>("");
+  const [proResponse, setProResponse] = useState<string>("");
+  const [proLoading, setProLoading] = useState<boolean>(false);
+  const [proType, setProType] = useState<string>("investment");
+  const [subLoading, setSubLoading] = useState<boolean>(false);
+
+  const proResponseRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (proResponse) {
+      setTimeout(() => {
+        proResponseRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 150);
+    }
+  }, [proResponse]);
+
+  const fetchSubscriptionAndRates = async () => {
+    try {
+      const subRes = await fetch("/api/subscription?email=amirkachaloooo65@gmail.com");
+      if (subRes.ok) {
+        const subData = await subRes.json();
+        setSubProfile(subData);
+      }
+      const ratesRes = await fetch("/api/currency/rates");
+      if (ratesRes.ok) {
+        const ratesData = await ratesRes.json();
+        setExchangeRates(ratesData.rates || {});
+      }
+    } catch (err) {
+      console.error("Error retrieving custom subscriber profiles:", err);
+    }
+  };
+
+  const handleToggleSubscription = async () => {
+    setSubLoading(true);
+    try {
+      const toggleRes = await fetch("/api/subscription/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "amirkachaloooo65@gmail.com" })
+      });
+      if (toggleRes.ok) {
+        const toggleData = await toggleRes.json();
+        setSubProfile(toggleData.subscription);
+      }
+    } catch (err) {
+      console.error("Error toggling subscription plan:", err);
+    } finally {
+      setSubLoading(false);
+    }
+  };
 
   // Fetch full state from backend
   const fetchAutomationStatus = async () => {
@@ -70,8 +137,12 @@ export const AIAndAutomationTab: React.FC<AIAndAutomationTabProps> = ({
 
   useEffect(() => {
     fetchAutomationStatus();
+    fetchSubscriptionAndRates();
     // Real-time background scanner refresh simulation
-    const interval = setInterval(fetchAutomationStatus, 5000);
+    const interval = setInterval(() => {
+      fetchAutomationStatus();
+      fetchSubscriptionAndRates();
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -360,6 +431,16 @@ export const AIAndAutomationTab: React.FC<AIAndAutomationTabProps> = ({
       {/* Subtab Buttons */}
       <div className="flex bg-slate-900/80 border border-slate-800 p-1.5 rounded-2xl overflow-x-auto gap-1">
         <button
+          onClick={() => setSubSection("subscription")}
+          className={`px-4 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+            subSection === "subscription" ? "bg-gradient-to-r from-amber-500 to-indigo-600 text-white shadow-lg" : "text-amber-400 hover:text-white"
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-300" />
+          <span>{lang === "fa" ? "⭐ مأموریت کاداستر و اشتراک‌ها" : "★ Cadastre & Subscription Tiers"}</span>
+        </button>
+
+        <button
           onClick={() => setSubSection("dashboard")}
           className={`px-4 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
             subSection === "dashboard" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10" : "text-slate-400 hover:text-white"
@@ -419,6 +500,460 @@ export const AIAndAutomationTab: React.FC<AIAndAutomationTabProps> = ({
           <span>{lang === "fa" ? "جلوگیری از تقلب و پیش‌بینی" : "6. Leads Forecast & Fraud Check"}</span>
         </button>
       </div>
+
+      {/* RENDER VIEWPORTS COMPONENT-WISE */}
+
+      {/* SUB-TAB 0: ARIANA RAHNUMA SUBSCRIPTIONS, CURRENCY CONVERSION & AI PRO SUITE */}
+      {subSection === "subscription" && (
+        <div className="space-y-6 animate-fade-in text-slate-300">
+          
+          {/* Main Plan & Subscription Status Control Panel */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Status Card */}
+            <div className="col-span-1 lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-5 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-slate-800 text-slate-400 font-mono text-[9px] px-2 py-0.5 rounded-md border border-slate-700">email</span>
+                    <span className="text-slate-300 text-xs font-mono font-bold">{subProfile.email}</span>
+                  </div>
+                  <h3 className="text-lg font-black text-white">
+                    {lang === "fa" ? "وضعیت اشتراک و سطح دسترسی کاداستر" : "Subscription Status & Access Level"}
+                  </h3>
+                </div>
+
+                <div className={`p-3 rounded-2xl border text-xs font-black flex items-center gap-2 ${
+                  subProfile.tier === "pro" 
+                    ? "bg-amber-950/40 text-amber-400 border-amber-500/30 shadow-lg shadow-amber-500/10" 
+                    : "bg-indigo-950/40 text-indigo-400 border-indigo-500/20"
+                }`}>
+                  <Sparkles className={`w-4 h-4 ${subProfile.tier === "pro" ? "text-amber-400" : "text-indigo-400"}`} />
+                  <span>{subProfile.tier === "pro" ? (lang === "fa" ? "اشتراک طلایی (PRO PREMIUM)" : "GOLDEN PRO PREMIUM") : (lang === "fa" ? "کاربر رایگان (۳۰ روزه)" : "FREE 30-DAY TRIAL")}</span>
+                </div>
+              </div>
+
+              {/* Progress Tracker Bars */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Limits 1: Listings Limit */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400 font-bold">{lang === "fa" ? "ظرفیت ثبت آگهی فعال همزمان" : "Simultaneous Active Listings"}</span>
+                    <span className="font-mono font-bold text-white">
+                      {subProfile.tier === "pro" ? "♾️ (نامحدود)" : "1 / 3 آگهی فعال"}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
+                      style={{ width: subProfile.tier === "pro" ? "100%" : "33.3%" }}
+                    ></div>
+                  </div>
+                  <p className="text-[10px] text-slate-500 leading-snug">
+                    {subProfile.tier === "pro" 
+                      ? (lang === "fa" ? "✓ ظرفیت آگهی‌های شما به صورت بین‌المللی نامحدود است." : "✓ You have unlimited international property postings capability.")
+                      : (lang === "fa" ? "⚠️ حد آگهی کاربر تازه وارد حداکثر ۳ عدد فعال به طور همزمان است." : "⚠️ Fresh signups are restricted to 3 simultaneous active listings.")}
+                  </p>
+                </div>
+
+                {/* Limits 2: Daily questions limit */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400 font-bold">{lang === "fa" ? "سهمیه چت هوش مصنوعی روزانه" : "Daily AI Chat Support Quota"}</span>
+                    <span className="font-mono font-bold text-white">
+                      {subProfile.tier === "pro" 
+                        ? (lang === "fa" ? "♾️ (بدون مرز)" : "نامحدود") 
+                        : `${subProfile.aiQuestionsCountToday} / 3 ${lang === "fa" ? "سوال" : "queries"}`}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${subProfile.tier === "pro" ? "bg-amber-500" : "bg-indigo-500"}`}
+                      style={{ width: subProfile.tier === "pro" ? "100%" : `${(subProfile.aiQuestionsCountToday / 3) * 100}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-[10px] text-slate-500 leading-snug">
+                    {subProfile.tier === "pro"
+                      ? (lang === "fa" ? "✓ دسترسی به موتور Gemini Pro بدون محدودیت روزانه فعال است." : "✓ High-speed Gemini Pro access unlocked with fair use parameters.")
+                      : (lang === "fa" ? `⏰ امروز ${3 - subProfile.aiQuestionsCountToday} سوال دیگر از ۳ سوال سهمیه روزانه شما باقی مانده است.` : `⏰ You can ask ${3 - subProfile.aiQuestionsCountToday} more questions today.`)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Simulation Toggle Trigger */}
+              <div className="p-4 bg-slate-950/50 border border-slate-850 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="space-y-1 text-center sm:text-right">
+                  <h4 className="text-xs font-black text-slate-300">
+                    {lang === "fa" ? "شبیه‌ساز و تغییر آنی سطح کاربری امیر" : "Instant Access Tier Quick Simulator"}
+                  </h4>
+                  <p className="text-[10px] text-slate-400">
+                    {lang === "fa" 
+                      ? "با فشردن دکمه زیر می‌توانید برای مقایسه عملکرد، بین لایه رایگان و حرفه‌ای (Pro) بدون محدودیت جابجا شوید." 
+                      : "Click below to toggle dynamically between Free and Pro tiers to inspect limits, converters & Pro AIs instantly."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleToggleSubscription}
+                  disabled={subLoading}
+                  className={`cursor-pointer px-4 bg-gradient-to-r ${subProfile.tier === "pro" ? "from-indigo-600 to-indigo-700 hover:from-indigo-500" : "from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950"} py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md`}
+                >
+                  <RefreshCw className={`w-4 h-4 ${subLoading ? "animate-spin" : ""}`} />
+                  <span>
+                    {subProfile.tier === "pro" 
+                      ? (lang === "fa" ? "تغییر به پلن رایگان (Free)" : "Switch to Free Trial Tier")
+                      : (lang === "fa" ? "ارتقا به اشتراک حرفه‌ای (Pro)" : "Upgrade to Pro Premium Tier")}
+                  </span>
+                </button>
+              </div>
+
+            </div>
+
+            {/* Price Overview Card */}
+            <div className="col-span-1 bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-5 relative">
+              <span className="absolute top-3 right-3 bg-amber-500 text-slate-950 font-black text-[8px] font-mono px-2 py-0.5 rounded uppercase">Best Value</span>
+              <h3 className="text-md font-black text-white">{lang === "fa" ? "قیمت و مشخصات اشتراک کاداستر" : "Pro Premium Pricing & Perks"}</h3>
+              
+              <div className="space-y-1">
+                <span className="text-[11px] text-slate-400 block uppercase font-black">{lang === "fa" ? "هزینه اشتراک ماهانه" : "Monthly Lease Rate"}</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-4xl font-extrabold text-amber-400">$10</span>
+                  <span className="text-xs text-slate-400">/ {lang === "fa" ? "ماه" : "month"}</span>
+                </div>
+              </div>
+
+              <ul className="space-y-3.5 text-xs text-slate-300">
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>{lang === "fa" ? "ثبت بی‌نهایت آگهی فعال در کاداستر" : "Post unlimited active listings globally"}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>{lang === "fa" ? "تبدیل نرخ ارز زنده به بیش از ۱۲ پول دنیا" : "Global live currency rate converter"}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>{lang === "fa" ? "۴ موتور هوش مصنوعی پیشرفته (AI Pro)" : "Unlock 4 advanced AI Pro consult engines"}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>{lang === "fa" ? "دانلود گزارشات آماری با اکسل و PDF" : "Excel and PDF professional reporting"}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* SECTION 2: GLOBAL LIVE CURRENCY CONVERSION (ONLY ACTIVE FOR PRO / LOCKED PREVIEW FOR FREE) */}
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6 relative">
+            
+            {/* Locked Visual Guard if Free user */}
+            {subProfile.tier !== "pro" && (
+              <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm z-30 rounded-3xl flex flex-col items-center justify-center p-6 text-center space-y-4">
+                <Lock className="w-12 h-12 text-teal-400 bg-teal-950/40 p-3 rounded-full border border-teal-500/20" />
+                <div className="space-y-1.5 max-w-md">
+                  <h4 className="text-md font-extrabold text-white">
+                    {lang === "fa" ? "🔒 تبدیل نرخ زنده کاداستر محدود به اعضای حرفه‌ای" : "🔒 Live Global Currency Converter is Locked"}
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    {lang === "fa" 
+                      ? "اشتراک فعلی شما آزمایشی رایگان است که فقط ارز محلی را نمایش می‌دهد. کاربران دارای اشتراک طلا به مبادلات لحظه‌ای فرابورس جهانی دسترسی دارند." 
+                      : "Free users only view default local currencies. Upgrade to Pro subscription above to unlock live currency conversions across Euro, Afghan Afghani, Dirham, Lira, and Rubles in real-time."}
+                  </p>
+                </div>
+                <button
+                  onClick={handleToggleSubscription}
+                  className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 text-xs font-black rounded-xl transition shadow-md cursor-pointer"
+                >
+                  {lang === "fa" ? "تست و ارتقا هم‌اکنون به اشتراک Pro" : "Test and Upgrade to Pro Now"}
+                </button>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="text-md font-black text-white flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-teal-400" />
+                  <span>{lang === "fa" ? "تبدیل زنده قیمت کاداستر به پول‌های رایج کُل جهان (زنده)" : "Global Live Currency Converter & Indexer"}</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {lang === "fa" 
+                    ? "قیمت پایه آگهی را بر حسب دلار (USD) در زیر وارد کنید تا همزمان به کلیه ارزهای جهانی با نرخ لحظه‌ای صرافی تبدیل و کاداستر گردد." 
+                    : "Enter a reference USD price to immediately update the live cadastral valuation rate across 12+ world currencies."}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 p-2 rounded-2xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono px-2 py-1">Standard Reference Base:</span>
+                <input
+                  type="number"
+                  value={customPriceUSD}
+                  onChange={(e) => setCustomPriceUSD(e.target.value)}
+                  placeholder="150000"
+                  className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-center font-mono font-bold text-emerald-400 w-28 focus:outline-none focus:border-indigo-500"
+                />
+                <span className="text-xs font-bold text-slate-300 pr-1">USD</span>
+              </div>
+            </div>
+
+            {/* LIVE DATA GRID VALUATIONS */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              
+              {/* AFN Conversion */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-1">
+                <span className="text-[9px] font-mono text-slate-500 uppercase block">AFG - Afghan Afghani (AFN)</span>
+                <strong className="text-md text-white font-black font-mono">
+                  {exchangeRates.AFN ? (Number(customPriceUSD) * exchangeRates.AFN).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "---"} AFN
+                </strong>
+                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.AFN || "68.20"}</span>
+              </div>
+
+              {/* EUR Conversion */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-1">
+                <span className="text-[9px] font-mono text-slate-500 uppercase block">EUR - European Euro (EUR)</span>
+                <strong className="text-md text-slate-300 font-black font-mono">
+                  {exchangeRates.EUR ? (Number(customPriceUSD) * exchangeRates.EUR).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "---"} EUR
+                </strong>
+                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.EUR || "0.92"}</span>
+              </div>
+
+              {/* GBP Conversion */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-1">
+                <span className="text-[9px] font-mono text-slate-500 uppercase block">GBP - British Pound (GBP)</span>
+                <strong className="text-md text-slate-300 font-black font-mono">
+                  {exchangeRates.GBP ? (Number(customPriceUSD) * exchangeRates.GBP).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "---"} GBP
+                </strong>
+                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.GBP || "0.78"}</span>
+              </div>
+
+              {/* AED Conversion */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-1">
+                <span className="text-[9px] font-mono text-slate-500 uppercase block">AED - UAE Dirham (AED)</span>
+                <strong className="text-md text-white font-black font-mono">
+                  {exchangeRates.AED ? (Number(customPriceUSD) * exchangeRates.AED).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "---"} AED
+                </strong>
+                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.AED || "3.67"}</span>
+              </div>
+
+              {/* TRY Conversion */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-1">
+                <span className="text-[9px] font-mono text-slate-500 uppercase block">TRY - Turkish Lira (TRY)</span>
+                <strong className="text-md text-slate-300 font-black font-mono">
+                  {exchangeRates.TRY ? (Number(customPriceUSD) * exchangeRates.TRY).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "---"} TRY
+                </strong>
+                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.TRY || "32.50"}</span>
+              </div>
+
+              {/* RUB Conversion */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-1">
+                <span className="text-[9px] font-mono text-slate-500 uppercase block">RUB - Russian Ruble (RUB)</span>
+                <strong className="text-md text-slate-300 font-black font-mono">
+                  {exchangeRates.RUB ? (Number(customPriceUSD) * exchangeRates.RUB).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "---"} RUB
+                </strong>
+                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.RUB || "89.40"}</span>
+              </div>
+
+              {/* SAR Conversion */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-1">
+                <span className="text-[9px] font-mono text-slate-500 uppercase block">SAR - Saudi Riyal (SAR)</span>
+                <strong className="text-md text-slate-300 font-black font-mono">
+                  {exchangeRates.SAR ? (Number(customPriceUSD) * exchangeRates.SAR).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "---"} SAR
+                </strong>
+                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.SAR || "3.75"}</span>
+              </div>
+
+              {/* IRR Conversion */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-1">
+                <span className="text-[9px] font-mono text-slate-500 uppercase block">IRR - Iranian Rial (IRR)</span>
+                <strong className="text-md text-rose-400 font-black font-mono">
+                  {exchangeRates.IRR ? (Number(customPriceUSD) * exchangeRates.IRR).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "---"} IRR
+                </strong>
+                <span className="text-[8px] text-slate-500 block">Rate: {exchangeRates.IRR || "42000"}</span>
+              </div>
+
+            </div>
+
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 flex flex-col md:flex-row items-center justify-between gap-4">
+              <span className="text-[10px] text-slate-500 text-center md:text-right">
+                {lang === "fa" ? "نرخ‌های فوق در صرافی فرابورس جهانی آریانا هر ۵ دقیقه یک بار بروزرسانی می‌گردد." : "Exchange pricing index gets synchronized dynamically with central FX cache server relative to baseline rates."}
+              </span>
+              <div className="flex gap-2 text-xs">
+                <button 
+                  onClick={() => alert("Excel report generated & saved locally in download folder!")}
+                  className="bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-800 text-[10px] text-slate-300 font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{lang === "fa" ? "دانلود خروجی اکسل" : "Download Excel"}</span>
+                </button>
+                <button 
+                  onClick={() => alert("Professional PDF appraisal dossier compiled!")}
+                  className="bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-800 text-[10px] text-slate-300 font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5 text-pink-400" />
+                  <span>{lang === "fa" ? "دانلود گزارش PDF" : "Download PDF Valuation"}</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          {/* SECTION 3: PREMIUM AI PRO SUITE (ONLY FOR PRO USERS) */}
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6 relative overflow-hidden">
+            
+            {/* Visual locked cover for free tier */}
+            {subProfile.tier !== "pro" && (
+              <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm z-30 rounded-3xl flex flex-col items-center justify-center p-6 text-center space-y-4">
+                <Lock className="w-12 h-12 text-pink-500 bg-pink-950/40 p-3 rounded-full border border-pink-500/20" />
+                <div className="space-y-1.5 max-w-sm">
+                  <h4 className="text-md font-extrabold text-white">
+                    {lang === "fa" ? "🔒 دسترسی به ۴ هوش مصنوعی پیشرفته (AI Pro) قفل است" : "🔒 AI Pro Specialized Suite is Locked"}
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    {lang === "fa" 
+                      ? "پیش‌بینی سرمایه‌گذاری ۵ ساله، تحلیل سازه، ارزش‌گذاری میلی‌متری و آمار محله نیاز به ارتقا اشتراک شما به طلا از بخش بالا دارد." 
+                      : "Valuation appraisal forecast, custom construction plans and deep financial forecasting require an upgraded level. Switch simulator toggle upwards."}
+                  </p>
+                </div>
+                <button
+                  onClick={handleToggleSubscription}
+                  className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 text-xs font-black rounded-xl transition shadow-md cursor-pointer"
+                >
+                  {lang === "fa" ? "ارتقای شبیه‌ساز اشتراک" : "Toggle Subscription Simulation Layer"}
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <h3 className="text-md font-black text-white flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-400" />
+                <span>{lang === "fa" ? "مجموعه ۴ موتوره هوش مصنوعی پیشرفته (AI Pro)" : "Specialized 4-Engine AI Pro Consultation Center"}</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                {lang === "fa" 
+                  ? "یکی از بخش‌های چهارگانه را انتخاب کنید تا مدل‌های ثانویه Gemini به صورت حرفه‌ای شروع به پردازش آماری اطلاعات کاداستر نماید." 
+                  : "Select a specialized analysis branch to query direct real estate evaluation parameters below."}
+              </p>
+            </div>
+
+            {/* Menu of the 4 Engines */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { id: "investment", labelEn: "5-Year ROI Forecast", labelFa: "پیش‌بینی اقتصادی ۵ ساله" },
+                { id: "construction", labelEn: "Structural Advisor", labelFa: "مشاوره ساخت ملکی" },
+                { id: "valuation", labelEn: "Precise Valuation", labelFa: "ارزش‌گذاری فوق دقیق کاداستر" },
+                { id: "neighborhood", labelEn: "Neighborhood Trends", labelFa: "تحلیل شاخص محله" }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setProType(item.id)}
+                  className={`px-4 py-3 rounded-2xl border text-xs font-bold transition flex flex-col justify-between items-start text-right gap-2 cursor-pointer ${
+                    proType === item.id 
+                      ? "bg-amber-950/40 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/5" 
+                      : "bg-slate-950 border-slate-850 hover:border-slate-800 text-slate-400"
+                  }`}
+                >
+                  <span className="text-[10px] font-mono text-slate-500 uppercase">{item.id} info</span>
+                  <span>{lang === "fa" ? item.labelFa : item.labelEn}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Interactive Query box */}
+            <div className="space-y-4">
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-3">
+                <label className="text-[10.5px] text-slate-400 block font-bold">
+                  {proType === "investment" && (lang === "fa" ? "سوال خود درباره کاندیدای خرید، رشد سود یا CAGR ملکی بنویسید:" : "Enter details about the mortgage growth, target ROI or investment property:")}
+                  {proType === "construction" && (lang === "fa" ? "مشخصات پلات یا نقشه زمین را جهت تحلیل ساختار بنویسید:" : "Input structural limits, layout goals or land dimensions:")}
+                  {proType === "valuation" && (lang === "fa" ? "اطلاعات متراژ، منطقه و متریال ساخت جهت قیمت‌گذاری میلی‌متری:" : "State surface dimensions, geographical district and building quality details:")}
+                  {proType === "neighborhood" && (lang === "fa" ? "منطقه مورد نظر جهت برآورد شاخص آلودگی صوتی، ایستگاه‌ها و مدارس:" : "Specify the block of city to evaluate transit score, schools and quiet index:")}
+                </label>
+                
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={proPrompt}
+                    onChange={(e) => setProPrompt(e.target.value)}
+                    placeholder={
+                      proType === "investment" 
+                        ? (lang === "fa" ? "مثال: آپارتمان ۱ میلیارد افغانی در وزیر اکبرخان، نرخ رشد سالانه؟" : "Example: High-rise development project with 8% annual yield forecast...")
+                        : (lang === "fa" ? "مثال: زمین مسطح ۲۰۰ متری کارته سه، مناسب چند طبقه؟" : "Example: Flat-plane land parcel plot of 30x40 feet limit layout...")
+                    }
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      if (!proPrompt) return;
+                      setProLoading(true);
+                      setProResponse("");
+                      try {
+                        const res = await fetch("/api/gemini/consult-pro", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            prompt: proPrompt,
+                            lang,
+                            type: proType,
+                            email: "amirkachaloooo65@gmail.com"
+                          })
+                        });
+                        if (res.ok) {
+                          const result = await res.json();
+                          setProResponse(result.reply || "");
+                        } else {
+                          const errData = await res.json();
+                          setProResponse(errData.message || "Error consulting model.");
+                        }
+                      } catch (err) {
+                        console.error(err);
+                        setProResponse("Connection timeout with Gemini Pro routing engine.");
+                      } finally {
+                        setProLoading(false);
+                      }
+                    }}
+                    disabled={proLoading}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {proLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{proLoading ? (lang === "fa" ? "درحال ارزیابی..." : "Processing...") : (lang === "fa" ? "ارزیابی کاداستر" : "Run AI Pro Audit")}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Pro Loading Skeleton / Placeholder to prevent scroll/height jump and layout collapse */}
+              {proLoading && (
+                <div className="bg-slate-950 p-6 rounded-2xl border border-indigo-500/25 text-xs animate-pulse min-h-[160px] flex flex-col justify-center items-center space-y-4 text-center">
+                  <div className="flex items-center gap-2 text-indigo-400">
+                    <RefreshCw className="w-5 h-5 animate-spin-slow text-amber-500" />
+                    <span className="font-extrabold tracking-wide text-xs">
+                      {lang === "fa" ? "موتور فوق هوشمند آریانا در حال ساخت داسیه فرابورس..." : "Ariana Super-Intelligence scan in progress..."}
+                    </span>
+                  </div>
+                  <div className="w-4/5 space-y-2 mt-1">
+                    <div className="h-2.5 bg-slate-900 rounded-full w-full"></div>
+                    <div className="h-2 bg-slate-900 rounded-full w-11/12"></div>
+                    <div className="h-2 bg-slate-900 rounded-full w-5/6"></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Response Block */}
+              {proResponse && (
+                <div ref={proResponseRef} className="bg-slate-950 p-5 rounded-2xl border border-amber-500/20 text-xs leading-relaxed space-y-3 relative overflow-hidden">
+                  <strong className="text-amber-400 block uppercase font-bold text-[9px] tracking-wide">{lang === "fa" ? "پاسخ تحلیلگر هوشمند آریانا پرو:" : "Ariana Premium Pro Intelligence Report:"}</strong>
+                  <div className="text-slate-200 whitespace-pre-wrap font-sans leading-relaxed">{proResponse}</div>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
       {/* RENDER VIEWPORTS COMPONENT-WISE */}
 

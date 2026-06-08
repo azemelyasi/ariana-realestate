@@ -966,6 +966,21 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                   </span>
                 </div>
               </div>
+
+              {/* Verified House Plate Spec Box */}
+              {property.housePlate && (
+                <div className="p-3 bg-gradient-to-r from-amber-950/15 via-transparent to-transparent border border-amber-500/10 rounded-2xl flex items-start gap-3 transition hover:border-amber-500/20 col-span-1 sm:col-span-2">
+                  <span className="text-xl shrink-0 animate-pulse">🏢</span>
+                  <div className="min-w-0">
+                    <span className="text-amber-500 block font-semibold text-[9px] uppercase leading-none font-mono">
+                      {lang === "fa" ? "پلاک ثبتی و شماره منزل" : "Residential House/Building Plate"}
+                    </span>
+                    <span className="text-amber-400 mt-1 block font-mono font-black text-xs truncate" title={property.housePlate}>
+                      {property.housePlate}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1840,6 +1855,13 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                   <span className="text-slate-200 font-bold text-[12px] block mt-0.5 leading-relaxed">
                     {property.address || `${property.district}, ${c.flag} ${lang === "fa" ? c.nameFa : c.nameEn}`}
                   </span>
+                  {property.housePlate && (
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <span className="bg-amber-500/10 text-amber-400 text-[10px] uppercase font-black px-2 py-0.5 rounded border border-amber-500/20 font-mono">
+                        🏢 {lang === 'fa' ? `پلاک منزل: ${property.housePlate}` : `House plate: ${property.housePlate}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1869,6 +1891,8 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                   readOnly={true}
                   lang={lang}
                   height="260px"
+                  countryCode={property.country}
+                  housePlate={property.housePlate}
                 />
 
                 <div className="w-full bg-slate-900/60 border border-slate-850/50 rounded-xl p-3 flex flex-col sm:flex-row gap-3 items-center justify-between text-[11px] font-sans">

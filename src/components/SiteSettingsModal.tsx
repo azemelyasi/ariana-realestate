@@ -27,6 +27,12 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
   const [appVersionMode, setAppVersionMode] = React.useState(settings.appVersionMode || "v3");
   const [themeMode, setThemeMode] = React.useState<"light" | "dark">(settings.themeMode || "dark");
   const [tetherWalletAddress, setTetherWalletAddress] = React.useState(settings.tetherWalletAddress || "TR7NHqdjwmJZGZ86HnEpv842bC78e146vD");
+  const [adminShetabCard, setAdminShetabCard] = React.useState(settings.adminShetabCard || "6037991823456789");
+  const [promoCodeState, setPromoCodeState] = React.useState(settings.promoCode || "MELK20");
+  const [promoDiscountState, setPromoDiscountState] = React.useState<number>(settings.promoDiscountPct !== undefined ? settings.promoDiscountPct : 20);
+  const [goldPriceTomanState, setGoldPriceTomanState] = React.useState<number>(settings.goldPriceToman !== undefined ? settings.goldPriceToman : 800);
+  const [goldPriceUSDTState, setGoldPriceUSDTState] = React.useState<number>(settings.goldPriceUSDT !== undefined ? settings.goldPriceUSDT : 10);
+  const [fiatCurrencyNameState, setFiatCurrencyNameState] = React.useState<string>(settings.fiatCurrencyName || "AFN");
 
   // Dynamic Adaptive tariffs configuration
   const [freeListingsLimit, setFreeListingsLimit] = React.useState<number>(settings.freeListingsLimit !== undefined ? settings.freeListingsLimit : 1);
@@ -102,11 +108,17 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
       appVersionMode,
       themeMode,
       tetherWalletAddress,
+      adminShetabCard,
+      promoCode: promoCodeState,
+      promoDiscountPct: promoDiscountState,
       freeListingsLimit,
       feeType,
       listingFeePrice,
       listingFeeUSDT,
       feeRatePct,
+      goldPriceToman: goldPriceTomanState,
+      goldPriceUSDT: goldPriceUSDTState,
+      fiatCurrencyName: fiatCurrencyNameState,
     });
   };
 
@@ -277,7 +289,58 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
             />
           </div>
 
-           <div>
+             <div>
+            <label className="block text-slate-400 mb-1 font-semibold">
+              {lang === "fa" ? "💳 شماره ۱۶ رقمی کارت شتاب مقصد مدیریت (جهت دریافت واریزی):" : "💳 Destination Admin Bank Shetab Card:"}
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono text-center font-bold tracking-widest text-xs pr-10"
+              value={adminShetabCard}
+              onChange={(e) => setAdminShetabCard(e.target.value.replace(/\s?/g, '').trim())}
+              placeholder="e.g. 6037991823456789"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-slate-400 mb-1 font-semibold">
+                {lang === "fa" ? "🎫 کد تخفیف جدید مدیریت:" : "🎫 Custom Promo Code:"}
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-indigo-400 uppercase text-center font-bold font-mono tracking-wider"
+                value={promoCodeState}
+                onChange={(e) => setPromoCodeState(e.target.value.trim().toUpperCase())}
+                placeholder="e.g. MELK20"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-400 mb-1 font-semibold">
+                {lang === "fa" ? "📈 میزان تخفیف کد (%)" : "📈 Promo Discount Pct (%)"}
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 text-center font-mono font-bold"
+                value={promoDiscountState}
+                onChange={(e) => setPromoDiscountState(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                placeholder="20"
+              />
+            </div>
+          </div>
+
+          <p className="text-[10px] text-slate-500 leading-relaxed -mt-2">
+            {lang === "fa" 
+              ? "💡 راهنمای کدهای چندگانه: می‌توانید کدهای متعددی را با ویرگول انگلیسی (,) از هم جدا کنید و حتی برای هر کدام درصد متفاوتی قرار دهید؛ مثلاً: AFG80:80, IRAN30:30, TURKEY20 (کد AFG80 با ۸۰٪، کد IRAN30 با ۳۰٪ و بقیه با مقدار پیش‌فرض اعمال می‌شوند)" 
+              : "💡 Multi-code guidance: Separate multiple codes by comma (,). You can even set separate percentages using colon, e.g. AFG80:80, IRAN30:30, TURKEY20."}
+          </p>
+
+          <div>
             <label className="block text-slate-400 mb-1 font-semibold">
               {getTranslation(lang, "settingsWalletAddress", "Personal USDT-TRC20 Wallet Address")}
             </label>
@@ -323,6 +386,61 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
             )}
           </div>
 
+          {/* Gold Subscription Pricing Config */}
+          <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl space-y-3.5">
+            <span className="text-[10px] text-amber-500 font-extrabold uppercase tracking-wider block font-mono">
+              💎 {lang === "fa" ? "تعرفه عضویت طلایی ویژه" : "Gold Premium Membership Pricing"}
+            </span>
+
+            <div>
+              <label className="block text-slate-400 mb-1 font-semibold text-xs">
+                {lang === "fa" ? "نام/عنوان ارز محلی شما (مثال: AFN یا تومان):" : "Your Local Currency Name (e.g. AFN or Toman):"}
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-white font-bold text-center font-mono"
+                value={fiatCurrencyNameState}
+                onChange={(e) => setFiatCurrencyNameState(e.target.value)}
+                placeholder="AFN"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">
+                  {lang === "fa" ? `تعرفه ماهانه (${fiatCurrencyNameState}):` : `Monthly Price (${fiatCurrencyNameState}):`}
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-amber-450 font-mono font-bold text-center"
+                  value={goldPriceTomanState}
+                  onChange={(e) => setGoldPriceTomanState(Math.max(0, parseInt(e.target.value) || 0))}
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">
+                  {lang === "fa" ? "تعرفه ماهانه (USDT):" : "Monthly Price (USDT):"}
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-amber-450 font-mono font-bold text-center"
+                  value={goldPriceUSDTState}
+                  onChange={(e) => setGoldPriceUSDTState(Math.max(0, parseInt(e.target.value) || 0))}
+                />
+              </div>
+            </div>
+            <p className="text-[9.5px] text-slate-500 leading-normal">
+              {lang === "fa" 
+                ? "💡 این مبالغ، هزینه پایه عضویت طلایی فرستنده هستند که تخفیف‌های عمومی و کد تخفیف معرف شما روی آن اعمال می‌شود."
+                : "💡 These are the base monthly Gold subscription price values. Global site and promo code discounts will be applied over them."}
+            </p>
+          </div>
+
           {/* Dynamic Fees subsection */}
           <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl space-y-3.5">
             <span className="text-[10px] text-indigo-400 font-extrabold uppercase tracking-wider block font-mono">
@@ -334,18 +452,21 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
               <label className="block text-slate-400 mb-1 font-semibold">
                 {getTranslation(lang, "settingsFreeLimit", "Initial Free Listings Limit:")}
               </label>
-              <select
-                value={freeListingsLimit}
-                onChange={(e) => setFreeListingsLimit(parseInt(e.target.value))}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-white font-semibold cursor-pointer"
-              >
-                <option value={0}>{getTranslation(lang, "settingsFreeLimitZero", "0 (Charge from the start)")}</option>
-                <option value={1}>{getTranslation(lang, "settingsFreeLimitOne", "1 First listing free")}</option>
-                <option value={2}>{getTranslation(lang, "settingsFreeLimitTwo", "2 First two listings free")}</option>
-                <option value={3}>{getTranslation(lang, "settingsFreeLimitThree", "3 First three listings free")}</option>
-              </select>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  max="500"
+                  value={freeListingsLimit}
+                  onChange={(e) => setFreeListingsLimit(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-white font-mono font-bold text-center focus:outline-none focus:border-indigo-500"
+                  placeholder="e.g. 5"
+                />
+              </div>
               <p className="text-[9.5px] text-slate-500 mt-1">
-                {getTranslation(lang, "settingsFreeLimitDesc", "Configure how many listings are free before payment window opens.")}
+                {lang === "fa" 
+                  ? "💡 تعداد آگهی‌های رایگان اولیه جهت شروع فعالیت (می‌توانید برای مثال عدد ۵، ۱۰، یا ۱۰۰ قرار دهید)."
+                  : getTranslation(lang, "settingsFreeLimitDesc", "Configure how many listings are free before payment window opens.")}
               </p>
             </div>
 

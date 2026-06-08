@@ -187,15 +187,31 @@ export const VisitorAnalyticsTab: React.FC<VisitorAnalyticsTabProps> = ({
         ];
 
         // Combine simulated with whatever real is in parsedLogs
-        const finalLogs = [...parsedLogs, ...initialSimulatedLogs];
+        const combinedLogs = [...parsedLogs, ...initialSimulatedLogs];
+        
+        // Ensure absolutely unique IDs
+        const seenIds = new Set<string>();
+        const finalLogs = combinedLogs.filter(log => {
+          if (seenIds.has(log.id)) return false;
+          seenIds.add(log.id);
+          return true;
+        });
+
         // Sort by newest stamp
         finalLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         localStorage.setItem("melkban_visitor_logs", JSON.stringify(finalLogs));
         setLogs(finalLogs);
       } else {
+        // Ensure unique IDs even if localStorage became corrupted previously
+        const seenIds = new Set<string>();
+        const uniqueParsed = parsedLogs.filter(log => {
+          if (seenIds.has(log.id)) return false;
+          seenIds.add(log.id);
+          return true;
+        });
         // Sort by newest stamp
-        parsedLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        setLogs(parsedLogs);
+        uniqueParsed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setLogs(uniqueParsed);
       }
     } catch (e) {
       console.error("Failed to fetch visitor analytics:", e);
@@ -208,8 +224,14 @@ export const VisitorAnalyticsTab: React.FC<VisitorAnalyticsTabProps> = ({
       if (e.key === "melkban_visitor_logs" && e.newValue) {
         try {
           const updated = JSON.parse(e.newValue);
-          updated.sort((a: VisitorLog, b: VisitorLog) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-          setLogs(updated);
+          const seenIds = new Set<string>();
+          const uniqueUpdated = updated.filter((log: VisitorLog) => {
+            if (seenIds.has(log.id)) return false;
+            seenIds.add(log.id);
+            return true;
+          });
+          uniqueUpdated.sort((a: VisitorLog, b: VisitorLog) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          setLogs(uniqueUpdated);
         } catch (err) {}
       }
     };
@@ -491,8 +513,8 @@ export const VisitorAnalyticsTab: React.FC<VisitorAnalyticsTabProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-850/40 font-medium text-slate-300">
               {logs.length > 0 ? (
-                logs.map((log) => (
-                  <tr key={log.id} className={`hover:bg-slate-900/60 transition-colors ${log.isRealTime ? "bg-violet-950/25 text-violet-200" : ""}`}>
+                logs.map((log, idx) => (
+                  <tr key={`${log.id}-${idx}`} className={`hover:bg-slate-900/60 transition-colors ${log.isRealTime ? "bg-violet-950/25 text-violet-200" : ""}`}>
                     {/* Timestamp */}
                     <td className={`py-3.5 px-3.5 font-mono text-[10px] ${isRtl ? "text-right" : "text-left"}`}>
                       {new Date(log.timestamp).toLocaleTimeString()}
