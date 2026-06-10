@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Language } from "../types";
 import { Sparkles, CheckCircle, CreditCard, Coins, Upload, FileText } from "lucide-react";
 import { toLocalizedDigits } from "./LocalCalendar";
+import { AutoTranslate } from "./AutoTranslate";
 
 interface GoldUpgradeModalProps {
   lang: Language;
@@ -214,18 +215,23 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
             </div>
             <div>
               <h3 className="text-md font-black text-white flex items-center gap-2">
-                <span>{isFa ? "💎 ارتقا به پنل کارگزاری طلایی ملکان" : "💎 Upgrade to Melkban Gold Agency Panel"}</span>
+                <span>
+                  <AutoTranslate text={isFa ? "💎 ارتقا به پنل کارگزاری طلایی ملکان" : "💎 Upgrade to Melkban Gold Agency Panel"} lang={lang} />
+                </span>
               </h3>
               <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                {isFa 
-                  ? "با پیوستن به کانون طلایی کاداستر، ملکتان را جهانی و معاملات را چندبرابر سرعت ببخشید." 
-                  : "Go global, access real-time forex indices & utilize unlimited AI engine configurations."}
+                <AutoTranslate 
+                  text={isFa 
+                    ? "با پیوستن به کانون طلایی کاداستر، ملکتان را جهانی و معاملات را چندبرابر سرعت ببخشید." 
+                    : "Go global, access real-time forex indices & utilize unlimited AI engine configurations."} 
+                  lang={lang} 
+                />
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full border border-slate-800 bg-slate-950 hover:bg-slate-850 hover:text-white transition flex items-center justify-center text-xs text-slate-400 cursor-pointer"
+            className="w-8 h-8 rounded-full border border-slate-800 bg-slate-950 hover:bg-slate-850 hover:text-white transition flex items-center justify-center text-xs text-slate-405 cursor-pointer"
           >
             ✕
           </button>
@@ -239,18 +245,23 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
               {/* Features comparison */}
               <div className="space-y-4">
                 <span className="text-[10px] uppercase font-black tracking-widest text-amber-400 block border-b border-slate-800/80 pb-2">
-                  {isFa ? "امکانات فرامحلی اشتراک طلایی" : "GOLD PREMIUM PERKS"}
+                  <AutoTranslate text={isFa ? "امکانات فرامحلی اشتراک طلایی" : "GOLD PREMIUM PERKS"} lang={lang} />
                 </span>
 
                 <div className="space-y-3.5">
                   <div className="flex items-start gap-2.5">
                     <CheckCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-black text-white">{isFa ? "تسعیر و تبدیل زنده تمام ارزهای جهان" : "Live Global Forex Desk"}</h4>
+                      <h4 className="text-xs font-black text-white">
+                        <AutoTranslate text={isFa ? "تسعیر و تبدیل زنده تمام ارزهای جهان" : "Live Global Forex Desk"} lang={lang} />
+                      </h4>
                       <p className="text-[10.5px] text-slate-400 leading-relaxed mt-0.5">
-                        {isFa 
-                          ? "نمایش خودکار قیمت و تبدیل سند به ۱۲ ارز زنده (دلار، درهم، یورو، لیر لیر، روبل، افغانی...) در چند ثانیه" 
-                          : "Convert property deeds into Dollar, Euro, Dirham, Afghan Afghani & Turkish Lira instantly."}
+                        <AutoTranslate 
+                          text={isFa 
+                            ? "نمایش خودکار قیمت و تبدیل سند به ۱۲ ارز زنده (دلار، درهم، یورو، لیر لیر، روبل، افغانی...) در چند ثانیه" 
+                            : "Convert property deeds into Dollar, Euro, Dirham, Afghan Afghani & Turkish Lira instantly."} 
+                          lang={lang} 
+                        />
                       </p>
                     </div>
                   </div>
@@ -258,11 +269,16 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                   <div className="flex items-start gap-2.5">
                     <CheckCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-black text-white">{isFa ? "نامحدود کردن ظرفیت ثبت آگهی ملکی" : "Unlimited Active Postings"}</h4>
+                      <h4 className="text-xs font-black text-white">
+                        <AutoTranslate text={isFa ? "نامحدود کردن ظرفیت ثبت آگهی ملکی" : "Unlimited Active Postings"} lang={lang} />
+                      </h4>
                       <p className="text-[10.5px] text-slate-400 leading-relaxed mt-0.5">
-                        {isFa 
-                          ? "برداشته شدن کامل حد ثبت آگهی‌های کارگزاری (بدون نیاز به پرداخت کارمزدهای مکرر بابت هر فایل)" 
-                          : "Bypass the 2-listing limitation completely. Host an endless catalog of premium cadastral items."}
+                        <AutoTranslate 
+                          text={isFa 
+                            ? "برداشته شدن کامل حد ثبت آگهی‌های کارگزاری (بدون نیاز به پرداخت کارمزدهای مکرر بابت هر فایل)" 
+                            : "Bypass the 2-listing limitation completely. Host an endless catalog of premium cadastral items."} 
+                          lang={lang} 
+                        />
                       </p>
                     </div>
                   </div>
@@ -270,11 +286,16 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                   <div className="flex items-start gap-2.5">
                     <CheckCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-black text-white">{isFa ? "دسترسی نامحدود به ۴ مدل هوش مصنوعی" : "4-Engine AI Consultation Suite"}</h4>
+                      <h4 className="text-xs font-black text-white">
+                        <AutoTranslate text={isFa ? "دسترسی نامحدود به ۴ مدل هوش مصنوعی" : "4-Engine AI Consultation Suite"} lang={lang} />
+                      </h4>
                       <p className="text-[10.5px] text-slate-400 leading-relaxed mt-0.5">
-                        {isFa 
-                          ? "مشاوره اقتصادی ۵ ساله، تحلیل ساختاری سازه، تخمین کاداستر و آمارهای محلی با هوش مصنوعی پیشرفته Gemini" 
-                          : "Unlock expert investment ROIs, materials checkups, and area statistical breakdowns."}
+                        <AutoTranslate 
+                          text={isFa 
+                            ? "مشاوره اقتصادی ۵ ساله، تحلیل ساختاری سازه، تخمین کاداستر و آمارهای محلی با هوش مصنوعی پیشرفته Gemini" 
+                            : "Unlock expert investment ROIs, materials checkups, and area statistical breakdowns."} 
+                          lang={lang} 
+                        />
                       </p>
                     </div>
                   </div>
@@ -282,11 +303,16 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                   <div className="flex items-start gap-2.5">
                     <CheckCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-black text-white">{isFa ? "نشان طلایی رسمی «کارگزار معتمد»" : "Gold Verified Trusted Badge"}</h4>
+                      <h4 className="text-xs font-black text-white">
+                        <AutoTranslate text={isFa ? "نشان طلایی رسمی «کارگزار معتمد»" : "Gold Verified Trusted Badge"} lang={lang} />
+                      </h4>
                       <p className="text-[10.5px] text-slate-400 leading-relaxed mt-0.5">
-                        {isFa 
-                          ? "به نمایش درآمدن نشان طلایی کاداستر کنار پروفایل شما جهت افزایش جلب اطمینان خریداران تا ۱۴۰٪" 
-                          : "Instill supreme buyer trust. Get labeled as a verified municipal broker with golden checkmarks."}
+                        <AutoTranslate 
+                          text={isFa 
+                            ? "به نمایش درآمدن نشان طلایی کاداستر کنار پروفایل شما جهت افزایش جلب اطمینان خریداران تا ۱۴۰٪" 
+                            : "Instill supreme buyer trust. Get labeled as a verified municipal broker with golden checkmarks."} 
+                          lang={lang} 
+                        />
                       </p>
                     </div>
                   </div>
@@ -294,11 +320,16 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                   <div className="flex items-start gap-2.5">
                     <CheckCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-black text-white">{isFa ? "دانلود گزارشات با PDF و Excel" : "Advanced Export Options"}</h4>
+                      <h4 className="text-xs font-black text-white">
+                        <AutoTranslate text={isFa ? "دانلود گزارشات با PDF و Excel" : "Advanced Export Options"} lang={lang} />
+                      </h4>
                       <p className="text-[10.5px] text-slate-400 leading-relaxed mt-0.5">
-                        {isFa 
-                          ? "استخراج یک‌کلیکه تحلیل منطقه‌ای و سبد اسناد کلاینت برای خروجی‌های حرفه‌ای چاپی و اکسل" 
-                          : "Compile valuation portfolios into presentable client documents with customizable contact grids."}
+                        <AutoTranslate 
+                          text={isFa 
+                            ? "استخراج یک‌کلیکه تحلیل منطقه‌ای و سبد اسناد کلاینت برای خروجی‌های حرفه‌ای چاپی و اکسل" 
+                            : "Compile valuation portfolios into presentable client documents with customizable contact grids."} 
+                          lang={lang} 
+                        />
                       </p>
                     </div>
                   </div>
@@ -308,14 +339,14 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
               {/* Checkout process form */}
               <div className="space-y-4 bg-slate-950 p-5 rounded-2xl border border-slate-850/80">
                 <span className="text-[10px] uppercase font-black tracking-widest text-slate-400 block border-b border-slate-900 pb-2">
-                  {isFa ? "جزئیات فعال‌سازی و فاکتور" : "ACTIVATION DETAILS"}
+                  <AutoTranslate text={isFa ? "جزئیات فعال‌سازی و فاکتور" : "ACTIVATION DETAILS"} lang={lang} />
                 </span>
 
                 <div className="space-y-3.5">
                   {/* Account Email */}
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold block">
-                      {isFa ? "✉️ ایمیل اکانت کارگزاری:" : "✉️ Broker Account Email:"}
+                      <AutoTranslate text={isFa ? "✉️ ایمیل اکانت کارگزاری:" : "✉️ Broker Account Email:"} lang={lang} />
                     </label>
                     <input
                       type="email"
@@ -329,7 +360,7 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                   {/* Payment Methods Tabs */}
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold block">
-                      {isFa ? "💳 انتخاب شیوه پرداخت ایمن:" : "💳 Select Secure Checkout Method:"}
+                      <AutoTranslate text={isFa ? "💳 انتخاب شیوه پرداخت ایمن:" : "💳 Select Secure Checkout Method:"} lang={lang} />
                     </label>
                     <div className="grid grid-cols-2 gap-1.5 bg-slate-900 p-1 rounded-xl">
                       <button
@@ -338,7 +369,7 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                         className={`py-1.5 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer ${paymentMethod === "card" ? "bg-amber-500 text-slate-950 shadow" : "text-slate-400 hover:text-white"}`}
                       >
                         <CreditCard className="w-3.5 h-3.5" />
-                        <span>{isFa ? "کارت عضو شتاب" : "Debit Card"}</span>
+                        <span><AutoTranslate text={isFa ? "کارت عضو شتاب" : "Debit Card"} lang={lang} /></span>
                       </button>
                       <button
                         type="button"
@@ -346,7 +377,7 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                         className={`py-1.5 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer ${paymentMethod === "crypto" ? "bg-amber-500 text-slate-950 shadow" : "text-slate-400 hover:text-white"}`}
                       >
                         <Coins className="w-3.5 h-3.5" />
-                        <span>{isFa ? "ارز دیجیتال (Tether)" : "Tether USDT"}</span>
+                        <span><AutoTranslate text={isFa ? "ارز دیجیتال (Tether)" : "Tether USDT"} lang={lang} /></span>
                       </button>
                     </div>
                   </div>
@@ -354,7 +385,7 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                   {/* Pricing Overview */}
                   <div className="bg-slate-900 p-3 rounded-xl border border-slate-850/50 space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-400">{isFa ? "تعرفه عضویت طلایی پایه:" : "Gold Base Subscription:"}</span>
+                      <span className="text-slate-400"><AutoTranslate text={isFa ? "تعرفه عضویت طلایی پایه:" : "Gold Base Subscription:"} lang={lang} /></span>
                       <span className="text-slate-300 font-mono font-bold">
                         {paymentMethod === "card" 
                           ? `${toLocalizedDigits(rawPriceToman.toLocaleString(), lang)} ${displayCurrency}` 
@@ -363,18 +394,18 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                     </div>
                     {globalDiscountPct > 0 && (
                       <div className="flex justify-between items-center text-xs text-emerald-400 font-bold">
-                        <span>{isFa ? "🎁 تخفیف عمومی سراسری سایت:" : "🎁 Global Site Discount:"}</span>
+                        <span><AutoTranslate text={isFa ? "🎁 تخفیف عمومی سراسری سایت:" : "🎁 Global Site Discount:"} lang={lang} /></span>
                         <span>-{toLocalizedDigits(globalDiscountPct.toString(), lang)}%</span>
                       </div>
                     )}
                     {promoDiscount > 0 && (
                       <div className="flex justify-between items-center text-xs text-amber-400 font-bold">
-                        <span>{isFa ? "🎫 تخفیف کد معرف/پروموشن شما:" : "🎫 Your Promo Code Discount:"}</span>
+                        <span><AutoTranslate text={isFa ? "🎫 تخفیف کد معرف/پروموشن شما:" : "🎫 Your Promo Code Discount:"} lang={lang} /></span>
                         <span>-{toLocalizedDigits(promoDiscount.toString(), lang)}%</span>
                       </div>
                     )}
-                    <div className="flex justify-between items-center bg-slate-950 p-2.5 rounded-lg border border-slate-850">
-                      <span className="text-xs text-white font-bold">{isFa ? "مبلغ قابل پرداخت نهایی:" : "Net Payable Total:"}</span>
+                    <div className="flex justify-between items-center bg-slate-950 p-2.5 rounded-lg border border-slate-850 font-bold">
+                      <span className="text-xs text-white font-bold"><AutoTranslate text={isFa ? "مبلغ قابل پرداخت نهایی:" : "Net Payable Total:"} lang={lang} /></span>
                       <strong className="text-md text-amber-500 font-black font-mono">
                         {paymentMethod === "card" ? (
                           <>
@@ -390,7 +421,7 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                   {/* Promo Input */}
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold block">
-                      {isFa ? "🎫 کد تخفیف ویژه (پروموشن):" : "🎫 Special Promo Code:"}
+                      <AutoTranslate text={isFa ? "🎫 کد تخفیف ویژه (پروموشن):" : "🎫 Special Promo Code:"} lang={lang} />
                     </label>
                     <div className="flex gap-1.5">
                       <input
@@ -405,7 +436,7 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                         onClick={handleApplyPromo}
                         className="px-3 bg-slate-800 hover:bg-slate-700 text-white hover:text-indigo-400 text-[10px] font-black rounded-xl transition cursor-pointer"
                       >
-                        {isFa ? "بررسی" : "Verify"}
+                        <AutoTranslate text={isFa ? "بررسی" : "Verify"} lang={lang} />
                       </button>
                     </div>
                     {promoError && <p className="text-[9px] text-rose-500 font-bold font-mono">{promoError}</p>}
@@ -418,21 +449,24 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                       {/* Destination Card info */}
                       <div className="bg-amber-500/10 border border-amber-500/25 p-3 rounded-xl space-y-1 text-center animate-fade-in">
                         <span className="text-[9px] text-amber-400 font-extrabold block uppercase tracking-wider font-sans">
-                          {isFa ? "💳 کُد ۱۶ رقمی کارت بانکی شتاب مقصد (مدیریت سایت):" : "💳 Destination Admin Bank Card Number:"}
+                          <AutoTranslate text={isFa ? "💳 کُد ۱۶ رقمی کارت بانکی شتاب مقصد (مدیریت سایت):" : "💳 Destination Admin Bank Card Number:"} lang={lang} />
                         </span>
                         <span className="font-mono text-sm text-white font-black select-all tracking-widest block py-0.5 bg-slate-950/80 rounded-lg border border-slate-800">
                           {toLocalizedDigits(adminShetabCard.replace(/(\d{4})/g, '$1 ').trim(), lang)}
                         </span>
                         <span className="text-[8.5px] text-slate-400 block leading-normal">
-                          {isFa 
-                            ? "✓ وجه اشتراک را به کارت مدیریت فوق واریز کرده و سپس مشخصات فیش/کارت خود را زیر بنویسید." 
-                            : "✓ Transfer subscription fee to the admin card above and input your sender card info below."}
+                          <AutoTranslate 
+                            text={isFa 
+                              ? "✓ وجه اشتراک را به کارت مدیریت فوق واریز کرده و سپس مشخصات فیش/کارت خود را زیر بنویسید." 
+                              : "✓ Transfer subscription fee to the admin card above and input your sender card info below."} 
+                            lang={lang} 
+                          />
                         </span>
                       </div>
 
                       <div className="space-y-1">
                         <label className="text-[9px] text-slate-400 font-bold block uppercase font-mono">
-                          {isFa ? "👤 کُد ۱۶ رقمی کارت بانکی شتاب فرستنده (شما):" : "👤 Your 16-Digit Sender Card Number:"}
+                          <AutoTranslate text={isFa ? "👤 کُد ۱۶ رقمی کارت بانکی شتاب فرستنده (شما):" : "👤 Your 16-Digit Sender Card Number:"} lang={lang} />
                         </label>
                         <input
                           type="text"
@@ -449,7 +483,7 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] text-slate-400 font-bold block">
-                          {isFa ? "👤 نام صاحب کارت بانکی:" : "👤 Cardholder Name:"}
+                          <AutoTranslate text={isFa ? "👤 نام صاحب کارت بانکی:" : "👤 Cardholder Name:"} lang={lang} />
                         </label>
                         <input
                           type="text"
@@ -463,7 +497,7 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                       {/* Receipt / Transfer Proof Upload (سند انتقالی) */}
                       <div className="space-y-1.5 pt-1">
                         <label className="text-[9px] text-slate-400 font-bold block">
-                          {isFa ? "📸 آپلود تصویر یا فایل سند انتقالی (فیش/رسید واریز):" : "📸 Upload Transfer Document (Receipt/Slip Photo):"}
+                          <AutoTranslate text={isFa ? "📸 آپلود تصویر یا فایل سند انتقالی (فیش/رسید واریز):" : "📸 Upload Transfer Document (Receipt/Slip Photo):"} lang={lang} />
                         </label>
                         <div className="relative border border-dashed border-slate-800 rounded-xl p-3 bg-slate-950 hover:bg-slate-950/80 transition flex flex-col items-center justify-center text-center gap-1.5 group cursor-pointer">
                           <input
@@ -490,7 +524,8 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                                 <FileText className="w-8 h-8 text-indigo-400 mb-1" />
                               )}
                               <span className="text-[10px] text-emerald-400 font-extrabold flex items-center gap-1">
-                                <CheckCircle className="w-3.5 h-3.5" /> {isFa ? "رسید انتقال ضمیمه شد" : "Document attached successfully"}
+                                <CheckCircle className="w-3.5 h-3.5" /> 
+                                <AutoTranslate text={isFa ? "رسید انتقال ضمیمه شد" : "Document attached successfully"} lang={lang} />
                               </span>
                               <span className="text-[8.5px] text-slate-500 font-mono truncate max-w-[200px]" title={receiptFileName}>
                                 {receiptFileName}
@@ -500,10 +535,10 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                             <>
                               <Upload className="w-5 h-5 text-slate-500 group-hover:text-amber-400 transition" />
                               <span className="text-[9.5px] text-slate-400 font-semibold">
-                                {isFa ? "جهت بارگذاری کلیک کنید یا فایل را بکشید" : "Click to select or drag & drop slip file"}
+                                <AutoTranslate text={isFa ? "جهت بارگذاری کلیک کنید یا فایل را بکشید" : "Click to select or drag & drop slip file"} lang={lang} />
                               </span>
                               <span className="text-[8.5px] text-slate-600">
-                                {isFa ? "(فرمت‌های مجاز: JPG, PNG, PDF)" : "(Allowed types: JPG, PNG, PDF)"}
+                                <AutoTranslate text={isFa ? "(فرمت‌های مجاز: JPG, PNG, PDF)" : "(Allowed types: JPG, PNG, PDF)"} lang={lang} />
                               </span>
                             </>
                           )}
@@ -516,16 +551,19 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
                   {paymentMethod === "crypto" && promoDiscount < 100 && (
                     <div className="space-y-2 bg-slate-900/50 p-3 rounded-xl border border-slate-850/40 text-[10px] text-slate-400 leading-relaxed">
                       <div className="flex justify-between">
-                        <span>{isFa ? "آدرس پرداخت تتر شبکه (TRC-20):" : "USDT address (TRC-20):"}</span>
+                        <span><AutoTranslate text={isFa ? "آدرس پرداخت تتر شبکه (TRC-20):" : "USDT address (TRC-20):"} lang={lang} /></span>
                         <span className="font-mono text-amber-400 font-bold">TRC-20</span>
                       </div>
                       <div className="p-2 bg-slate-950 rounded-lg font-mono text-[9px] text-slate-300 font-bold select-all text-center border border-slate-850 break-all select-all">
                         {tetherWalletAddress}
                       </div>
                       <p className="text-[8.5px] text-slate-500 text-center">
-                        {isFa 
-                          ? "✓ پس از واریز تتر به ولت سامانه فوق، کلید تایید نهایی پایینی را فشار دهید." 
-                          : "✓ Deposit USDT inside the cadastral vault and trigger approval ledger."}
+                        <AutoTranslate 
+                          text={isFa 
+                            ? "✓ پس از واریز تتر به ولت سامانه فوق، کلید تایید نهایی پایینی را فشار دهید." 
+                            : "✓ Deposit USDT inside the cadastral vault and trigger approval ledger."} 
+                          lang={lang} 
+                        />
                       </p>
                     </div>
                   )}
@@ -537,9 +575,12 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
 
             {/* Micro warning note */}
             <p className="text-[9px] text-slate-500 leading-relaxed text-center">
-              {isFa 
-                ? "💡 گواهینامه اشتراک کاداستر با پایداری چندگانه ابری فعال می‌شود. این لایه شبیه‌ساز پرداخت، قابلیت ارتقای ۱۰۰ درصدی ایمیل شما را در کل اپ ملکتان به صورت داینامیک فراهم می‌کند."
-                : "💡 Cadastral cloud profiles are compiled in local sandbox caching and dynamic system memory, instantly upgrading server responses across and updating layouts."}
+              <AutoTranslate 
+                text={isFa 
+                  ? "💡 گواهینامه اشتراک کاداستر با پایداری چندگانه ابری فعال می‌شود. این لایه شبیه‌ساز پرداخت، قابلیت ارتقای ۱۰۰ درصدی ایمیل شما را در کل اپ ملکتان به صورت داینامیک فراهم می‌کند."
+                  : "💡 Cadastral cloud profiles are compiled in local sandbox caching and dynamic system memory, instantly upgrading server responses across and updating layouts."} 
+                lang={lang} 
+              />
             </p>
           </div>
         )}
@@ -552,9 +593,11 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
             </div>
             
             <div className="space-y-2">
-              <h4 className="text-md font-black text-white">{isFa ? "در حال تایید و ثبت فاکتور طلایی..." : "Verifying & Committing Golden Ledger..."}</h4>
+              <h4 className="text-md font-black text-white">
+                <AutoTranslate text={isFa ? "در حال تایید و ثبت فاکتور طلایی..." : "Verifying & Committing Golden Ledger..."} lang={lang} />
+              </h4>
               <p className="text-xs text-slate-400 font-mono italic max-w-sm mx-auto leading-relaxed h-12 flex items-center justify-center">
-                {progressMsg}
+                <AutoTranslate text={progressMsg} lang={lang} />
               </p>
             </div>
             
@@ -571,34 +614,41 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
             </div>
             
             <div className="space-y-2">
-              <h4 className="text-lg font-black text-white">{isFa ? "🎉 تبریک! اشتراک طلایی آریانا با موفقیت فعال شد!" : "🎉 Congratulations! Ariana Gold Subscription Activated!"}</h4>
+              <h4 className="text-lg font-black text-white">
+                <AutoTranslate text={isFa ? "🎉 تبریک! اشتراک طلایی آریانا با موفقیت فعال شد!" : "🎉 Congratulations! Ariana Gold Subscription Activated!"} lang={lang} />
+              </h4>
               <p className="text-xs text-slate-350 max-w-md mx-auto leading-relaxed">
-                {isFa 
-                  ? `بنگاه معاملات ملکی شما به سطح طلایی ارتقا یافت. هم‌اکنون دسترسی به تبدیل اسعار زنده جهانی خلیج فارس و اروپا، ۴ موتور هوش مصنوعی Gemini و ثبت آگهی‌های نامحدود برای شما باز شده است.` 
-                  : `Your real estate agency account is now in Gold premium status. Live world exchange rates, specialized AI engines, and limitless listings are fully unlocked.`}
+                <AutoTranslate 
+                  text={isFa 
+                    ? `بنگاه معاملات ملکی شما به سطح طلایی ارتقا یافت. هم‌اکنون دسترسی به تبدیل اسعار زنده جهانی خلیج فارس و اروپا، ۴ موتور هوش مصنوعی Gemini و ثبت آگهی‌های نامحدود برای شما باز شده است.` 
+                    : `Your real estate agency account is now in Gold premium status. Live world exchange rates, specialized AI engines, and limitless listings are fully unlocked.`} 
+                  lang={lang} 
+                />
               </p>
             </div>
 
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850/80 space-y-1.5 text-center min-w-[280px]">
               <div className="flex justify-between text-[11px]">
-                <span className="text-slate-400">{isFa ? "شناسه کاربری طلایی:" : "Active Member Profile:"}</span>
+                <span className="text-slate-400"><AutoTranslate text={isFa ? "شناسه کاربری طلایی:" : "Active Member Profile:"} lang={lang} /></span>
                 <span className="text-amber-400 font-black font-mono">{emailInput}</span>
               </div>
               <div className="flex justify-between text-[11px]">
-                <span className="text-slate-400">{isFa ? "ردیف عضویت:" : "Access Level:"}</span>
-                <span className="text-emerald-400 font-bold uppercase tracking-wider">{isFa ? "وی‌آی‌پی طلایی (GOLD PRO)" : "GOLD CADASTRAL PRO"}</span>
+                <span className="text-slate-400"><AutoTranslate text={isFa ? "ردیف عضویت:" : "Access Level:"} lang={lang} /></span>
+                <span className="text-emerald-400 font-bold uppercase tracking-wider">
+                  <AutoTranslate text={isFa ? "وی‌آی‌پی طلایی (GOLD PRO)" : "GOLD CADASTRAL PRO"} lang={lang} />
+                </span>
               </div>
               <div className="flex justify-between text-[11px]">
-                <span className="text-slate-400">{isFa ? "اعتبار قانونی:" : "Expires at:"}</span>
+                <span className="text-slate-400"><AutoTranslate text={isFa ? "اعتبار قانونی:" : "Expires at:"} lang={lang} /></span>
                 <span className="text-slate-300 font-semibold font-mono">31 July 2026</span>
               </div>
             </div>
 
             <button
               onClick={onClose}
-              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/10 transition active:scale-95 cursor-pointer font-bold"
+              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/10 transition active:scale-95 cursor-pointer font-bold animate-pulse-subtle"
             >
-              {isFa ? "دمت گرم، شروع استفاده از خدمات طلایی کاداستر" : "Excellent, Start Using Gold Features"}
+              <AutoTranslate text={isFa ? "دمت گرم، شروع استفاده از خدمات طلایی کاداستر" : "Excellent, Start Using Gold Features"} lang={lang} />
             </button>
           </div>
         )}
@@ -607,20 +657,20 @@ export const GoldUpgradeModal: React.FC<GoldUpgradeModalProps> = ({
         {txStep === "idle" && (
           <div className="p-4 border-t border-slate-800 bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-3 sticky bottom-0 z-15">
             <span className="text-[10px] text-slate-500">
-              {isFa ? "🛡️ تسعیر توسط بانک‌های مرکزی و صرافی‌های فرابورس تایید شده است." : "🛡️ Continuous blockchain encryption & municipal standard validation is guaranteed."}
+              <AutoTranslate text={isFa ? "🛡️ تسعیر توسط بانک‌های مرکزی و صرافی‌های فرابورس تایید شده است." : "🛡️ Continuous blockchain encryption & municipal standard validation is guaranteed."} lang={lang} />
             </span>
             <div className="flex gap-2 w-full sm:w-auto">
               <button
                 onClick={onClose}
                 className="flex-1 sm:flex-initial px-4 py-2 bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition cursor-pointer"
               >
-                {isFa ? "انصراف" : "Cancel"}
+                <AutoTranslate text={isFa ? "انصراف" : "Cancel"} lang={lang} />
               </button>
               <button
                 onClick={handlesSubmitActivation}
                 className="flex-1 sm:flex-initial px-6 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-450 text-slate-950 rounded-xl text-xs font-black transition shadow-md cursor-pointer animate-pulse-subtle"
               >
-                {isFa ? "تکمیل و راه‌اندازی اشتراک طلایی" : "Submit & Launch Gold Pro Class"}
+                <AutoTranslate text={isFa ? "تکمیل و راه‌اندازی اشتراک طلایی" : "Submit & Launch Gold Pro Class"} lang={lang} />
               </button>
             </div>
           </div>

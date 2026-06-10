@@ -20,6 +20,7 @@ import { GoldUpgradeModal } from "./components/GoldUpgradeModal";
 
 import { CadastralCalculator } from "./components/CadastralCalculator";
 import { V2LiveCurrencyTerminal } from "./components/V2LiveCurrencyTerminal";
+import { AutoTranslate } from "./components/AutoTranslate";
 
 // Dynamic Code Splitting (Lazy-Loading) for Heavy Dashboard Tabs and Overlay Panels
 const SiteSettingsModal = lazy(() => import("./components/SiteSettingsModal").then(m => ({ default: m.SiteSettingsModal })));
@@ -927,12 +928,9 @@ export default function App() {
         const data = await res.json();
         if (data && data.rates) {
           const refinedRates = {
-            ...data.rates,
             USD: 1,
             USDT: 1,
-            AFN: 62.50, // Always enforce real street market rate of 62.50 AFN
-            IRR: 1375125, // Always enforce parallel market rate of 1,375,125 IRR
-            TMN: 137512,  // Always enforce parallel market rate of 137,512 Toman
+            ...data.rates,
           };
           setRates((prev) => ({
             ...prev,
@@ -945,6 +943,33 @@ export default function App() {
       }
     }
     loadExchangeRates();
+  }, [settings]);
+
+  // Reset window scroll position to top whenever active tab changes to prevent view jumping on mobile
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" as any });
+  }, [activeTab]);
+
+  // Load and sync global system settings on mount
+  useEffect(() => {
+    async function fetchSystemSettings() {
+      try {
+        const res = await fetch("/api/settings");
+        const data = await res.json();
+        if (data && data.success && data.settings) {
+          setSettings((prev) => {
+            const merged = { ...prev, ...data.settings };
+            if (JSON.stringify(prev) === JSON.stringify(merged)) {
+              return prev;
+            }
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load server system settings on mount:", err);
+      }
+    }
+    fetchSystemSettings();
   }, []);
 
   const handleAddProperty = async (propData: Partial<Property>) => {
@@ -1078,9 +1103,39 @@ export default function App() {
     );
   };
 
-  const handleSaveSettings = (newSet: SystemSettings) => {
+  const handleSaveSettings = async (newSet: SystemSettings) => {
     setSettings(newSet);
     setShowSettingsModal(false);
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newSet)
+      });
+      console.log("Global server settings updated and persisted successfully!");
+    } catch (e) {
+      console.error("Failed to save global server settings:", e);
+    }
+  };
+
+  const handleUpdateRates = async (newRates: Record<string, number>) => {
+    setRates(newRates);
+    localStorage.setItem("melkban_rates", JSON.stringify(newRates));
+    const updated = {
+      ...settings,
+      customRates: newRates
+    };
+    setSettings(updated);
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+      });
+      console.log("Global server currency rates updated successfully!");
+    } catch (e) {
+      console.error("Failed to save global server currency rates:", e);
+    }
   };
 
   if (globalVeto === "full" && userRole !== "admin") {
@@ -1304,10 +1359,10 @@ export default function App() {
               type="button"
               onClick={handleInstallPWA}
               className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white border border-emerald-550/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md shadow-emerald-600/10 cursor-pointer animate-pulse-subtle shrink-0"
-              title={lang === "fa" ? `نصب وب‌اپلیکیشن ${t.brand}` : `Install ${t.brand} App`}
+              title={`Install ${t.brand} App`}
             >
               <span>📲</span>
-              <span>{lang === "fa" ? "نصب برنامه" : "Install App"}</span>
+              <span><AutoTranslate text="Install App" lang={lang} /></span>
             </button>
 
             {/* Quick Post Button */}
@@ -1588,7 +1643,7 @@ export default function App() {
               {/* Sidebar with Live AI consultation & Quick Calculator (Col span 4) */}
               <div className="lg:col-span-4 space-y-6">
                 <AIConsultant lang={lang} />
-                <CadastralCalculator lang={lang} isSidebar={true} rates={rates} />
+                <CadastralCalculator lang={lang} isSidebar={true} rates={rates} onSaveRates={handleUpdateRates} />
               </div>
 
             </div>
@@ -1609,7 +1664,7 @@ export default function App() {
         {/* ------------------ VIEW 3: INTEGRATED APPRAISER FORM ------------------ */}
         {activeTab === "appraisal" && (
           <div className="animate-fade-in max-w-3xl mx-auto">
-            <CadastralCalculator lang={lang} rates={rates} />
+            <CadastralCalculator lang={lang} rates={rates} onSaveRates={handleUpdateRates} />
           </div>
         )}
 
@@ -3220,12 +3275,13 @@ export default function App() {
                 />
               </div>
               <h3 className="text-md font-black text-slate-100 font-sans">
-                {lang === "fa" ? `نصب وب‌اپلیکیشن ${t.brand}` : `Install ${t.brand} Premium App`}
+                <AutoTranslate text={`Install ${t.brand} Premium App`} lang={lang} />
               </h3>
               <p className="text-[11px] text-slate-400 leading-normal">
-                {lang === "fa" 
-                  ? "با نصب نسخه وب‌اپ، دسترسی به نقشه‌های کاداستر و دستیار هوش مصنوعی بدون نیاز به مرورگر و با آیکون اختصاصی صورت می‌پذیرد." 
-                  : "Set down premium shortcut registries. Gain fast entry to maps and AI experts right from your device's direct homescreen."}
+                <AutoTranslate 
+                  text="Install our fast web-app shortcut registry. Gain instant, non-browser entry to cadastral maps and AI assistants with a dedicated application icon on your homescreen." 
+                  lang={lang} 
+                />
               </p>
             </div>
 
@@ -3238,13 +3294,14 @@ export default function App() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm">🛡️</span>
                       <p className="text-[10px] text-emerald-400 font-black uppercase tracking-wider">
-                        {lang === "fa" ? "محیط امن شبیه‌ساز گوگل فعال است" : "Google Sandbox Frame Active"}
+                        <AutoTranslate text="Google Sandbox Frame Active" lang={lang} />
                       </p>
                     </div>
                     <p className="text-[9.5px] text-slate-300 leading-normal">
-                      {lang === "fa" 
-                        ? "به دلیل محدودیت‌های امنیتی مرورگر کروم درون فریم پیش‌نمایش، امکان نصب مستقیم از اینجا وجود ندارد. لطفاً دکمه طلایی زیر را کلیک کنید تا برنامه در یک تب مستقل باز شود و بلافاصله با زدن همین کلید سبز نصب شود!" 
-                        : "Direct PWA install handles are disabled inside nested sandboxed frames. Press the button below to launch an independent browser context to install."}
+                      <AutoTranslate 
+                        text="Direct PWA installation handles are disabled inside nested sandboxed frames due to Chrome security policies inside iframe. Press the golden button below to launch an independent browser context, open in a new tab, and install instantly." 
+                        lang={lang} 
+                      />
                     </p>
                     <button
                       type="button"
@@ -3253,9 +3310,10 @@ export default function App() {
                         window.open(targetUrl, "_blank");
                         setShowInstallGuide(false);
                       }}
-                      className="w-full py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black rounded-lg transition shadow-lg shadow-amber-500/10 cursor-pointer active:scale-95 text-center"
+                      className="w-full py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black rounded-lg transition shadow-lg shadow-amber-500/10 cursor-pointer active:scale-95 text-center flex items-center justify-center gap-1"
                     >
-                      🚀 {lang === "fa" ? "باز کردن در تب مستقل و نصب فوری" : "Launch Standalone & Install Easily"}
+                      <span>🚀</span>
+                      <AutoTranslate text="Launch Standalone & Install Easily" lang={lang} />
                     </button>
                   </div>
                 );
@@ -3286,25 +3344,19 @@ export default function App() {
                   <div className="flex items-start gap-2.5">
                     <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۱</span>
                     <p>
-                      {lang === "fa" 
-                        ? "در پایین مرورگر Safari روی دکمه اشتراک‌گذاری (گزینه Share 📤) ضربه بزنید." 
-                        : "Open this page in Safari browser, then tap the 'Share' tool at the bottom."}
+                      <AutoTranslate text="Open this page in Safari browser, then tap the 'Share' tool at the bottom." lang={lang} />
                     </p>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۲</span>
                     <p>
-                      {lang === "fa" 
-                        ? "کمی پایین رفته و پیوند Add to Home Screen (افزودن به صفحه اصلی ➕) را انتخاب کنید." 
-                        : "Scroll down the list and select the 'Add to Home Screen' action."}
+                      <AutoTranslate text="Scroll down the list and select the 'Add to Home Screen' action." lang={lang} />
                     </p>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۳</span>
                     <p>
-                      {lang === "fa" 
-                        ? "در بالای صفحه دکمه Add را لمس کنید تا به عنوان برنامه همیشگی نصب شود." 
-                        : "Click 'Add' on the upper corner of your screen to conclude setting the shortcut."}
+                      <AutoTranslate text="Click 'Add' on the upper corner of your screen to conclude setting the shortcut." lang={lang} />
                     </p>
                   </div>
                 </div>
@@ -3313,25 +3365,19 @@ export default function App() {
                   <div className="flex items-start gap-2.5">
                     <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۱</span>
                     <p>
-                      {lang === "fa" 
-                        ? "روی دکمه سبز رنگ نصب برنامه کلیک کنید یا منوی مرورگر خود (⋮) را باز کنید." 
-                        : "Click our green 'Install' header button, or expand the browser menu button (⋮)."}
+                      <AutoTranslate text="Click our green 'Install' header button, or expand the browser menu button (⋮)." lang={lang} />
                     </p>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۲</span>
                     <p>
-                      {lang === "fa" 
-                        ? "گزینه Install App یا افزودن به میانبر دسکتاپ را فشار دهید." 
-                        : "Locate and toggle the 'Install app' or 'Add to Home screen' trigger."}
+                      <AutoTranslate text="Locate and toggle the 'Install app' or 'Add to Home screen' trigger." lang={lang} />
                     </p>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۳</span>
                     <p>
-                      {lang === "fa" 
-                        ? "فرآیند بارگیری را تایید کنید تا میانبر با آیکون آریانا رهنما بارگذاری شود." 
-                        : "Confirm the prompt. The operating system will complete setup as a standalone tool!"}
+                      <AutoTranslate text="Confirm the prompt. The operating system will complete setup as a standalone tool!" lang={lang} />
                     </p>
                   </div>
 
@@ -3339,12 +3385,13 @@ export default function App() {
                   <div className="mt-3 p-2.5 bg-indigo-950/40 border border-indigo-500/20 rounded-xl space-y-1">
                     <p className="text-[10px] text-indigo-300 font-bold flex items-center gap-1">
                       <span>💡</span>
-                      {lang === "fa" ? "عدم نمایش آیکون در دسکتاپ ویندوز ۱۱؟" : "No Desktop Shortcut on Windows 11?"}
+                      <AutoTranslate text="No Desktop Shortcut on Windows 11?" lang={lang} />
                     </p>
                     <p className="text-[9.5px] text-slate-400 leading-normal">
-                      {lang === "fa"
-                        ? "مرورگر کروم ممکن است آیکون دسکتاپ را خودکار نسازد. برای ایجاد آن: آدرس chrome://apps را در کروم باز کرده، روی ملک‌بان راست‌کلیک کنید و گزینه Create shortcut را انتخاب و دسکتاپ را تیک بزنید. همچنین می‌توانید نام ملک‌بان را در منوی استارت ویندوز جستجو کنید."
-                        : "Windows Chrome installs PWAs quietly. If missing on desktop: open chrome://apps in Chrome, right-click 'Melkban' -> 'Create shortcut' -> check 'Desktop'. Or simply search for 'Melkban' in your Windows Start Menu."}
+                      <AutoTranslate 
+                        text="Windows Chrome installs PWAs quietly. If missing on desktop: open chrome://apps in Chrome, right-click 'Melkban' -> 'Create shortcut' -> check 'Desktop'. Or simply search for the app name in your Windows Start Menu." 
+                        lang={lang} 
+                      />
                     </p>
                   </div>
                 </div>
@@ -3357,7 +3404,7 @@ export default function App() {
                 onClick={() => setShowInstallGuide(false)}
                 className="flex-1 py-2 bg-slate-950 border border-slate-850 hover:border-slate-800 text-slate-400 hover:text-white rounded-xl text-[11px] font-bold transition active:scale-95 cursor-pointer"
               >
-                {lang === "fa" ? "متوجه شدم" : "Got it"}
+                <AutoTranslate text="Got it" lang={lang} />
               </button>
               {deferredPrompt && (
                 <button
@@ -3365,9 +3412,10 @@ export default function App() {
                     setShowInstallGuide(false);
                     handleInstallPWA();
                   }}
-                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-bold transition active:scale-95 cursor-pointer shadow-md shadow-indigo-600/10"
+                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-bold transition active:scale-95 cursor-pointer shadow-md shadow-indigo-600/10 flex items-center justify-center gap-1"
                 >
-                  ⚡️ {lang === "fa" ? "نصب هوشمند" : "Install Instantly"}
+                  <span>⚡️</span>
+                  <AutoTranslate text="Install Instantly" lang={lang} />
                 </button>
               )}
             </div>

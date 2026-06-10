@@ -162,7 +162,11 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 hover:-translate-y-1 transition duration-300 flex flex-col justify-between shadow-lg" id={`property-card-${property.id}`}>
+    <div 
+      onClick={() => onViewDetails(property)}
+      className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 hover:-translate-y-1 transition duration-300 flex flex-col justify-between shadow-lg cursor-pointer" 
+      id={`property-card-${property.id}`}
+    >
       {/* Top Image & Badge */}
       <div className="relative aspect-video bg-slate-950 overflow-hidden">
         <img
@@ -311,14 +315,20 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             <div className="flex justify-end gap-2 border-t border-slate-850 pt-3 mt-3">
               {onEdit && (
                 <button
-                  onClick={() => onEdit(property)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(property);
+                  }}
                   className="text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg font-bold cursor-pointer"
                 >
                   ✏️ {lang === "fa" ? "ویرایش" : "Edit"}
                 </button>
               )}
               <button
-                onClick={() => onDelete(property.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(property.id);
+                }}
                 className="text-[10px] bg-rose-950/60 hover:bg-rose-900 border border-rose-900/50 text-rose-300 px-3 py-1.5 rounded-lg font-bold cursor-pointer"
               >
                 ✕ {t.btnDelete}

@@ -5,6 +5,7 @@ import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
 import { CadastralInteractiveMap } from "./CadastralInteractiveMap";
 import { Upload, CheckCircle, FileText } from "lucide-react";
+import { CALC_TRANSLATIONS, CalculatorTranslationSet } from "./calculatorTranslations";
 
 const brokerLocal: any = {
   en: {
@@ -946,6 +947,7 @@ const payTranslations: any = {
 
 export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClose, onAddProperty, settings, userRole, propertyToEdit }) => {
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+  const tc: Partial<CalculatorTranslationSet> = CALC_TRANSLATIONS[lang] || CALC_TRANSLATIONS.en || {};
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
 
   const getT = (key: keyof typeof payTranslations.en) => {
@@ -1069,13 +1071,21 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
   };
 
   // Form states
+  const formatValueOnLoad = (val?: string | number) => {
+    if (val === undefined || val === null || val === "") return "";
+    const clean = String(val).replace(/,/g, "");
+    const parts = clean.split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+  };
+
   const [country, setCountry] = useState(propertyToEdit?.country || "AE");
   const [title, setTitle] = useState(propertyToEdit?.title || "");
   const [description, setDescription] = useState(propertyToEdit?.description || "");
   const [type, setType] = useState<"sale" | "rent">(propertyToEdit?.type === "rent" ? "rent" : "sale");
-  const [pricePerSqm, setPricePerSqm] = useState(propertyToEdit?.pricePerSqm ? String(propertyToEdit.pricePerSqm) : "");
-  const [rent, setRent] = useState(propertyToEdit?.rent ? String(propertyToEdit.rent) : "");
-  const [deposit, setDeposit] = useState(propertyToEdit?.deposit ? String(propertyToEdit.deposit) : "");
+  const [pricePerSqm, setPricePerSqm] = useState(propertyToEdit?.pricePerSqm ? formatValueOnLoad(propertyToEdit.pricePerSqm) : "");
+  const [rent, setRent] = useState(propertyToEdit?.rent ? formatValueOnLoad(propertyToEdit.rent) : "");
+  const [deposit, setDeposit] = useState(propertyToEdit?.deposit ? formatValueOnLoad(propertyToEdit.deposit) : "");
   const [area, setArea] = useState(propertyToEdit?.area ? String(propertyToEdit.area) : "120");
   const [bedrooms, setBedrooms] = useState(propertyToEdit?.bedrooms !== undefined ? propertyToEdit.bedrooms : 2);
   const [phone, setPhone] = useState(propertyToEdit?.phone || "");
@@ -1193,8 +1203,12 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
 
     if (!title.trim() || !phone.trim() || !area.trim()) return;
 
+    const cleanPricePerSqm = pricePerSqm ? pricePerSqm.replace(/,/g, "") : "";
+    const cleanRent = rent ? rent.replace(/,/g, "") : "";
+    const cleanDeposit = deposit ? deposit.replace(/,/g, "") : "";
+
     const parsedArea = parseFloat(area) || 120;
-    const parsedPricePerSqm = pricePerSqm ? parseFloat(pricePerSqm) : undefined;
+    const parsedPricePerSqm = cleanPricePerSqm ? parseFloat(cleanPricePerSqm) : undefined;
     const calculatedTotal = parsedPricePerSqm ? parsedPricePerSqm * parsedArea : undefined;
 
     // Use a random center coordinate for this listing based on country
@@ -1229,8 +1243,8 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
       type,
       pricePerSqm: parsedPricePerSqm,
       totalPrice: calculatedTotal,
-      rent: rent ? parseFloat(rent) : undefined,
-      deposit: deposit ? parseFloat(deposit) : undefined,
+      rent: cleanRent ? parseFloat(cleanRent) : undefined,
+      deposit: cleanDeposit ? parseFloat(cleanDeposit) : undefined,
       area: parsedArea,
       country,
       district,
@@ -1352,12 +1366,10 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                 <span className="text-lg shrink-0">💎</span>
                 <div className="space-y-1">
                   <h4 className="text-xs font-black text-amber-400">
-                    {lang === "fa" ? "پیشنهاد عالی: ارتقای کارگذاری به حساب طلایی" : "Premium Alternative: Go Gold Pro"}
+                    {tc.goldUpgradeTitle || "Premium Alternative: Go Gold Pro"}
                   </h4>
                   <p className="text-[10px] text-slate-400 leading-relaxed">
-                    {lang === "fa"
-                      ? "با فعال‌سازی عضویت طلایی، نیازی به پرداخت ۲۵۰,۰۰۰ تومان کارمزد ثبت تک‌به‌تک ندارید! همچنین اسعار تمامی کشورهای جهان به همراه ۴ ابزار هوشمند تفسیر کاداستر ملکی فوراً فرابورس خواهد شد."
-                      : "Upgrade to Gold Membership instead of paying 5 USDT for single listings! Post unlimited properties global-wide + get specialized AI assistance."}
+                    {tc.goldUpgradeDesc || "Upgrade to Gold Membership instead of paying 5 USDT for single listings! Post unlimited properties global-wide + get specialized AI assistance."}
                   </p>
                 </div>
               </div>
@@ -1374,9 +1386,7 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                     });
                     if (res.ok) {
                       await res.json();
-                      alert(lang === "fa" 
-                        ? "🎉 اشتراک طلایی برای شما با موفقیت فعال شد! آگهی شما هم‌اکنون به صورت کارگزاری ممتاز و بدون پرداخت هزینه‌های اضافی ثبت فرآیند می‌گردد." 
-                        : "🎉 Gold Pro activated successfully! Your listing has been processed bypass limits.");
+                      alert(tc.goldActivateSuccess || "🎉 Gold Pro activated successfully! Your listing has been processed bypassing limits.");
                       if (pendingProperty) {
                         onAddProperty(pendingProperty);
                       }
@@ -1388,7 +1398,7 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                 }}
                 className="w-full py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 text-[10.5px] font-black rounded-xl transition cursor-pointer active:scale-95 shadow-md shadow-amber-500/10"
               >
-                {lang === "fa" ? "🔮 فعال‌سازی آنی پنل طلایی و ثبت کل آگهی‌ها" : "🔮 Activate Gold Pro & Skip Single Payment"}
+                {tc.goldUpgradeBtn || "🔮 Activate Gold Pro & Skip Single Payment"}
               </button>
             </div>
 
@@ -1867,12 +1877,32 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                     {t.labelPriceSqm} ({activeCountry.currency}) <span className="text-indigo-400">*</span>
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     required
-                    placeholder="e.g. 8500"
+                    placeholder="e.g. 8,500"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
                     value={pricePerSqm}
-                    onChange={(e) => setPricePerSqm(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const clean = val.replace(/,/g, "");
+                      if (clean === "") {
+                        setPricePerSqm("");
+                        return;
+                      }
+                      if (clean === ".") {
+                        setPricePerSqm(".");
+                        return;
+                      }
+                      const parts = clean.split(".");
+                      const intPart = parts[0].replace(/[^\d]/g, "");
+                      const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                      if (parts.length > 1) {
+                        const decPart = parts[1].replace(/[^\d]/g, "");
+                        setPricePerSqm(`${formattedInt}.${decPart}`);
+                      } else {
+                        setPricePerSqm(formattedInt);
+                      }
+                    }}
                   />
                 </div>
               ) : (
@@ -1882,11 +1912,31 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                       {t.labelDeposit} ({activeCountry.currency})
                     </label>
                     <input
-                      type="number"
-                      placeholder="e.g. 5000"
+                      type="text"
+                      placeholder="e.g. 5,000"
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
                       value={deposit}
-                      onChange={(e) => setDeposit(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const clean = val.replace(/,/g, "");
+                        if (clean === "") {
+                          setDeposit("");
+                          return;
+                        }
+                        if (clean === ".") {
+                          setDeposit(".");
+                          return;
+                        }
+                        const parts = clean.split(".");
+                        const intPart = parts[0].replace(/[^\d]/g, "");
+                        const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        if (parts.length > 1) {
+                          const decPart = parts[1].replace(/[^\d]/g, "");
+                          setDeposit(`${formattedInt}.${decPart}`);
+                        } else {
+                          setDeposit(formattedInt);
+                        }
+                      }}
                     />
                   </div>
                   <div>
@@ -1894,12 +1944,32 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ lang, onClos
                       {t.labelRent} ({activeCountry.currency}) <span className="text-indigo-400">*</span>
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       required
-                      placeholder="e.g. 1500"
+                      placeholder="e.g. 1,500"
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:ring-2 focus:ring-indigo-500 text-xs focus:outline-none"
                       value={rent}
-                      onChange={(e) => setRent(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const clean = val.replace(/,/g, "");
+                        if (clean === "") {
+                          setRent("");
+                          return;
+                        }
+                        if (clean === ".") {
+                          setRent(".");
+                          return;
+                        }
+                        const parts = clean.split(".");
+                        const intPart = parts[0].replace(/[^\d]/g, "");
+                        const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        if (parts.length > 1) {
+                          const decPart = parts[1].replace(/[^\d]/g, "");
+                          setRent(`${formattedInt}.${decPart}`);
+                        } else {
+                          setRent(formattedInt);
+                        }
+                      }}
                     />
                   </div>
                 </>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Language } from "../types";
 import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
+import { CALC_TRANSLATIONS, CalculatorTranslationSet } from "./calculatorTranslations";
 
 interface V2LiveCurrencyTerminalProps {
   lang: Language;
@@ -16,6 +17,7 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
   onUpgradeClick,
   rates: passedRates
 }) => {
+  const t: Partial<CalculatorTranslationSet> = CALC_TRANSLATIONS[lang] || CALC_TRANSLATIONS["en"] || {};
   const [rates, setRates] = useState<Record<string, number>>(() => {
     if (passedRates) return passedRates;
     return {
@@ -68,12 +70,9 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
       .then((data) => {
         if (data && data.rates) {
           const refinedRates = {
-            ...data.rates,
             USD: 1,
             USDT: 1,
-            AFN: 62.50, // Street exchange rate of AFN
-            IRR: 1375125, // True market value of IRR in Rials
-            TMN: 137512,  // True market value of IRR in Tomans
+            ...data.rates,
           };
           setRates((prev) => ({
             ...prev,
@@ -106,8 +105,8 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         isDual: true,
         centralBank: 1310,
         freeMarket: Math.round(standardRate * 1.13), // ~13% parallel market premium
-        cbLabel: lang === "fa" ? "نرخ مصوب دولتی" : "CBI Official Rate",
-        fmLabel: lang === "fa" ? "بازار آزاد الحارثیه" : "Free Market (Al-Kifah)",
+        cbLabel: t.iqdCbiOfficial || "CBI Official Rate",
+        fmLabel: t.iqdFreeMarket || "Free Market (Al-Kifah)",
       };
     }
     if (currencyCode === "TRY") {
@@ -115,8 +114,8 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         isDual: true,
         centralBank: standardRate,
         freeMarket: Number((standardRate * 1.018).toFixed(3)), // Kapalıçarşı ~1.8% premium
-        cbLabel: lang === "fa" ? "بانک مرکزی ترکیه (CBRT)" : "CBRT Official",
-        fmLabel: lang === "fa" ? "بازار بزرگ استانبول" : "Grand Bazaar Rate",
+        cbLabel: t.tryCbrtOfficial || "CBRT Official",
+        fmLabel: t.tryGrandBazaar || "Grand Bazaar Rate",
       };
     }
     if (currencyCode === "SYP") {
@@ -124,8 +123,8 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         isDual: true,
         centralBank: 13000,
         freeMarket: Math.round(standardRate * 1.15), // ~15% street market premium
-        cbLabel: lang === "fa" ? "بانک مرکزی سوریه" : "Official Damascus",
-        fmLabel: lang === "fa" ? "بازار موازی خیابان" : "Street Parallel",
+        cbLabel: t.sypCbiOfficial || "Official Damascus",
+        fmLabel: t.sypParallel || "Street Parallel",
       };
     }
     if (currencyCode === "LBP") {
@@ -133,8 +132,8 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         isDual: true,
         centralBank: 15000,
         freeMarket: 89500, // True parallel market rate
-        cbLabel: lang === "fa" ? "نرخ رسمی بانک ملی" : "BDL Official fixed",
-        fmLabel: lang === "fa" ? "بازار آزاد صرافی‌ها" : "Sayrafa Parallel",
+        cbLabel: t.lbpBdlOfficial || "BDL Official fixed",
+        fmLabel: t.lbpParallel || "Sayrafa Parallel",
       };
     }
     if (currencyCode === "EGP") {
@@ -142,8 +141,8 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         isDual: true,
         centralBank: standardRate,
         freeMarket: Number((standardRate * 1.035).toFixed(3)), // 3.5% parallel premium
-        cbLabel: lang === "fa" ? "نرخ مصوب بانک مرکزی" : "CBE Official Rate",
-        fmLabel: lang === "fa" ? "بازار موازی قاهره" : "Parallel Free Market",
+        cbLabel: t.egpCbeOfficial || "CBE Official Rate",
+        fmLabel: t.egpParallel || "Parallel Free Market",
       };
     }
     if (currencyCode === "RUB") {
@@ -151,8 +150,8 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         isDual: true,
         centralBank: standardRate,
         freeMarket: Number((standardRate * 1.045).toFixed(3)), // Commercial spread
-        cbLabel: lang === "fa" ? "نرخ رسمی مسکو" : "CBR Official Rate",
-        fmLabel: lang === "fa" ? "بازار آزاد صرافی روسیه" : "OTC Free Market",
+        cbLabel: t.rubCbrOfficial || "CBR Official Rate",
+        fmLabel: t.rubParallel || "OTC Free Market",
       };
     }
     
@@ -162,8 +161,8 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         isDual: true,
         centralBank: 4200, // 42000 IRR = 4200 Toman
         freeMarket: freeMarketRate,
-        cbLabel: lang === "fa" ? "نرخ کاذب دولتی (۴,۲۰۰ تومان)" : "Official Peg Rate (4,200 Toman)",
-        fmLabel: lang === "fa" ? "نرخ واقعی صرافی آزاد (تومان)" : "Free Market Toman Rate",
+        cbLabel: t.irrOfficialPeg || "Official Peg Rate (4,200 Toman)",
+        fmLabel: t.irrFreeMarket || "Free Market Toman Rate",
       };
     }
     
@@ -192,15 +191,13 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-              {lang === "fa" ? "ترمینال مانیتورینگ زنده اسعار کاداستر (نسخه ۲)" : "V2 Live Cadastral Currency Terminal"}
+              {t.terminalHeaderTitle || "V2 Live Cadastral Currency Terminal"}
               <span className={`text-[8px] border px-1.5 py-0.5 rounded font-bold uppercase transition-all ${isLive ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30 animate-pulse" : "bg-amber-500/20 text-amber-300 border-amber-500/30"}`}>
-                {isLoading ? (lang === "fa" ? "بروزرسانی..." : "UPDATING...") : isLive ? (lang === "fa" ? "برخط" : "LIVE FEED") : (lang === "fa" ? "آفلاین" : "OFFLINE")}
+                {isLoading ? (t.terminalUpdating || "UPDATING...") : isLive ? (t.terminalLiveFeed || "LIVE FEED") : (t.terminalOffline || "OFFLINE")}
               </span>
             </h3>
             <p className="text-[10px] text-slate-400 mt-0.5">
-              {lang === "fa" 
-                ? "نمایش زنده و تسعیر دقیق همزمان نرخ برابری بانک مرکزی در مقابل بازار آزاد و موازی صرافی‌ها" 
-                : "Continuous cryptographic valuations of all 21 nation-states simultaneously refreshed"}
+              {t.terminalHeaderDesc || "Continuous cryptographic valuations of all 21 nation-states simultaneously refreshed"}
             </p>
           </div>
         </div>
@@ -208,7 +205,7 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
         {/* Live status indicators */}
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
-            <span>Refreshed: {lastUpdated ? toLocalizedDigits(lastUpdated, lang) : "Default"}</span>
+            <span>{t.terminalRefreshed || "Refreshed"}: {lastUpdated ? toLocalizedDigits(lastUpdated, lang) : (t.terminalDefault || "Default")}</span>
           </div>
         </div>
       </div>
@@ -221,12 +218,10 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
             <span className="text-xl">💎</span>
             <div className="space-y-1">
               <h4 className="text-xs font-black text-amber-400">
-                {lang === "fa" ? "اشتراک طلایی کاداستر: اسعار تمام‌جهان و ابزار هوشمند پیشرفته" : "Gold Cadastre Subscription: Live Global Forex & AI Suite"}
+                {t.goldTitle || "Gold Cadastre Subscription: Live Global Forex & AI Suite"}
               </h4>
               <p className="text-[10.5px] text-slate-300 leading-relaxed max-w-2xl">
-                {lang === "fa" 
-                  ? "جهت قفل‌گشایی تبدیل خودکار فرمول کاداستر ملکی به درهم امارات، لیر ترکیه، یورو و افغانی با نرخ موازی صرافی‌ها، ثبت نامحدود آگهی (بدون کارمزد تکی) و ۴ موتور هوش مصنوعی پیشرفته، عضو طلا شوید." 
-                  : "Unlock automatic in-app conversion to Lira, Euro, Dirham & Ruble with active exchange rates, remove the 2-listing quota & deploy 4 specialized AI modules."}
+                {t.goldDesc || "Unlock automatic in-app conversion to Lira, Euro, Dirham & Ruble with active exchange rates, remove the 2-listing quota & deploy 4 specialized AI modules."}
               </p>
             </div>
           </div>
@@ -236,7 +231,7 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
             className="cursor-pointer relative z-10 shrink-0 px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 text-[10.5px] font-black rounded-xl transition shadow-md shadow-amber-500/10 active:scale-95 flex items-center gap-1"
           >
             <span>💎</span>
-            <span>{lang === "fa" ? "ارتقای فوری به پنل طلایی" : "Upgrade to Gold Pro Now"}</span>
+            <span>{t.goldBtn || "Upgrade to Gold Pro Now"}</span>
           </button>
         </div>
       )}
@@ -297,7 +292,7 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
                 <div className="space-y-1.5">
                   <div>
                     <span className="text-[8px] text-slate-500 block font-mono font-bold uppercase leading-none">
-                      {lang === "fa" ? "نرخ یکپارچه مصوب" : "Unified / Pegged Rate"}
+                      {t.terminalUnifiedPegged || "Unified / Pegged Rate"}
                     </span>
                     <div className="text-[12px] font-extrabold text-white mt-0.5 font-mono tracking-tight leading-tight">
                       {toLocalizedDigits(rateToUSD.toLocaleString(undefined, { maximumFractionDigits: 3 }), lang)}{" "}
@@ -311,7 +306,7 @@ export const V2LiveCurrencyTerminal: React.FC<V2LiveCurrencyTerminalProps> = ({
               {standardCode !== "USD" && (
                 <div className="border-t border-slate-900 pt-1 mt-1.5 flex justify-between items-center bg-slate-950 p-1 rounded-lg">
                   <span className="text-[8.5px] text-slate-500 block font-mono font-bold leading-none">
-                    {lang === "fa" ? "ارزش اسمی ۱ دلار" : "Value inside 1$"}
+                    {t.terminalValueInUSD || "Value inside 1$"}
                   </span>
                   <span className="text-[10px] font-black font-mono text-emerald-400 leading-none">
                     ${toLocalizedDigits(unitInUSD.toLocaleString(undefined, { maximumFractionDigits: 4 }), lang)}

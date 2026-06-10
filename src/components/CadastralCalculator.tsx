@@ -3,14 +3,17 @@ import { Language } from "../types";
 import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
 import { CALC_TRANSLATIONS } from "./calculatorTranslations";
+import { getForexDisclaimer } from "../utils/forexDisclaimer";
+import { AutoTranslate } from "./AutoTranslate";
 
 interface CadastralCalculatorProps {
   lang: Language;
   isSidebar?: boolean;
   rates?: Record<string, number>;
+  onSaveRates?: (newRates: Record<string, number>) => void;
 }
 
-export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, isSidebar = false, rates: passedRates }) => {
+export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, isSidebar = false, rates: passedRates, onSaveRates }) => {
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
   const tc = CALC_TRANSLATIONS[lang] || CALC_TRANSLATIONS.en!;
 
@@ -87,9 +90,35 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
   const [isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Live Multi-Currency Conversion Inputs
-  const [inputAmount, setInputAmount] = useState<number>(1000);
+  // Live Multi-Currency Conversion Inputs (backed by text string to avoid stubborn 0 inputs)
+  const [inputAmountStr, setInputAmountStr] = useState<string>("1,000");
+  const inputAmount = parseFloat(inputAmountStr.replace(/,/g, "")) || 0;
   const [inputCurrency, setInputCurrency] = useState<string>("AED");
+  const [showManualOverrides, setShowManualOverrides] = useState(false);
+
+  // Map to hold raw typed string states of each manual currency rate input
+  const [rateInputValues, setRateInputValues] = useState<Record<string, string>>({});
+
+  // Sync rates to local typed strings without clobbering active input sessions (preserves periods, empty values and adds commas)
+  useEffect(() => {
+    setRateInputValues(prev => {
+      const next = { ...prev };
+      Object.keys(rates).forEach((code) => {
+        const currentValStr = next[code];
+        const currentNum = currentValStr !== undefined ? (parseFloat(currentValStr.replace(/,/g, "")) || 0) : -1;
+        if (currentValStr === undefined || currentNum !== rates[code]) {
+          if (rates[code] !== undefined) {
+            const parts = rates[code].toString().split(".");
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            next[code] = parts.join(".");
+          } else {
+            next[code] = "";
+          }
+        }
+      });
+      return next;
+    });
+  }, [rates]);
 
   // Fetch Live Rates
   useEffect(() => {
@@ -407,6 +436,16 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
             </div>
           </div>
 
+          {/* Sourcing & Free Market Advisory Notice */}
+          <div className="p-3.5 bg-indigo-950/20 text-slate-300 border border-indigo-950/60 rounded-xl text-[10px] leading-relaxed flex items-start gap-2.5 shadow-sm" id="forex-sourcing-banner">
+            <span className="text-sm shrink-0 self-start">💡</span>
+            <div>
+              <p className="font-sans font-medium text-slate-100">
+                {getForexDisclaimer(lang)}
+              </p>
+            </div>
+          </div>
+
           {/* Dual Inputs Row */}
           <div className={`grid grid-cols-1 ${isSidebar ? "" : "sm:grid-cols-2"} gap-3 bg-slate-950 p-4 rounded-xl border border-slate-850`}>
             <div>
@@ -431,14 +470,121 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
                 {tc.enterAmount}
               </label>
               <input
-                type="number"
-                value={inputAmount}
-                min="1"
-                onChange={(e) => setInputAmount(Math.max(0, parseFloat(e.target.value) || 0))}
+                type="text"
+                value={inputAmountStr}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const clean = val.replace(/,/g, "");
+                  if (clean === "") {
+                    setInputAmountStr("");
+                    return;
+                  }
+                  if (clean === ".") {
+                    setInputAmountStr(".");
+                    return;
+                  }
+                  const parts = clean.split(".");
+                  const intPart = parts[0].replace(/[^\d]/g, "");
+                  const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                  if (parts.length > 1) {
+                    const decPart = parts[1].replace(/[^\d]/g, "");
+                    setInputAmountStr(`${formattedInt}.${decPart}`);
+                  } else {
+                    setInputAmountStr(formattedInt);
+                  }
+                }}
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-indigo-400 font-bold font-mono text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                placeholder="1000"
+                placeholder="1,000"
               />
             </div>
+          </div>
+
+          {/* Manual Rates Adjustment Toggle and Panel */}
+          <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 space-y-3" id="manual-forex-customizer">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400">
+                {tc.manualRatesTitle || "🛠️ Manual Free Market Rate Overrides (Optional)"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowManualOverrides(!showManualOverrides)}
+                className="text-[10px] bg-slate-900 hover:bg-slate-800 text-indigo-400 font-bold px-2 py-1 rounded-md border border-slate-800 transition-colors"
+                id="toggle-manual-rates-btn"
+              >
+                {showManualOverrides 
+                  ? (tc.manualRatesBtnClose || "❌ Hide Rates Panel") 
+                  : (tc.manualRatesBtnOpen || "✏️ Manual Rate for Free Market")}
+              </button>
+            </div>
+
+            {showManualOverrides && (
+              <div className="space-y-3 pt-2 border-t border-slate-900">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 animate-fade-in" id="manual-rates-inputs-grid">
+                  {currenciesList.filter(c => c.code !== "USD" && c.code !== "USDT").map((curr) => {
+                    return (
+                      <div key={curr.code} className="bg-slate-900 p-2 rounded-lg border border-slate-850 flex flex-col gap-1 text-[10px]">
+                        <span className="text-slate-400 font-bold flex items-center gap-1">
+                          <span>{curr.flag}</span>
+                          <span className="truncate">
+                            <AutoTranslate text={lang === "fa" ? curr.nameFa : curr.nameEn} lang={lang} /> ({curr.code})
+                          </span>
+                        </span>
+                        <div className="relative flex items-center mt-1">
+                          <span className="absolute left-1.5 text-[8px] text-slate-500 font-mono">1$ =</span>
+                          <input
+                            type="text"
+                            value={rateInputValues[curr.code] !== undefined ? rateInputValues[curr.code] : (rates[curr.code]?.toString() || "")}
+                            onChange={(e) => {
+                              const valStr = e.target.value;
+                              const clean = valStr.replace(/,/g, "");
+                              if (clean === "") {
+                                setRateInputValues(prev => ({ ...prev, [curr.code]: "" }));
+                                setRates(prev => ({ ...prev, [curr.code]: 0 }));
+                                return;
+                              }
+                              if (clean === ".") {
+                                setRateInputValues(prev => ({ ...prev, [curr.code]: "." }));
+                                return;
+                              }
+
+                              const parts = clean.split(".");
+                              const intPart = parts[0].replace(/[^\d]/g, "");
+                              const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                              let formatted = formattedInt;
+                              if (parts.length > 1) {
+                                const decPart = parts[1].replace(/[^\d]/g, "");
+                                formatted = `${formattedInt}.${decPart}`;
+                              }
+
+                              setRateInputValues(prev => ({ ...prev, [curr.code]: formatted }));
+                              
+                              const numericVal = parseFloat(clean);
+                              if (!isNaN(numericVal)) {
+                                setRates(prev => ({ ...prev, [curr.code]: numericVal }));
+                              }
+                            }}
+                            className="w-full bg-slate-950 border border-slate-850 focus:border-indigo-500 rounded px-1 py-1 text-center font-bold text-indigo-300 font-mono text-[11px] pl-5"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {onSaveRates && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSaveRates(rates);
+                      alert(tc.saveRatesSuccessAlert || "✅ Custom rates were saved to the cloud database and applied globally!");
+                    }}
+                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-[11px] uppercase tracking-wider transition-all duration-150 shadow-md hover:shadow-indigo-500/10 active:scale-[0.98] border border-indigo-500/20"
+                    id="save-rate-overrides-global-btn"
+                  >
+                    {tc.saveRatesBtn || "💾 Save New Rates Globally on Server"}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Multiple Currencies Result Grid  ("تبدیل چندین ارز باهم") */}
@@ -465,7 +611,9 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-bold text-slate-200 flex items-center gap-1">
                         <span>{curr.flag}</span>
-                        <span>{lang === "fa" ? curr.nameFa.split(" ")[0] : curr.code}</span>
+                        <span>
+                          <AutoTranslate text={lang === "fa" ? curr.nameFa : curr.nameEn} lang={lang} />
+                        </span>
                       </span>
                       <span className="text-[8px] bg-slate-900 text-slate-400 border border-slate-800 px-1 py-0.5 rounded font-mono">
                         {curr.code}
@@ -476,9 +624,11 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
                       <div className="text-[13px] font-extrabold font-mono text-white tracking-tight truncate" title={originalValue.toLocaleString()}>
                         {toLocalizedDigits(formatConvertedValue(originalValue, curr.code), lang)}
                       </div>
-                      <div className="text-[9px] text-slate-500 font-medium flex justify-between mt-0.5">
-                        <span>{curr.desc}</span>
-                        <span className="text-indigo-400 font-bold">{curr.symbol}</span>
+                      <div className="text-[9px] text-slate-500 font-medium flex justify-between mt-0.5 w-full min-w-0">
+                        <span className="truncate pr-1">
+                          <AutoTranslate text={curr.desc} lang={lang} />
+                        </span>
+                        <span className="text-indigo-400 font-bold shrink-0">{curr.symbol}</span>
                       </div>
                     </div>
                   </div>

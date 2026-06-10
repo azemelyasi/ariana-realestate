@@ -3,8 +3,11 @@ import { Property, Language, DisputeReport } from "../types";
 import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
 import { getTranslation } from "../i18n";
+import { CALC_TRANSLATIONS } from "./calculatorTranslations";
 import { Compass, Globe, Copy, ShieldAlert, CheckCircle } from "lucide-react";
 import { CadastralInteractiveMap } from "./CadastralInteractiveMap";
+import { getForexDisclaimer } from "../utils/forexDisclaimer";
+import { AutoTranslate } from "./AutoTranslate";
 
 interface PropertyDetailsModalProps {
   property: Property;
@@ -17,6 +20,7 @@ interface PropertyDetailsModalProps {
 
 export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ property, lang, onClose, onSubmitComplaint, onStartChat, rates: passedRates }) => {
   const isRtl = ["fa", "ar", "ku", "ps", "ur"].includes(lang);
+  const tc = (CALC_TRANSLATIONS[lang] || CALC_TRANSLATIONS["en"])!;
   const c = COUNTRIES.find((cnt) => cnt.code === property.country) || COUNTRIES[0];
 
   const calculatedTotalPrice = property.totalPrice || ((property.pricePerSqm || 0) * (property.area || 0));
@@ -60,6 +64,44 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  // Visitor custom free market exchange calculator states
+  const [visitorInputAmountStr, setVisitorInputAmountStr] = useState<string>(Math.round(calculatedTotalPrice).toLocaleString("en-US"));
+  const [visitorInputCurrency, setVisitorInputCurrency] = useState<string>("USD");
+  const [visitorRateInputValues, setVisitorRateInputValues] = useState<Record<string, string>>({});
+  
+  // Keep rateInputValues in sync with newly loaded rates so they don't start blank
+  useEffect(() => {
+    setVisitorRateInputValues(prev => {
+      const next = { ...prev };
+      Object.keys(rates).forEach(code => {
+        if (next[code] === undefined && rates[code] !== undefined) {
+          const parts = rates[code].toString().split(".");
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+          next[code] = parts.join(".");
+        }
+      });
+      return next;
+    });
+  }, [rates]);
+
+  const getVisitorRate = (code: string): number => {
+    if (code === "USD" || code === "USDT") return 1;
+    const typedValStr = visitorRateInputValues[code];
+    if (typedValStr !== undefined && typedValStr !== "") {
+      const parsed = parseFloat(typedValStr.replace(/,/g, ""));
+      if (!isNaN(parsed)) return parsed;
+    }
+    return rates[code] || 1;
+  };
+
+  const getVisitorConvertedValue = (targetCode: string) => {
+    const amount = parseFloat(visitorInputAmountStr.replace(/,/g, "")) || 0;
+    const rateInUSD = getVisitorRate(visitorInputCurrency);
+    const amountInUSD = visitorInputCurrency === "USD" || visitorInputCurrency === "USDT" ? amount : (amount / (rateInUSD || 1));
+    const targetRate = getVisitorRate(targetCode);
+    return amountInUSD * targetRate;
+  };
 
   // Secure Legal Check Certificate states
   const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false);
@@ -311,7 +353,9 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                   <span className="text-[10px] text-indigo-400 font-bold tracking-wider block mb-1 uppercase">
                     🏷️ {lang === "fa" ? "کد فایل ثبت اسناد" : "FILE REGISTRY ID"}: MLS-{String(property.id).toUpperCase()}
                   </span>
-                  <h3 className="text-lg md:text-2xl font-black tracking-tight">{property.title}</h3>
+                  <h3 className="text-lg md:text-2xl font-black tracking-tight">
+                    <AutoTranslate text={property.title} lang={lang} />
+                  </h3>
                 </div>
 
                 {/* Micro Image Controller on the bottom-right */}
@@ -415,7 +459,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
               <span>📝</span> {getTranslation(lang, "listingSpecs", "Listing Description")}
             </h4>
             <div className="bg-slate-950/40 p-4 rounded-2xl border border-slate-850/50 leading-relaxed text-slate-300 text-xs shadow-inner">
-              {property.description}
+              <AutoTranslate text={property.description} lang={lang} />
             </div>
           </div>
 
@@ -956,7 +1000,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                     {lang === "fa" ? "سیستم گرمایشی مجهز" : "Heating System"}
                   </span>
                   <span className="text-slate-200 mt-1 block font-bold text-xs truncate" title={displayHeating}>
-                    {displayHeating}
+                    <AutoTranslate text={displayHeating} lang={lang} />
                   </span>
                 </div>
               </div>
@@ -969,7 +1013,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                     {lang === "fa" ? "کابینت و دکور آشپزخانه" : "Cabinets / Kitchen"}
                   </span>
                   <span className="text-slate-200 mt-1 block font-bold text-xs truncate" title={displayCabinets}>
-                    {displayCabinets}
+                    <AutoTranslate text={displayCabinets} lang={lang} />
                   </span>
                 </div>
               </div>
@@ -982,7 +1026,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                     {lang === "fa" ? "سیستم سرمایشی" : "Cooling System"}
                   </span>
                   <span className="text-slate-200 mt-1 block font-bold text-xs truncate" title={displayCooling}>
-                    {displayCooling}
+                    <AutoTranslate text={displayCooling} lang={lang} />
                   </span>
                 </div>
               </div>
@@ -995,7 +1039,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                     {lang === "fa" ? "سند و تاییدیه ثبتی" : "Legal Deed & Certification"}
                   </span>
                   <span className="text-slate-200 mt-1 block font-bold text-xs truncate" title={displayStructuralStatus}>
-                    {displayStructuralStatus}
+                    <AutoTranslate text={displayStructuralStatus} lang={lang} />
                   </span>
                 </div>
               </div>
@@ -1059,7 +1103,9 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                     <div className="flex items-center justify-between gap-1 mb-1">
                       <span className="text-[10px] font-bold text-slate-200 flex items-center gap-1 truncate">
                         <span>{matrix.flag}</span>
-                        <span className="truncate">{lang === "fa" ? matrix.nameFa : matrix.nameEn}</span>
+                        <span className="truncate">
+                          <AutoTranslate text={lang === "fa" ? matrix.nameFa : matrix.nameEn} lang={lang} />
+                        </span>
                       </span>
                       <span className="text-[8px] font-mono shrink-0 bg-slate-950 text-slate-400 border border-slate-850 px-1 rounded font-black">
                         {matrix.code}
@@ -1078,6 +1124,169 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                   </div>
                 );
               })}
+            </div>
+
+            {/* Divider and Visitor Custom Calculator Option */}
+            <div className="border-t border-slate-900 mt-4 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h6 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <span>🎛️</span>
+                  <span>{tc.freeMarketCalcTitle || "Free Market Calculator & Manual Overrides"}</span>
+                </h6>
+                <span className="text-[8px] text-slate-500 font-mono">
+                  {tc.manualFreeMarketRateLabel || "Manual Free Market Rate"}
+                </span>
+              </div>
+
+              {/* Sourcing & Free Market Advisory Notice */}
+              <div className="p-3 bg-indigo-950/20 text-slate-300 border border-indigo-950/60 rounded-xl text-[9px] leading-relaxed flex items-start gap-2 mb-3 shadow-sm" id="visitor-forex-sourcing-banner">
+                <span className="text-xs shrink-0 self-start">💡</span>
+                <div>
+                  <p className="font-sans text-slate-350">
+                    {getForexDisclaimer(lang)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Input section */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3 bg-slate-900/60 p-2.5 rounded-xl border border-slate-850">
+                {/* Amount to convert */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-medium">
+                    {lang === "fa" ? "مقدار پایه جهت تبدیل:" : "Amount to Convert:"}
+                  </span>
+                  <input
+                    type="text"
+                    value={visitorInputAmountStr}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const clean = val.replace(/,/g, "");
+                      if (clean === "") {
+                        setVisitorInputAmountStr("");
+                        return;
+                      }
+                      if (clean === ".") {
+                        setVisitorInputAmountStr(".");
+                        return;
+                      }
+                      const parts = clean.split(".");
+                      const intPart = parts[0].replace(/[^\d]/g, "");
+                      const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                      if (parts.length > 1) {
+                        const decPart = parts[1].replace(/[^\d]/g, "");
+                        setVisitorInputAmountStr(`${formattedInt}.${decPart}`);
+                      } else {
+                        setVisitorInputAmountStr(formattedInt);
+                      }
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 text-indigo-300 font-bold font-mono text-xs rounded-lg px-2.5 py-1.5 focus:border-indigo-500 focus:outline-none"
+                    placeholder="e.g. 1,000"
+                  />
+                </div>
+
+                {/* Input Currency */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-medium font-sans">
+                    {lang === "fa" ? "واحد پول مبدا:" : "Source Currency:"}
+                  </span>
+                  <select
+                    value={visitorInputCurrency}
+                    onChange={(e) => setVisitorInputCurrency(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 font-bold text-xs rounded-lg px-2 py-1.5 focus:border-indigo-500 focus:outline-none"
+                  >
+                    {exchangeMatrix.map(curr => (
+                      <option key={curr.code} value={curr.code} className="bg-slate-950 text-slate-200">
+                        {curr.flag} {lang === "fa" ? curr.nameFa : curr.nameEn} ({curr.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Reset Button */}
+                <div className="flex items-end justify-start sm:justify-end gap-2 pb-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVisitorInputAmountStr(Math.round(calculatedTotalPrice).toLocaleString("en-US"));
+                      setVisitorInputCurrency("USD");
+                      const resetRates: Record<string, string> = {};
+                      Object.keys(rates).forEach(code => {
+                        resetRates[code] = rates[code]?.toString() || "";
+                      });
+                      setVisitorRateInputValues(resetRates);
+                    }}
+                    className="px-2.5 py-1.5 bg-slate-850 hover:bg-slate-800 text-slate-300 text-[9px] font-bold rounded-lg border border-slate-800 flex items-center gap-1 transition-all w-full sm:w-auto"
+                  >
+                    🔄 {lang === "fa" ? "پیش‌فرض آگهی" : "Ad Default Price"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Conversion results for main currencies with live overriding inputs */}
+              <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+                {exchangeMatrix.map((matrix) => {
+                  const resultValue = getVisitorConvertedValue(matrix.code);
+                  const isBaseOverrideNeeded = matrix.code !== "USD" && matrix.code !== "USDT";
+
+                  return (
+                    <div key={matrix.code} className="bg-slate-900/40 border border-slate-850 px-2.5 py-1.5 rounded-xl flex flex-row items-center justify-between gap-2 hover:ring-1 hover:ring-indigo-500/10 transition-all">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm shrink-0">{matrix.flag}</span>
+                        <div className="min-w-0">
+                          <span className="text-[9px] text-slate-400 font-bold block truncate">
+                            {lang === "fa" ? matrix.nameFa : matrix.nameEn}
+                          </span>
+                          <span className="text-[11.5px] font-black text-white font-mono tracking-tight block truncate">
+                            {toLocalizedDigits(Math.round(resultValue).toLocaleString(), lang)} {matrix.symbol}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Manual Exchange Rate Editor with Clearer Label for Free Market */}
+                      {isBaseOverrideNeeded && (
+                        <div className="flex flex-col items-end gap-1 select-none shrink-0" id="manual-rate-sub-panel">
+                          <span className="text-[7.5px] text-slate-500 font-sans font-bold">
+                            {tc.manualFreeMarketRateLabel || "Manual Free Market Rate"}
+                          </span>
+                          <div className="flex items-center gap-1 bg-slate-950/80 px-2 py-0.5 rounded-lg border border-slate-850">
+                            <span className="text-[8.5px] text-slate-500 font-mono">1$ =</span>
+                            <input
+                              type="text"
+                              value={visitorRateInputValues[matrix.code] !== undefined ? visitorRateInputValues[matrix.code] : (rates[matrix.code]?.toString() || "")}
+                              onChange={(e) => {
+                                const valStr = e.target.value;
+                                const clean = valStr.replace(/,/g, "");
+                                if (clean === "") {
+                                  setVisitorRateInputValues(prev => ({ ...prev, [matrix.code]: "" }));
+                                  return;
+                                }
+                                if (clean === ".") {
+                                  setVisitorRateInputValues(prev => ({ ...prev, [matrix.code]: "." }));
+                                  return;
+                                }
+
+                                const parts = clean.split(".");
+                                const intPart = parts[0].replace(/[^\d]/g, "");
+                                const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                                let formatted = formattedInt;
+                                if (parts.length > 1) {
+                                  const decPart = parts[1].replace(/[^\d]/g, "");
+                                  formatted = `${formattedInt}.${decPart}`;
+                                }
+
+                                setVisitorRateInputValues(prev => ({ ...prev, [matrix.code]: formatted }));
+                              }}
+                              placeholder={rates[matrix.code]?.toString() || "0"}
+                              className="w-[70px] bg-transparent text-center font-bold text-indigo-400 font-mono text-[10px] focus:outline-none focus:text-indigo-300 border-none p-0 focus:ring-0"
+                            />
+                            <span className="text-[8px] text-indigo-450 font-bold shrink-0">{matrix.code}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
