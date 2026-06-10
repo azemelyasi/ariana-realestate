@@ -217,16 +217,70 @@ async function getLiveExchangeRates(): Promise<any> {
   const tryJitter = Math.sin(seed / 1500) * 0.08;
   const rubJitter = Math.cos(seed / 1000) * 0.25;
 
-  // Set precise real-world parallel market base (around 1,375,125 Rials as specified)
-  const ParallelMarketIRRBase = 1375125;
-  baseRates.IRR = ParallelMarketIRRBase + irrJitter;
-  baseRates.TMN = Math.round(baseRates.IRR / 10); // True Toman representation (e.g. 137512)
+  // Retrieve custom overrides from system settings if exists
+  let customOverrides: any = {};
+  try {
+    const sysSettings = readSettingsFromDisk();
+    if (sysSettings && sysSettings.customRates && typeof sysSettings.customRates === "object") {
+      customOverrides = sysSettings.customRates;
+    }
+  } catch (err) {
+    console.error("Failed to read settings for rates override:", err);
+  }
 
-  baseRates.AFN = Number((62.50 + afnJitter).toFixed(3));
-  baseRates.TRY = Number((33.50 + tryJitter).toFixed(3));
-  baseRates.RUB = Number((91.45 + rubJitter).toFixed(3));
-  baseRates.AED = Number((3.6725 + (Math.sin(seed / 900) * 0.0005)).toFixed(4));
-  baseRates.SAR = Number((3.750 + (Math.cos(seed / 1100) * 0.0005)).toFixed(4));
+  // Set precise real-world parallel market base (around 1,375,125 Rials as specified)
+  if (customOverrides.IRR !== undefined && customOverrides.IRR > 0) {
+    baseRates.IRR = Number(customOverrides.IRR);
+  } else {
+    const ParallelMarketIRRBase = 1375125;
+    baseRates.IRR = ParallelMarketIRRBase + irrJitter;
+  }
+
+  if (customOverrides.TMN !== undefined && customOverrides.TMN > 0) {
+    baseRates.TMN = Number(customOverrides.TMN);
+  } else {
+    baseRates.TMN = Math.round(baseRates.IRR / 10); // True Toman representation (e.g. 137512)
+  }
+
+  if (customOverrides.AFN !== undefined && customOverrides.AFN > 0) {
+    baseRates.AFN = Number(customOverrides.AFN);
+  } else {
+    baseRates.AFN = Number((62.50 + afnJitter).toFixed(3));
+  }
+
+  if (customOverrides.TRY !== undefined && customOverrides.TRY > 0) {
+    baseRates.TRY = Number(customOverrides.TRY);
+  } else {
+    baseRates.TRY = Number((33.50 + tryJitter).toFixed(3));
+  }
+
+  if (customOverrides.RUB !== undefined && customOverrides.RUB > 0) {
+    baseRates.RUB = Number(customOverrides.RUB);
+  } else {
+    baseRates.RUB = Number((91.45 + rubJitter).toFixed(3));
+  }
+
+  if (customOverrides.AED !== undefined && customOverrides.AED > 0) {
+    baseRates.AED = Number(customOverrides.AED);
+  } else {
+    baseRates.AED = Number((3.6725 + (Math.sin(seed / 900) * 0.0005)).toFixed(4));
+  }
+
+  if (customOverrides.SAR !== undefined && customOverrides.SAR > 0) {
+    baseRates.SAR = Number(customOverrides.SAR);
+  } else {
+    baseRates.SAR = Number((3.750 + (Math.cos(seed / 1100) * 0.0005)).toFixed(4));
+  }
+
+  // Apply other arbitrary overrides if defined
+  Object.keys(customOverrides).forEach((code) => {
+    if (!["IRR", "TMN", "AFN", "TRY", "RUB", "AED", "SAR"].includes(code)) {
+      const val = parseFloat(customOverrides[code]);
+      if (val && val > 0) {
+        baseRates[code] = val;
+      }
+    }
+  });
 
   return baseRates;
 }
@@ -918,6 +972,69 @@ app.post("/api/automation/chatbot/learn", (req, res) => {
   res.json({ status: "success", learnedQA: newQA });
 });
 
+// On-the-fly Gemini Translation Endpoint (Dynamic translation of missed/fallback texts)
+app.post("/api/translate", async (req, res) => {
+  const { text, targetLang } = req.body;
+  if (!text) {
+    return res.status(400).json({ error: "No text supplied for translation" });
+  }
+  const langKey = targetLang || "en";
+
+  let activeAi = getRoundRobinGeminiClient();
+  if (activeAi) {
+    try {
+      const isArray = Array.isArray(text);
+      const textToTranslate = isArray ? JSON.stringify(text) : String(text);
+
+      const prompt = isArray 
+        ? `Translate this JSON array of strings into target language code "${langKey}" (e.g. ps stands for Pashto, tr for Turkish, ar for Arabic). Retain exact JSON structure and array length. Return ONLY a valid JSON array of strings, No markdown code blocks, no explanations, no wrappers.
+        JSON content: ${textToTranslate}`
+        : `Translate this text precisely into target language code "${langKey}". Do not add any introductory, conversational, or extra text, just return the translated result.
+        Text content: ${textToTranslate}`;
+
+      const response = await activeAi.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: `You are an expert translator specializing in real estate, listings details, and software installation systems. Translate the requested segment into code "${langKey}" accurately. Use beautiful, natural and modern human phrasing. Return the raw translation without comments.`,
+          temperature: 0.2,
+        }
+      });
+
+      let translationResult = response.text || "";
+      if (isArray) {
+        try {
+          let cleaned = translationResult.trim();
+          if (cleaned.startsWith("```json")) {
+            cleaned = cleaned.substring(7);
+            if (cleaned.endsWith("```")) {
+              cleaned = cleaned.substring(0, cleaned.length - 3);
+            }
+          } else if (cleaned.startsWith("```")) {
+            cleaned = cleaned.substring(3);
+            if (cleaned.endsWith("```")) {
+              cleaned = cleaned.substring(0, cleaned.length - 3);
+            }
+          }
+          cleaned = cleaned.trim();
+          const parsed = JSON.parse(cleaned);
+          return res.json({ result: parsed });
+        } catch (e) {
+          console.error("Failed to parse array JSON from Gemini translation:", e);
+          return res.json({ result: text, error: "JSON parse fail" });
+        }
+      } else {
+        return res.json({ result: translationResult.trim() });
+      }
+    } catch (err) {
+      console.error("AI translation error:", err);
+      return res.json({ result: text, error: "AI translation call failed" });
+    }
+  } else {
+    return res.json({ result: text, error: "Gemini server offline" });
+  }
+});
+
 // Auto translation pack generator (AI Duty #1)
 app.post("/api/automation/translate-pack", async (req, res) => {
   const { targetLanguage, isRtl } = req.body;
@@ -1009,6 +1126,7 @@ import fs from "fs";
 // 1. Properties persistence
 const propertiesFilePath = path.join(process.cwd(), "properties.json");
 const chatsFilePath = path.join(process.cwd(), "chats.json");
+const settingsFilePath = path.join(process.cwd(), "settings.json");
 
 // Dynamic lazy initializer for Firebase client connection
 const configPath = path.join(process.cwd(), "firebase-applet-config.json");
@@ -1081,13 +1199,55 @@ function writeChatsToDisk(chats: any[]) {
   }
 }
 
+// 2. Settings persistence
+function readSettingsFromDisk(): any {
+  try {
+    if (fs.existsSync(settingsFilePath)) {
+      const raw = fs.readFileSync(settingsFilePath, "utf8");
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error("Error reading settings.json:", e);
+  }
+  return {
+    siteName: "Ariana Rahnuma",
+    allowPublicPost: true,
+    requireApproval: true,
+    contactEmail: "registry@arianarahnuma.com",
+    contactPhone: "+93 799 123 456",
+    address: "Wazir Akbar Khan, District 10, Kabul, Afghanistan",
+    themeMode: "dark",
+    listingFeePrice: 18,
+    globalDiscountPct: 15,
+    promoCode: "AFG20",
+    promoDiscountPct: 20,
+    tetherWalletAddress: "TR7NHqdjwmJZGZ86HnEpv842bC78e146vD",
+    adminShetabCard: "6037991823456789",
+    freeListingsLimit: 1,
+    feeType: "fixed",
+    listingFeeUSDT: 5,
+    feeRatePct: 0.05,
+    goldPriceToman: 800,
+    goldPriceUSDT: 10,
+    fiatCurrencyName: "AFN"
+  };
+}
+
+function writeSettingsToDisk(settings: any) {
+  try {
+    fs.writeFileSync(settingsFilePath, JSON.stringify(settings, null, 2), "utf8");
+  } catch (e) {
+    console.error("Error writing settings.json:", e);
+  }
+}
+
 // -------------------------------------------------------------
 // FIRESTORE HIGH ENERGY HYDRATION ENGINE
 // -------------------------------------------------------------
 async function seedFirestoreData() {
   if (!firestoreDb) return;
   try {
-    const { collection, getDocs, doc, setDoc } = await import("firebase/firestore");
+    const { collection, getDocs, doc, setDoc, getDoc } = await import("firebase/firestore");
     
     // Properties seeding
     const propSnapshot = await getDocs(collection(firestoreDb, "properties"));
@@ -1110,8 +1270,50 @@ async function seedFirestoreData() {
       }
       console.log(`Firestore seeded successfully with ${initialChats.length} chat messages!`);
     }
+
+    // Settings seeding
+    const settingsDocRef = doc(firestoreDb, "shared_config", "system_settings");
+    const settingsSnap = await getDoc(settingsDocRef);
+    if (!settingsSnap.exists()) {
+      console.log("Firestore shared_config/system_settings is completely empty. Seeding defaults...");
+      const defaultSet = readSettingsFromDisk();
+      await setDoc(settingsDocRef, defaultSet);
+      console.log("Firestore system settings seeded successfully!");
+    }
   } catch (err) {
     console.error("Error seeding Firestore on startup:", err);
+  }
+}
+
+async function readSettingsFromDatabase(): Promise<any> {
+  if (firestoreDb) {
+    try {
+      const { doc, getDoc } = await import("firebase/firestore");
+      const snap = await getDoc(doc(firestoreDb, "shared_config", "system_settings"));
+      if (snap.exists()) {
+        const val = snap.data();
+        try {
+          fs.writeFileSync(settingsFilePath, JSON.stringify(val, null, 2), "utf8");
+        } catch (err) {}
+        return val;
+      }
+    } catch (e) {
+      console.error("Firestore readSettings failure, fallback to disk:", e);
+    }
+  }
+  return readSettingsFromDisk();
+}
+
+async function saveSettingsToDatabase(settings: any) {
+  writeSettingsToDisk(settings);
+  if (firestoreDb) {
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      await setDoc(doc(firestoreDb, "shared_config", "system_settings"), settings);
+      console.log("Firestore SUCCESS: Fully persisted global system settings");
+    } catch (e) {
+      console.error("Firestore error writing global settings:", e);
+    }
   }
 }
 
@@ -1232,6 +1434,19 @@ async function saveChatToDatabase(msg: any) {
 const activeOTPs = new Map<string, { code: string; expires: number }>();
 
 // APIs:
+// GET system settings
+app.get("/api/settings", async (_req, res) => {
+  const settings = await readSettingsFromDatabase();
+  res.json({ success: true, settings });
+});
+
+// POST save system settings
+app.post("/api/settings", async (req, res) => {
+  const newSettings = req.body;
+  await saveSettingsToDatabase(newSettings);
+  res.json({ success: true, settings: newSettings });
+});
+
 // GET list of active properties
 app.get("/api/properties", async (_req, res) => {
   const list = await readPropertiesFromDatabase();
@@ -1266,8 +1481,8 @@ app.post("/api/properties", async (req, res) => {
     // Add new listing flow
     updatedProp.id = "prop-" + Math.floor(Math.random() * 900000 + 100000);
     updatedProp.createdAt = new Date().toISOString();
-    updatedProp.isApproved = false; // Requiring admin approval before general release
-    console.log(`Server: Added a brand new listing ID: ${updatedProp.id}`);
+    updatedProp.isApproved = clientProp.isApproved !== undefined ? clientProp.isApproved : false;
+    console.log(`Server: Added a brand new listing ID: ${updatedProp.id}, Approved: ${updatedProp.isApproved}`);
   }
 
   await savePropertyToDatabase(updatedProp);
