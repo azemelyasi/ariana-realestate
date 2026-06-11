@@ -1133,6 +1133,32 @@ const configPath = path.join(process.cwd(), "firebase-applet-config.json");
 let firebaseApp: any = null;
 let firestoreDb: any = null;
 
+// CIRCUIT BREAKER / ROBUST HEALTH MONITOR PATTERN
+let isFirestoreHealthy = true;
+let lastFirestoreErrorTime = 0;
+
+function checkFirestoreAvailability(): boolean {
+  if (!firestoreDb) return false;
+  if (!isFirestoreHealthy) {
+    const elapsed = Date.now() - lastFirestoreErrorTime;
+    if (elapsed > 45000) { // Retry after 45 seconds
+      isFirestoreHealthy = true;
+      console.log("⚡ [Firestore Circuit Breaker] Retrying connection attempt...");
+    } else {
+      return false; // Instant fallback to local file db
+    }
+  }
+  return true;
+}
+
+function markFirestoreUnhealthy() {
+  if (isFirestoreHealthy) {
+    isFirestoreHealthy = false;
+    lastFirestoreErrorTime = Date.now();
+    console.warn("⚠️ [Firestore Circuit Breaker] Connection flagged as unhealthy. Fallback to offline disk configuration.");
+  }
+}
+
 async function initFirebase() {
   if (fs.existsSync(configPath)) {
     try {
@@ -1145,8 +1171,10 @@ async function initFirebase() {
       firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
       console.log("★★★★★ Firebase Connected: Successfully initialized Firestore client DB connection ★★★★★");
       
-      // Auto seed if empty
-      await seedFirestoreData();
+      // Auto seed if empty (run asynchronously in background to never block startup flow)
+      seedFirestoreData().catch(err => {
+        console.error("Error seeding firestore background task:", err);
+      });
     } catch (err) {
       console.error("Error during Firebase lazy init:", err);
     }
@@ -1245,48 +1273,76 @@ function writeSettingsToDisk(settings: any) {
 // FIRESTORE HIGH ENERGY HYDRATION ENGINE
 // -------------------------------------------------------------
 async function seedFirestoreData() {
-  if (!firestoreDb) return;
+  if (!checkFirestoreAvailability()) return;
   try {
     const { collection, getDocs, doc, setDoc, getDoc } = await import("firebase/firestore");
     
     // Properties seeding
-    const propSnapshot = await getDocs(collection(firestoreDb, "properties"));
+    const readPropsPromise = getDocs(collection(firestoreDb, "properties"));
+    const timeoutPropsPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Properties seed retrieve timeout")), 2000)
+    );
+    const propSnapshot = await Promise.race([readPropsPromise, timeoutPropsPromise]);
+    
     if (propSnapshot.empty) {
       console.log("Firestore properties is completely vacant. Seeding default listings...");
       const initialProps = readPropertiesFromDisk();
       for (const p of initialProps) {
-        await setDoc(doc(firestoreDb, "properties", p.id), p);
+        const writePromise = setDoc(doc(firestoreDb, "properties", p.id), p);
+        const timeoutWritePromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Property seed write timeout")), 2000)
+        );
+        await Promise.race([writePromise, timeoutWritePromise]);
       }
       console.log(`Firestore seeded successfully with ${initialProps.length} property listings!`);
     }
 
     // Chats seeding
-    const chatSnapshot = await getDocs(collection(firestoreDb, "chats"));
+    const readChatsPromise = getDocs(collection(firestoreDb, "chats"));
+    const timeoutChatsPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Chats seed retrieve timeout")), 2000)
+    );
+    const chatSnapshot = await Promise.race([readChatsPromise, timeoutChatsPromise]);
+    
     if (chatSnapshot.empty) {
       console.log("Firestore chats is completely vacant. Seeding default messages...");
       const initialChats = readChatsFromDisk();
       for (const c of initialChats) {
-        await setDoc(doc(firestoreDb, "chats", c.id), c);
+        const writePromise = setDoc(doc(firestoreDb, "chats", c.id), c);
+        const timeoutWritePromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Chat seed write timeout")), 2000)
+        );
+        await Promise.race([writePromise, timeoutWritePromise]);
       }
       console.log(`Firestore seeded successfully with ${initialChats.length} chat messages!`);
     }
 
     // Settings seeding
     const settingsDocRef = doc(firestoreDb, "shared_config", "system_settings");
-    const settingsSnap = await getDoc(settingsDocRef);
+    const readSettingsPromise = getDoc(settingsDocRef);
+    const timeoutSettingsPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Settings seed retrieve timeout")), 2000)
+    );
+    const settingsSnap = await Promise.race([readSettingsPromise, timeoutSettingsPromise]);
+    
     if (!settingsSnap.exists()) {
       console.log("Firestore shared_config/system_settings is completely empty. Seeding defaults...");
       const defaultSet = readSettingsFromDisk();
-      await setDoc(settingsDocRef, defaultSet);
+      const writePromise = setDoc(settingsDocRef, defaultSet);
+      const timeoutWritePromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Settings seed write timeout")), 2000)
+      );
+      await Promise.race([writePromise, timeoutWritePromise]);
       console.log("Firestore system settings seeded successfully!");
     }
   } catch (err) {
     console.error("Error seeding Firestore on startup:", err);
+    markFirestoreUnhealthy();
   }
 }
 
 async function readSettingsFromDatabase(): Promise<any> {
-  if (firestoreDb) {
+  if (checkFirestoreAvailability()) {
     try {
       const { doc, getDoc } = await import("firebase/firestore");
       const readPromise = getDoc(doc(firestoreDb, "shared_config", "system_settings"));
@@ -1303,6 +1359,7 @@ async function readSettingsFromDatabase(): Promise<any> {
       }
     } catch (e) {
       console.error("Firestore readSettings failure, fallback to disk:", e);
+      markFirestoreUnhealthy();
     }
   }
   return readSettingsFromDisk();
@@ -1310,19 +1367,20 @@ async function readSettingsFromDatabase(): Promise<any> {
 
 async function saveSettingsToDatabase(settings: any) {
   writeSettingsToDisk(settings);
-  if (firestoreDb) {
+  if (checkFirestoreAvailability()) {
     // Run Firestore save in the background to prevent blocking/hanging the API response thread
     (async () => {
       try {
         const { doc, setDoc } = await import("firebase/firestore");
         const writePromise = setDoc(doc(firestoreDb, "shared_config", "system_settings"), settings);
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore settings write timeout")), 3000)
+          setTimeout(() => reject(new Error("Firestore settings write timeout")), 2500)
         );
         await Promise.race([writePromise, timeoutPromise]);
         console.log("Firestore SUCCESS: Fully persisted global system settings in background");
       } catch (e) {
         console.error("Firestore error writing global settings (background):", e);
+        markFirestoreUnhealthy();
       }
     })();
   }
@@ -1331,7 +1389,7 @@ async function saveSettingsToDatabase(settings: any) {
 // Master read-write functions that interact seamlessly with Firestore and keep local files updated
 
 async function readPropertiesFromDatabase(): Promise<any[]> {
-  if (firestoreDb) {
+  if (checkFirestoreAvailability()) {
     try {
       const { collection, getDocs } = await import("firebase/firestore");
       const readPromise = getDocs(collection(firestoreDb, "properties"));
@@ -1355,6 +1413,7 @@ async function readPropertiesFromDatabase(): Promise<any[]> {
       }
     } catch (e) {
       console.error("Firestore readProperties failure, fallback to disk:", e);
+      markFirestoreUnhealthy();
     }
   }
   return readPropertiesFromDisk();
@@ -1372,18 +1431,19 @@ async function savePropertyToDatabase(property: any) {
   writePropertiesToDisk(list);
 
   // Update cloud Firestore in background
-  if (firestoreDb) {
+  if (checkFirestoreAvailability()) {
     (async () => {
       try {
         const { doc, setDoc } = await import("firebase/firestore");
         const writePromise = setDoc(doc(firestoreDb, "properties", property.id), property);
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore property write timeout")), 3000)
+          setTimeout(() => reject(new Error("Firestore property write timeout")), 2500)
         );
         await Promise.race([writePromise, timeoutPromise]);
         console.log(`Firestore SUCCESS: Fully persisted property ${property.id} in background`);
       } catch (e) {
         console.error(`Firestore error writing property ${property.id} (background):`, e);
+        markFirestoreUnhealthy();
       }
     })();
   }
@@ -1396,25 +1456,26 @@ async function deletePropertyFromDatabase(id: string) {
   writePropertiesToDisk(list);
 
   // Update cloud Firestore in background
-  if (firestoreDb) {
+  if (checkFirestoreAvailability()) {
     (async () => {
       try {
         const { doc, deleteDoc } = await import("firebase/firestore");
         const deletePromise = deleteDoc(doc(firestoreDb, "properties", id));
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore property delete timeout")), 3000)
+          setTimeout(() => reject(new Error("Firestore property delete timeout")), 2500)
         );
         await Promise.race([deletePromise, timeoutPromise]);
         console.log(`Firestore SUCCESS: Deleted property ${id} in background`);
       } catch (e) {
         console.error(`Firestore error deleting property ${id} (background):`, e);
+        markFirestoreUnhealthy();
       }
     })();
   }
 }
 
 async function readChatsFromDatabase(): Promise<any[]> {
-  if (firestoreDb) {
+  if (checkFirestoreAvailability()) {
     try {
       const { collection, getDocs } = await import("firebase/firestore");
       const readPromise = getDocs(collection(firestoreDb, "chats"));
@@ -1438,6 +1499,7 @@ async function readChatsFromDatabase(): Promise<any[]> {
       }
     } catch (e) {
       console.error("Firestore readChats failure, fallback to disk:", e);
+      markFirestoreUnhealthy();
     }
   }
   return readChatsFromDisk();
@@ -1450,18 +1512,19 @@ async function saveChatToDatabase(msg: any) {
   writeChatsToDisk(chats);
 
   // Update cloud Firestore in background
-  if (firestoreDb) {
+  if (checkFirestoreAvailability()) {
     (async () => {
       try {
         const { doc, setDoc } = await import("firebase/firestore");
         const writePromise = setDoc(doc(firestoreDb, "chats", msg.id), msg);
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore chat write timeout")), 3000)
+          setTimeout(() => reject(new Error("Firestore chat write timeout")), 2500)
         );
         await Promise.race([writePromise, timeoutPromise]);
         console.log(`Firestore SUCCESS: Fully persisted chat msg ${msg.id} in background`);
       } catch (e) {
         console.error(`Firestore error writing chat message ${msg.id} (background):`, e);
+        markFirestoreUnhealthy();
       }
     })();
   }
