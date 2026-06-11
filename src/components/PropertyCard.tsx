@@ -4,6 +4,7 @@ import { TRANSLATIONS, getTranslation } from "../i18n";
 import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
 import { Heart } from "lucide-react";
+import { AutoTranslate } from "./AutoTranslate";
 
 interface PropertyCardProps {
   property: Property;
@@ -230,18 +231,18 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between gap-1 mb-1 flex-wrap">
-            <span className="text-[10px] text-indigo-400 font-bold tracking-wider block truncate" title={`${property.district}${property.address && property.address !== property.district ? ` - ${property.address}` : ""}`}>
-              📍 {property.district} {property.address && property.address !== property.district ? `(${property.address})` : ""}
+            <span className="text-[10px] text-indigo-400 font-bold tracking-wider block truncate animate-fade-in" title={`${property.district}${property.address && property.address !== property.district ? ` - ${property.address}` : ""}`}>
+              📍 <AutoTranslate text={`${property.district}${property.address && property.address !== property.district ? ` (${property.address})` : ""}`} lang={lang} />
             </span>
             <span className="text-[8px] bg-indigo-950/40 border border-indigo-900/30 px-1.5 py-0.5 rounded text-indigo-300 font-mono" title="Mathematical Coordinates Secured to avoid lawsuits">
               📡 GPS: SECURED
             </span>
           </div>
           <h4 className="text-sm font-bold text-slate-100 line-clamp-1 mb-2 hover:text-indigo-400 transition cursor-pointer" onClick={() => onViewDetails(property)}>
-            {property.title}
+            <AutoTranslate text={property.title} lang={lang} />
           </h4>
           <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
-            {property.description}
+            <AutoTranslate text={property.description} lang={lang} />
           </p>
 
           {/* Zillow Killer Trust badging */}

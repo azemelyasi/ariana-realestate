@@ -308,6 +308,159 @@ export const SEOInspectorTab: React.FC<SEOInspectorTabProps> = ({
         </div>
 
       </div>
+
+      {/* Global 200 Multilingual SEO Landing Pages Hub */}
+      <SEOArticlesHub lang={lang} copiedKey={copiedKey} onCopy={(txt, k) => handleCopyText(txt, k)} />
+    </div>
+  );
+};
+
+// Sub-component for exploring generated files
+interface SEOArticlesHubProps {
+  lang: Language;
+  copiedKey: string | null;
+  onCopy: (text: string, key: string) => void;
+}
+
+const SEOArticlesHub: React.FC<SEOArticlesHubProps> = ({ lang, copiedKey, onCopy }) => {
+  const [topicSlug, setTopicSlug] = useState("why-live-currency-real-estate");
+  const [targetLang, setTargetLang] = useState<string>(lang);
+
+  const topics = [
+    { slug: "why-live-currency-real-estate", labelFa: "۱. اهمیت تبدیل ارز در املاک", labelEn: "1. Real Estate Live Forex Needs" },
+    { slug: "market-analysis-2026", labelFa: "۲. تحلیل نرخ ارز روند ۲۰۲۶", labelEn: "2. Forex Trends 2026 Forecast" },
+    { slug: "dubai-buyers-guide-foreigners", labelFa: "۳. راهنمای خرید دبی برای خارجی‌ها", labelEn: "3. Dubai Foreigners Purchase Guide" },
+    { slug: "how-ai-transforms-valuation", labelFa: "۴. هوش مصنوعی در ارزشگذاری", labelEn: "4. AI Valuation Breakthroughs" },
+    { slug: "dubai-property-usdt-investment", labelFa: "۵. سرمایه‌گذاری ملکی دبی با تتر", labelEn: "5. Dubai Property Purchase via USDT" },
+    { slug: "free-ai-valuation-estimator", labelFa: "۶. ابزار تخمین ارزش کاداستر", labelEn: "6. Interactive AI Estimator Tool" },
+    { slug: "dubai-vs-istanbul-vs-berlin", labelFa: "۷. مقایسه بازارهای سرمایه‌گذاری", labelEn: "7. Dubai vs Istanbul vs Berlin" },
+    { slug: "residence-and-citizenship-investment", labelFa: "۸. اخذ اقامت شینگن و امارات", labelEn: "8. Residence & Passport by Purchase" },
+    { slug: "short-term-vs-long-term-rentals", labelFa: "۹. مقایسه کرایه کوتاه‌مدت و بلندمدت", labelEn: "9. Short-Term vs Long-Term Renting" },
+    { slug: "why-ariana-rahnuma-real-estate", labelFa: "۱۰. چرا سامانه آریانا رهنما؟", labelEn: "10. Why Ariana Rahnuma FinTech" },
+  ];
+
+  const languages = [
+    { code: "en", name: "English" },
+    { code: "ar", name: "العربية (Arabic)" },
+    { code: "fa", name: "فارسی (Farsi)" },
+    { code: "de", name: "Deutsch (German)" },
+    { code: "fr", name: "Français (French)" },
+    { code: "ru", name: "Русский (Russian)" },
+    { code: "es", name: "Español (Spanish)" },
+    { code: "it", name: "Italiano (Italian)" },
+    { code: "tr", name: "Türkçe (Turkish)" },
+    { code: "ur", name: "اردو (Urdu)" },
+    { code: "hi", name: "हिन्दी (Hindi)" },
+    { code: "prs", name: "دری (Dari)" },
+    { code: "ps", name: "پښتو (Pashto)" },
+    { code: "uz", name: "Oʻzbekcha (Uzbek)" },
+    { code: "zh", name: "简体中文 (Chinese)" },
+    { code: "ja", name: "日本語 (Japanese)" },
+    { code: "ko", name: "한국어 (Korean)" },
+    { code: "pt", name: "Português (Portuguese)" },
+    { code: "nl", name: "Nederlands (Dutch)" },
+    { code: "sv", name: "Svenska (Swedish)" }
+  ];
+
+  const absoluteUrl = `${window.location.origin}/blog/${topicSlug}-${targetLang}.html`;
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
+      <div>
+        <span className="text-[10px] bg-indigo-950/50 text-indigo-400 font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border border-indigo-900/30 font-mono inline-flex items-center gap-1.5 animate-pulse">
+          🌐 MULTILINGUAL CRAWL INDEX HUB (200 PAGES ACTIVE)
+        </span>
+        <h3 className="text-sm font-black text-white mt-1">
+          {lang === "fa" ? "مدیریت محتوای سئو فرامرزی آریانا رهنما" : "Ariana Rahnuma Global SEO Content Console"}
+        </h3>
+        <p className="text-[11px] text-slate-400 leading-normal mt-1">
+          {lang === "fa" 
+            ? "۲۰۰ فایل کامپایل‌شده محلی با متا تگ‌های پیشرفته، پیوندهای hreflang متقاطع، و متناسب با RTL/LTR هم‌اکنون به طور فیزیکی در سرور بارگذاری شده است." 
+            : "Explore 200 physical pre-compiled static landing pages dynamically inter-linked with semantic canonical attributes."}
+        </p>
+      </div>
+
+      {/* Selectors grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+            {lang === "fa" ? "۱. انتخاب موضوع سرمایه‌گذاری (۱۰ موضوع سئو):" : "1. Select SEO Subject Topic:"}
+          </label>
+          <select 
+            value={topicSlug} 
+            onChange={(e) => setTopicSlug(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-2.5 text-white text-xs outline-none focus:border-indigo-500 cursor-pointer"
+          >
+            {topics.map(t => (
+              <option key={t.slug} value={t.slug}>
+                {lang === "fa" ? t.labelFa : t.labelEn}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+            {lang === "fa" ? "۲. انتخاب زبان بومی (۲۰ زبان زنده):" : "2. Select Localized Native Tongue:"}
+          </label>
+          <select 
+            value={targetLang} 
+            onChange={(e) => setTargetLang(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-2.5 text-white text-xs outline-none focus:border-indigo-500 cursor-pointer"
+          >
+            {languages.map(l => (
+              <option key={l.code} value={l.code}>
+                {l.name} [{l.code}]
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Action panel & preview */}
+      <div className="bg-slate-950 rounded-2xl border border-slate-850 p-4 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-900 pb-3">
+          <div className="space-y-0.5">
+            <span className="text-[9px] text-indigo-400 font-mono block">STATIC DEPLOYMENT RESOURCE URL</span>
+            <code className="text-[11px] text-slate-300 font-mono break-all font-semibold">
+              /blog/{topicSlug}-{targetLang}.html
+            </code>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onCopy(absoluteUrl, "blogurl")}
+              className="text-[10.5px] bg-slate-905 hover:bg-slate-900 text-slate-300 font-black px-3 py-1.5 rounded-xl border border-slate-800 cursor-pointer transition active:scale-95"
+            >
+              {copiedKey === "blogurl" ? "✓ COPIED LINK" : "📋 COPY URL"}
+            </button>
+            <a
+              href={`/blog/${topicSlug}-${targetLang}.html`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10.5px] bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95 inline-flex items-center gap-1.5"
+            >
+              <span>🌐</span> OPEN LIVE PAGE
+            </a>
+          </div>
+        </div>
+
+        {/* Mock SEO Metadata summary */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-medium">
+          <div className="space-y-1.5 bg-slate-900/40 p-3 rounded-xl border border-slate-850/40">
+            <span className="text-[9px] text-emerald-400 font-bold block uppercase tracking-wider">Indexed Google Link Meta Title</span>
+            <p className="text-slate-200 line-clamp-2">
+              {topicSlug.toUpperCase().replace(/-/g, " ")} | ARIANA RAHNUMA [{targetLang.toUpperCase()}]
+            </p>
+          </div>
+          <div className="space-y-1.5 bg-slate-900/40 p-3 rounded-xl border border-slate-850/40">
+            <span className="text-[9px] text-indigo-400 font-bold block uppercase tracking-wider">Hreflang Canonical Headers Autolinked</span>
+            <p className="text-slate-400 font-mono text-[10px]">
+              &lt;link rel="alternate" hreflang="{targetLang}" href="{absoluteUrl}"&gt;
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

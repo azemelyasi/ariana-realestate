@@ -470,22 +470,20 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <span className="text-xl">🛡️</span>
                 <div>
                   <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">
-                    {lang === "fa" ? "سپر حفاظت حقوقی و مصونیت کاداستر" : "MELKBAN CADASTRAL IMMUNITY SHIELD"}
+                    <AutoTranslate text="MELKBAN CADASTRAL IMMUNITY SHIELD" lang={lang} />
                   </h4>
                   <p className="text-[9.5px] text-slate-400 font-semibold leading-none mt-0.5">
-                    {lang === "fa" ? "پروتکل امنیتی پیشرفته برای پیشگیری تمام‌عیار از شکایت، معارض و تداخل مرزی" : "Advanced legal dispute firewall guarding borders, pricing, and title trust"}
+                    <AutoTranslate text="Advanced legal dispute firewall guarding borders, pricing, and title trust" lang={lang} />
                   </p>
                 </div>
               </div>
               <span className="text-[8.5px] font-black bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                {lang === "fa" ? "امنیت طلایی کاداستر" : "ZILLOW-GOLD COMPLIANCE"}
+                <AutoTranslate text="ZILLOW-GOLD COMPLIANCE" lang={lang} />
               </span>
             </div>
 
             <p className="text-[10px] text-slate-400 leading-normal">
-              {lang === "fa"
-                ? "ملکبان با استفاده از الگوهای پیشرفته کاداستر ریاضی، ثبت مختصات دقیق ماهواره‌ای GPS، و راستی‌آزمایی مشاورین به شکل رسمی یا تعهد معتمدین محلی، بستری ۱۰۰٪ امن فراهم ساخته تا خریدار و فروشنده بدون نگرانی از کلاهبرداری یا شکایت دادگاهی، معامله کنند."
-                : "Melkban leverages satellite coordinates and decentralized trust guarantees to structure real estate transactions with complete legal immunization."}
+              <AutoTranslate text="Melkban leverages satellite coordinates and decentralized trust guarantees to structure real estate transactions with complete legal immunization." lang={lang} />
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -493,13 +491,11 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-sm">🛰️</span>
                   <span className="text-[9.5px] font-bold text-slate-300">
-                    {lang === "fa" ? "مختصات قفل هندسی" : "Geolock Guarantee"}
+                    <AutoTranslate text="Geolock Guarantee" lang={lang} />
                   </span>
                 </div>
                 <p className="text-[9px] text-slate-550 leading-relaxed">
-                  {lang === "fa" 
-                    ? "تثبیت نقطه زمین روی مدار بین‌المللی WGS84 جهت رفع هر نوع ادعای مساحتی." 
-                    : "Coordinates locked mathematically onto GPS orbits to prevent boundary overlay lawsuits."}
+                  <AutoTranslate text="Coordinates locked mathematically onto GPS orbits to prevent boundary overlay lawsuits." lang={lang} />
                 </p>
               </div>
 
@@ -507,13 +503,13 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-sm">🤝</span>
                   <span className="text-[9.5px] font-bold text-slate-300">
-                    {lang === "fa" ? "اعتبار‌سنجی دوگانه" : "Verified Broker Identity"}
+                    <AutoTranslate text="Verified Broker Identity" lang={lang} />
                   </span>
                 </div>
                 <p className="text-[9px] text-slate-550 leading-relaxed">
                   {property.isLocalTrustEndorsed 
-                    ? (lang === "fa" ? "ثبت معتبر محلی با تذکر تاییدشده بزرگان قبیله/منطقه." : "National identity & local elder collateral verified for high authenticity.") 
-                    : (lang === "fa" ? "احراز هویت با پروانه رسمی صادر شده از اتحادیه املاک." : "Official professional real estate license validated by state registries.")}
+                    ? <AutoTranslate text="National identity & local elder collateral verified for high authenticity." lang={lang} />
+                    : <AutoTranslate text="Official professional real estate license validated by state registries." lang={lang} />}
                 </p>
               </div>
 
@@ -521,13 +517,11 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-sm">⚖️</span>
                   <span className="text-[9.5px] font-bold text-slate-300">
-                    {lang === "fa" ? "تضمین اصالت آگهی" : "Lawsuit Immunity Test"}
+                    <AutoTranslate text="Lawsuit Immunity Test" lang={lang} />
                   </span>
                 </div>
                 <p className="text-[9px] text-slate-550 leading-relaxed">
-                  {lang === "fa"
-                    ? "سیستم مانیتورینگ آنلاین ضد‌ تبانی و ثبت گزارش فوری مغایرت سند مالکیت."
-                    : "Anti-price manipulation protocols combined with instant decentralized complaints feed."}
+                  <AutoTranslate text="Anti-price manipulation protocols combined with instant decentralized complaints feed." lang={lang} />
                 </p>
               </div>
             </div>
@@ -536,10 +530,10 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
             <div className="bg-indigo-950/20 border border-indigo-900/30 p-3 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="text-left">
                 <span className="text-[10px] font-black text-indigo-300 block">
-                  {lang === "fa" ? "برگ رسمی تضمین سلامت کاداستر ملکی" : "CADASTRAL HEALTH & INDEMNITY CERTIFICATE"}
+                  <AutoTranslate text="CADASTRAL HEALTH & INDEMNITY CERTIFICATE" lang={lang} />
                 </span>
                 <span className="text-[9px] text-slate-500 font-semibold block leading-tight mt-0.5">
-                  {lang === "fa" ? "مهر دیجیتال حاوی کد رهگیری بین‌المللی و گواهی مختصات ثبتی جی‌پی‌اس" : "Secure cryptographically assigned certificate with GPS coordinate stamps"}
+                  <AutoTranslate text="Secure cryptographically assigned certificate with GPS coordinate stamps" lang={lang} />
                 </span>
               </div>
 
@@ -559,30 +553,27 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                   {isGeneratingCertificate ? (
                     <span className="flex items-center gap-1">
                       <span className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      {lang === "fa" ? "در حال استعلام و صدور هولوگرام..." : "Fetching Ledger Data..."}
+                      <AutoTranslate text="Fetching Ledger Data..." lang={lang} />
                     </span>
                   ) : (
-                    <span>⭐ {lang === "fa" ? "صدور فوری گواهی عدم مرافعه حقوقی" : "Generate Legal Guarantee Certificate"}</span>
+                    <span>⭐ <AutoTranslate text="Generate Legal Guarantee Certificate" lang={lang} /></span>
                   )}
                 </button>
               ) : (
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-1.5 text-center">
-                    <span className="text-[10px] text-emerald-400 font-black block">✓ {lang === "fa" ? "سند صادر و مهر شد!" : "CERTIFICATE SECURED!"}</span>
+                    <span className="text-[10px] text-emerald-400 font-black block">✓ <AutoTranslate text="CERTIFICATE SECURED!" lang={lang} /></span>
                     <span className="text-[8.5.5px] font-mono text-emerald-500 block leading-none select-all font-bold mt-0.5">{certificateId}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      // Simulated PDF download alert
-                      const text = lang === "fa" 
-                        ? `گواهی تایید کاداستر با شماره رهگیری ${certificateId} برای ملک "${property.title}" با موفقیت دانلود شد و ضمیمه قولنامه صادر گردید.` 
-                        : `Cadastre Shield Certificate #${certificateId} successfully printed and ready to bind to legal escrow contracts. No border matches overlap registered.`;
+                      const text = `Cadastre Shield Certificate #${certificateId} successfully printed and ready to bind to legal escrow contracts. No border matches overlap registered.`;
                       alert(`📜 ${text}`);
                     }}
                     className="bg-slate-900 border border-slate-800 hover:border-indigo-500 text-indigo-400 text-[10px] px-3 py-1.5 rounded-xl font-bold transition cursor-pointer"
                   >
-                    📥 {lang === "fa" ? "دانلود گواهی / نسخه چاپی" : "Download / Print"}
+                    📥 <AutoTranslate text="Download / Print" lang={lang} />
                   </button>
                 </div>
               )}
@@ -596,11 +587,11 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <span className="text-xl animate-pulse">🤖</span>
                 <div>
                   <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-                    {lang === "fa" ? "نگهبان هوش مصنوعی ملک‌بان (پایش کلاهبرداری و اسپم)" : "MELKBAN SENTINEL AI SCOUT"}
+                    <AutoTranslate text="MELKBAN SENTINEL AI SCOUT" lang={lang} />
                     <span className="text-[7.5px] bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded border border-red-500/10">REAL-TIME</span>
                   </h4>
                   <p className="text-[9.5px] text-slate-500 font-semibold leading-none mt-0.5">
-                    {lang === "fa" ? "آنالیز آنی اصطلاحات کلاهبرداری، قیمت طعمه، رفتارهای اسپم و تحلیل تازگی آگهی" : "Instant behavior audit scouting for bait pricing, downpayment wire hazards and stale listing data"}
+                    <AutoTranslate text="Instant behavior audit scouting for bait pricing, downpayment wire hazards and stale listing data" lang={lang} />
                   </p>
                 </div>
               </div>
@@ -609,9 +600,10 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
             {!sentinelResult && !isScanningSentinel ? (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-900/60 rounded-2xl border border-slate-850/50">
                 <p className="text-[10px] text-slate-400 leading-normal max-w-md font-medium">
-                  {lang === "fa"
-                    ? "آیا نگران کدهای آگهی فیک، بیعانه‌های غیرقانونی، سیم‌کارت‌های یک‌بارمصرف یا ثبت‌های قدیمی منقضی‌شده هستید؟ با هوش مصنوعی سنتینل، کل ساختار آگهی را فوری آنالیز کنید."
-                    : "Suspicious of duplicate photos, phantom agents, or hidden bank transfer requests? Engage our live AI algorithm to analyze the structural compliance score."}
+                  <AutoTranslate 
+                    text="Suspicious of duplicate photos, phantom agents, or hidden bank transfer requests? Engage our live AI algorithm to analyze the structural compliance score." 
+                    lang={lang} 
+                  />
                 </p>
                 <button
                   type="button"
@@ -918,8 +910,8 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                     </div>
                     <div className="mt-1.5 text-[8.5px] text-slate-500 leading-none font-bold">
                       {sentinelResult!.stalenessScore > 40 
-                        ? (lang === "fa" ? "⏳ نیازمند به روزرسانی استعلام" : "⏳ Stale. Needs review with owner.") 
-                        : (lang === "fa" ? "✓ آگهی نوپا و فعال" : "✓ Fresh and active.")}
+                        ? (<span>⏳ <AutoTranslate text="Stale. Needs review with owner." lang={lang} /></span>) 
+                        : (<span>✓ <AutoTranslate text="Fresh and active." lang={lang} /></span>)}
                     </div>
                   </div>
                 </div>
@@ -928,39 +920,45 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <div className="bg-slate-950 p-3 rounded-xl border border-slate-850/80 space-y-2">
                   <div className="text-[10px] uppercase text-indigo-400 tracking-wider font-extrabold flex items-center gap-1 leading-none">
                     <span>📡</span>
-                    {lang === "fa" ? "شواهد امنیتی و گزارش تحلیلی کاداستر" : "SENTINEL AUDIT REPORT LOGS"}
+                    <AutoTranslate text="SENTINEL AUDIT REPORT LOGS" lang={lang} />
                   </div>
                   
                   <div className="space-y-1.5 pt-1">
                     {/* Scam Logs */}
                     <div className="space-y-1">
-                      <span className="text-[8.5px] font-black text-rose-400 block uppercase tracking-wider">{lang === "fa" ? "بخش تهدیدات کلاهبرداری:" : "Financial Scam Vectors:"}</span>
+                      <span className="text-[8.5px] font-black text-rose-400 block uppercase tracking-wider">
+                        <AutoTranslate text="Financial Scam Vectors:" lang={lang} />
+                      </span>
                       {sentinelResult!.scamFactors.map((f, i) => (
                         <div key={i} className="text-[9px] text-slate-400 flex items-start gap-1 font-medium leading-relaxed">
-                          <span className="text-indigo-500">•</span>
-                          <span>{f}</span>
+                          <span className="text-rose-500">•</span>
+                          <span><AutoTranslate text={f} lang={lang} /></span>
                         </div>
                       ))}
                     </div>
 
                     {/* Spam Logs */}
                     <div className="space-y-1 pt-1 border-t border-slate-900">
-                      <span className="text-[8.5px] font-black text-amber-400 block uppercase tracking-wider">{lang === "fa" ? "بخش مانیتورینگ اسپم:" : "Spam Behavior Vectors:"}</span>
+                      <span className="text-[8.5px] font-black text-amber-400 block uppercase tracking-wider">
+                        <AutoTranslate text="Spam Behavior Vectors:" lang={lang} />
+                      </span>
                       {sentinelResult!.spamFactors.map((f, i) => (
                         <div key={i} className="text-[9px] text-slate-400 flex items-start gap-1 font-medium leading-relaxed">
                           <span className="text-amber-500">•</span>
-                          <span>{f}</span>
+                          <span><AutoTranslate text={f} lang={lang} /></span>
                         </div>
                       ))}
                     </div>
 
                     {/* Staleness Logs */}
                     <div className="space-y-1 pt-1 border-t border-slate-900">
-                      <span className="text-[8.5px] font-black text-blue-400 block uppercase tracking-wider">{lang === "fa" ? "بخش تاریخ تاییدیه:" : "Metadata Freshness Vectors:"}</span>
+                      <span className="text-[8.5px] font-black text-blue-400 block uppercase tracking-wider">
+                        <AutoTranslate text="Metadata Freshness Vectors:" lang={lang} />
+                      </span>
                       {sentinelResult!.staleFactors.map((f, i) => (
                         <div key={i} className="text-[9px] text-slate-400 flex items-start gap-1 font-medium leading-relaxed">
                           <span className="text-indigo-400">•</span>
-                          <span>{f}</span>
+                          <span><AutoTranslate text={f} lang={lang} /></span>
                         </div>
                       ))}
                     </div>
@@ -978,7 +976,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                     }}
                     className="text-[9px] text-indigo-400 hover:text-indigo-300 font-bold underline cursor-pointer"
                   >
-                    🔄 {lang === "fa" ? "آنالیز مجدد" : "Re-Scan"}
+                    🔄 <AutoTranslate text="Re-Scan" lang={lang} />
                   </button>
                 </div>
               </div>
@@ -988,7 +986,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
           {/* Guaranteed Heating and Cabinets Accessories Section */}
           <div className="space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <span>🏠</span> {lang === "fa" ? "امکانات داخلی و متریال ساخت" : "Internal Amenities & Material Finishes"}
+              <span>🏠</span> <AutoTranslate text="Internal Amenities & Material Finishes" lang={lang} />
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -997,7 +995,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <span className="text-xl shrink-0">🔥</span>
                 <div className="min-w-0">
                   <span className="text-slate-500 block font-semibold text-[9px] uppercase leading-none">
-                    {lang === "fa" ? "سیستم گرمایشی مجهز" : "Heating System"}
+                    <AutoTranslate text="Heating System" lang={lang} />
                   </span>
                   <span className="text-slate-200 mt-1 block font-bold text-xs truncate" title={displayHeating}>
                     <AutoTranslate text={displayHeating} lang={lang} />
@@ -1010,7 +1008,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <span className="text-xl shrink-0">🍳</span>
                 <div className="min-w-0">
                   <span className="text-slate-500 block font-semibold text-[9px] uppercase leading-none">
-                    {lang === "fa" ? "کابینت و دکور آشپزخانه" : "Cabinets / Kitchen"}
+                    <AutoTranslate text="Cabinets / Kitchen" lang={lang} />
                   </span>
                   <span className="text-slate-200 mt-1 block font-bold text-xs truncate" title={displayCabinets}>
                     <AutoTranslate text={displayCabinets} lang={lang} />
@@ -1023,7 +1021,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <span className="text-xl shrink-0">❄️</span>
                 <div className="min-w-0">
                   <span className="text-slate-500 block font-semibold text-[9px] uppercase leading-none">
-                    {lang === "fa" ? "سیستم سرمایشی" : "Cooling System"}
+                    <AutoTranslate text="Cooling System" lang={lang} />
                   </span>
                   <span className="text-slate-200 mt-1 block font-bold text-xs truncate" title={displayCooling}>
                     <AutoTranslate text={displayCooling} lang={lang} />
@@ -1036,7 +1034,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 <span className="text-xl shrink-0">📜</span>
                 <div className="min-w-0">
                   <span className="text-slate-500 block font-semibold text-[9px] uppercase leading-none">
-                    {lang === "fa" ? "سند و تاییدیه ثبتی" : "Legal Deed & Certification"}
+                    <AutoTranslate text="Legal Deed & Certification" lang={lang} />
                   </span>
                   <span className="text-slate-200 mt-1 block font-bold text-xs truncate" title={displayStructuralStatus}>
                     <AutoTranslate text={displayStructuralStatus} lang={lang} />
@@ -1050,7 +1048,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                   <span className="text-xl shrink-0 animate-pulse">🏢</span>
                   <div className="min-w-0">
                     <span className="text-amber-500 block font-semibold text-[9px] uppercase leading-none font-mono">
-                      {lang === "fa" ? "پلاک ثبتی و شماره منزل" : "Residential House/Building Plate"}
+                      <AutoTranslate text="Residential House/Building Plate" lang={lang} />
                     </span>
                     <span className="text-amber-400 mt-1 block font-mono font-black text-xs truncate" title={property.housePlate}>
                       {property.housePlate}
@@ -1073,18 +1071,17 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({ prop
                 </div>
                 <div>
                   <h5 className="text-[11px] font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    {lang === "fa" ? "تسعیر قیمت برابری اسعار کاداستر" : "Simultaneous Price Valuations Feed"}
+                    <AutoTranslate text="Simultaneous Price Valuations Feed" lang={lang} />
                     <span className="text-[7.5px] bg-emerald-500/20 text-emerald-300 px-1 py-0.5 rounded font-black animate-pulse">
-                      {isLoadingCurrencies ? (lang === "fa" ? "درحال اتصال..." : "CONNECTING...") : (lang === "fa" ? "برخط" : "ONLINE API")}
+                      {isLoadingCurrencies ? <AutoTranslate text="CONNECTING..." lang={lang} /> : <AutoTranslate text="ONLINE API" lang={lang} />}
                     </span>
                   </h5>
                   <p className="text-[9px] text-slate-550">
-                    {lang === "fa" ? "محاسبه آنی قیمت فوق به تمام اسعار اصلی کشورهای جهان اول و خاورمیانه کاداستر" : "Instant calculation of property price in global base units"}
+                    <AutoTranslate text="Instant calculation of property price in global base units" lang={lang} />
                   </p>
                 </div>
               </div>
             </div>
-
             {/* Conversion Result Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[170px] overflow-y-auto pr-1">
               {exchangeMatrix.map((matrix) => {

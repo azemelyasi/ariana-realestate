@@ -51,6 +51,8 @@ export interface Property {
   paymentMethod?: string;
   paymentCardNum?: string;
   paymentCardCVC?: string; // sender name
+  isSpamSuspected?: boolean;
+  spamReason?: string;
 }
 
 export interface CalendarEvent {
