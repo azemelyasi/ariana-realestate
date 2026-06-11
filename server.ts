@@ -110,14 +110,14 @@ if (apiKey) {
 
 // Round-Robin Keys Setup (up to 6 Gemini Keys on top of the main API Key)
 const geminiKeys: string[] = [
-  process.env.GEMINI_API_KEY || "AQ.Ab8RN6IpUcbdUWvnr_h3Bur2slDBujh0i4AD_SHMDbtPB1WYCA",
-  process.env.GEMINI_API_KEY_1 || "AQ.Ab8RN6K1LQL2s2Zirrd-WqyUoHv34rdzlnLkqW4Rska3WMHDbA",
-  process.env.GEMINI_API_KEY_2 || "AQ.Ab8RN6LnKBo9LhWTiAKeF_IuUecqJ7l2F-KKNiqOWG9p4SUBqQ",
+  process.env.GEMINI_API_KEY || "",
+  process.env.GEMINI_API_KEY_1 || "",
+  process.env.GEMINI_API_KEY_2 || "",
   process.env.GEMINI_API_KEY_3 || "",
   process.env.GEMINI_API_KEY_4 || "",
   process.env.GEMINI_API_KEY_5 || "",
   process.env.GEMINI_API_KEY_6 || ""
-].filter(Boolean);
+].filter(key => key && !key.startsWith("AQ."));
 
 let rrIndex = 0;
 
@@ -1481,8 +1481,42 @@ app.post("/api/properties", async (req, res) => {
     // Add new listing flow
     updatedProp.id = "prop-" + Math.floor(Math.random() * 900000 + 100000);
     updatedProp.createdAt = new Date().toISOString();
-    updatedProp.isApproved = clientProp.isApproved !== undefined ? clientProp.isApproved : false;
-    console.log(`Server: Added a brand new listing ID: ${updatedProp.id}, Approved: ${updatedProp.isApproved}`);
+    
+    // Server-side Spam and Duplicate check for security (against fraud and duplicate ads)
+    const existingList = await readPropertiesFromDatabase();
+    const titleClean = (clientProp.title || "").trim().toLowerCase();
+    const descClean = (clientProp.description || "").trim().toLowerCase();
+    
+    let isSpamOrDup = false;
+    let spamReason = "";
+    
+    for (const p of existingList) {
+      const pTitle = (p.title || "").trim().toLowerCase();
+      const pDesc = (p.description || "").trim().toLowerCase();
+      
+      // Match 1: Exact same title or very close description in the same country
+      if (titleClean === pTitle && clientProp.country === p.country && Math.abs((clientProp.area || 0) - (p.area || 0)) < 1) {
+        isSpamOrDup = true;
+        spamReason = "Duplicate ad title & area detected in same country";
+        break;
+      }
+      if (descClean.length > 30 && pDesc.length > 30 && descClean.substring(0, 80) === pDesc.substring(0, 80) && clientProp.country === p.country) {
+        isSpamOrDup = true;
+        spamReason = "Duplicate description prefix detected";
+        break;
+      }
+    }
+    
+    if (isSpamOrDup) {
+      console.log(`SENTINEL WATCH: Suspected duplicate and potential fraud listing detected! Reason: ${spamReason}`);
+      updatedProp.isSpamSuspected = true;
+      updatedProp.spamReason = spamReason;
+      updatedProp.isApproved = false; // Always force hold for human auditing
+    } else {
+      updatedProp.isApproved = clientProp.isApproved !== undefined ? clientProp.isApproved : false;
+    }
+    
+    console.log(`Server: Added a brand new listing ID: ${updatedProp.id}, Approved: ${updatedProp.isApproved}, Spammed: ${updatedProp.isSpamSuspected || false}`);
   }
 
   await savePropertyToDatabase(updatedProp);
