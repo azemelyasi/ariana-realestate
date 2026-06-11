@@ -256,6 +256,9 @@ export default function App() {
     return defaultSettings;
   });
 
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsSaveStatus, setSettingsSaveStatus] = useState<"idle" | "success" | "error" | "reset_success">("idle");
+
   // Apply theme dynamically to document body
   useEffect(() => {
     if (settings.themeMode === "light") {
@@ -1104,17 +1107,32 @@ export default function App() {
   };
 
   const handleSaveSettings = async (newSet: SystemSettings) => {
+    setIsSavingSettings(true);
+    setSettingsSaveStatus("idle");
     setSettings(newSet);
+    localStorage.setItem("melkban_settings", JSON.stringify(newSet));
     setShowSettingsModal(false);
     try {
-      await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newSet)
       });
+      const data = await res.json();
+      if (data && data.success) {
+        setSettingsSaveStatus("success");
+      } else {
+        setSettingsSaveStatus("error");
+      }
       console.log("Global server settings updated and persisted successfully!");
     } catch (e) {
+      setSettingsSaveStatus("error");
       console.error("Failed to save global server settings:", e);
+    } finally {
+      setIsSavingSettings(false);
+      setTimeout(() => {
+        setSettingsSaveStatus("idle");
+      }, 5000);
     }
   };
 
@@ -1293,7 +1311,7 @@ export default function App() {
               onClick={() => setShowInboxModal(true)}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold tracking-wide transition-all text-slate-400 hover:text-white hover:bg-slate-850 flex items-center gap-1 cursor-pointer"
             >
-              💬 {lang === "fa" ? "گفتگوها" : "Inbox Chats"}
+              💬 {t.btnInboxChats || "Inbox Chats"}
             </button>
 
             {/* GOLD PREMIUM ACTIVE CTA FOR REAL ESTATE AGENCIES */}
@@ -1310,8 +1328,8 @@ export default function App() {
               <span>💎</span>
               <span>
                 {subscriptionTier === "pro"
-                  ? (lang === "fa" ? "کارگزاری طلایی کاداستر" : "Active Gold Agency")
-                  : (lang === "fa" ? "ارتقا به پنل طلایی" : "Upgrade to Gold Pro")}
+                  ? (t.btnActiveGoldAgency || "Active Gold Agency")
+                  : (t.btnGoldUpgrade || "Upgrade to Gold Pro")}
               </span>
             </button>
 
@@ -1362,7 +1380,7 @@ export default function App() {
               title={`Install ${t.brand} App`}
             >
               <span>📲</span>
-              <span><AutoTranslate text="Install App" lang={lang} /></span>
+              <span>{t.btnInstallApp || "Install App"}</span>
             </button>
 
             {/* Quick Post Button */}
@@ -1400,26 +1418,28 @@ export default function App() {
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent"></div>
               <div className="space-y-2 relative z-10">
                 <span className="text-[9px] uppercase font-bold tracking-widest text-indigo-400 font-mono bg-indigo-950/40 px-2.5 py-1 rounded-full border border-indigo-900/40">
-                  Cadastral Ledger Approved
+                  <AutoTranslate text="Cadastral Ledger Approved" lang={lang} />
                 </span>
                 <h2 className="text-xl md:text-2xl font-black text-slate-100">
-                  {lang === "fa" ? "املاک کارشناسی و کاداستر برتر" : "Sophisticated Registries without Compromise"}
+                  <AutoTranslate text="Sophisticated Registries without Compromise" lang={lang} />
                 </h2>
                 <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
-                  {lang === "fa" 
-                    ? "جستجو، ارزیابی و هماهنگی بازدید املاک برتر در ۸ کشور هدف با محاسبه نرخ تسعیر ارز زنده کاداستر." 
-                    : "Inspect premium architectural units across our 8 registered nation-states. Use the Integrated Valuation Tool or schedule onsite viewings seamlessly."}
+                  <AutoTranslate text="Inspect premium architectural units across our 8 registered nation-states. Use the Integrated Valuation Tool or schedule onsite viewings seamlessly." lang={lang} />
                 </p>
               </div>
 
               {/* Quick Counter tags */}
               <div className="flex gap-4 relative z-10 shrink-0 font-mono">
                 <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-850 text-center min-w-[100px]">
-                  <span className="text-slate-550 text-[9px] block">TOTAL UNITS</span>
+                  <span className="text-slate-550 text-[9px] block">
+                    <AutoTranslate text="TOTAL UNITS" lang={lang} />
+                  </span>
                   <span className="text-lg font-black text-indigo-400">{toLocalizedDigits(properties.length, lang)}</span>
                 </div>
                 <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-850 text-center min-w-[100px]">
-                  <span className="text-slate-555 text-[9px] block">VERIFIEDS</span>
+                  <span className="text-slate-555 text-[9px] block">
+                    <AutoTranslate text="VERIFIEDS" lang={lang} />
+                  </span>
                   <span className="text-lg font-black text-emerald-400">{toLocalizedDigits(properties.filter(p=>p.isApproved).length, lang)}</span>
                 </div>
               </div>
@@ -1438,10 +1458,10 @@ export default function App() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black tracking-widest text-indigo-400 uppercase">
-                  {lang === "fa" ? "🌍 ناوبری و دسته‌بندی هوشمند قاره‌ای جهان (بدون سردرگمی)" : "🌍 DECENTRALIZED GLOBAL CONDOMINIUM REGIONS (ZERO CONFUSION)"}
+                  🌍 <AutoTranslate text="DECENTRALIZED GLOBAL CONDOMINIUM REGIONS (ZERO CONFUSION)" lang={lang} />
                 </span>
                 <span className="text-[8.5px] bg-indigo-950/40 text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-900/40">
-                  {lang === "fa" ? `نمایش بر اساس موقعیت مداری` : `AUTO-GEOLOCKED`}
+                  <AutoTranslate text="AUTO-GEOLOCKED" lang={lang} />
                 </span>
               </div>
               
@@ -1478,10 +1498,10 @@ export default function App() {
                       
                       <div className="mt-2 min-w-0">
                         <span className={`text-[10px] font-black truncate block leading-none ${isActive ? "text-indigo-400" : "text-slate-200"}`}>
-                          {lang === "fa" ? reg.nameFa : reg.nameEn}
+                          <AutoTranslate text={reg.nameEn} lang={lang} />
                         </span>
                         <span className="text-[8px] font-mono text-slate-500 font-bold block mt-1">
-                          {toLocalizedDigits(pCount, lang)} {lang === "fa" ? "آگهی فعال" : "active files"}
+                          {toLocalizedDigits(pCount, lang)} <AutoTranslate text="active files" lang={lang} />
                         </span>
                       </div>
                     </button>
@@ -1987,6 +2007,12 @@ export default function App() {
                                   </td>
                                   <td className="py-3 px-3">
                                     <div className="flex flex-col gap-1.5 items-start">
+                                      {p.isSpamSuspected && (
+                                        <span className="bg-rose-950/80 text-rose-400 border border-rose-900/40 rounded-md px-2 py-0.5 text-[9px] font-extrabold font-mono tracking-wider animate-bounce flex items-center gap-1">
+                                          ⚠️ {lang === "fa" ? "آگهی تکراری / مشکوک" : "SUSPECTED DUPLICATE ad"}
+                                        </span>
+                                      )}
+
                                       {p.isApproved ? (
                                         <span className="bg-emerald-950 text-emerald-400 border border-emerald-950 rounded-md px-2 py-0.5 text-[9.5px] font-extrabold font-mono tracking-wider">
                                           {getTranslation(lang, "adminStatusApproved", "APPROVED")}
@@ -2352,6 +2378,77 @@ export default function App() {
                               value={settings.tetherWalletAddress || "TR7NHqdjwmJZGZ86HnEpv842bC78e146vD"}
                               onChange={(e) => setSettings({ ...settings, tetherWalletAddress: e.target.value })}
                             />
+                          </div>
+
+                          {/* Dynamic Action Buttons and Feedback Toast Area */}
+                          <div className="space-y-3 pt-4 border-t border-slate-850">
+                            {settingsSaveStatus === "success" && (
+                              <div className="p-3 bg-emerald-950/40 border border-emerald-900/30 text-emerald-300 rounded-xl text-center text-xs animate-fade-in font-sans font-medium" id="settings-success-alert">
+                                ✅ {lang === "fa" ? "تغییرات با موفقیت در دیتابیس ابری ذخیره شدند و همگام‌سازی گردید!" : "Settings saved and synchronized successfully to Cloud Database!"}
+                              </div>
+                            )}
+                            {settingsSaveStatus === "reset_success" && (
+                              <div className="p-3 bg-amber-950/40 border border-amber-900/30 text-amber-300 rounded-xl text-center text-xs animate-fade-in font-sans font-medium" id="settings-reset-alert">
+                                🔄 {lang === "fa" ? "تنظیمات به مقادیر پیش‌فرض بازنشانی و در دیتابیس همگام شدند!" : "All parameters successfully restored to defaults and live synchronized!"}
+                              </div>
+                            )}
+                            {settingsSaveStatus === "error" && (
+                              <div className="p-3 bg-red-950/40 border border-red-900/30 text-rose-400 rounded-xl text-center text-xs animate-fade-in font-sans font-medium" id="settings-error-alert">
+                                ❌ {lang === "fa" ? "خطا در همگام‌سازی دیتابیس! لطفاً اتصال اینترنت خود را بررسی کنید." : "Database synchronization failure. Please verify connection credentials!"}
+                              </div>
+                            )}
+
+                            <div className="flex flex-col sm:flex-row gap-3">
+                              <button
+                                type="submit"
+                                disabled={isSavingSettings}
+                                className="flex-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-50 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-lg transition-all duration-300 font-sans tracking-wide cursor-pointer flex items-center justify-center gap-2 border border-indigo-500/20 active:scale-98"
+                                id="btn-confirm-settings"
+                              >
+                                {isSavingSettings ? (
+                                  <span>⌛ {lang === "fa" ? "در حال ثبت تغییرات..." : "Saving Changes..."}</span>
+                                ) : (
+                                  <span>⚙️ {lang === "fa" ? "ثبت و تایید نهایی تنظیمات" : "Confirm & Save System Settings"}</span>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const defaultSettings: SystemSettings = {
+                                    siteName: "Ariana Rahnuma",
+                                    allowPublicPost: true,
+                                    requireApproval: true,
+                                    contactEmail: "registry@arianarahnuma.com",
+                                    contactPhone: "+93 799 123 456",
+                                    address: "Wazir Akbar Khan, District 10, Kabul, Afghanistan",
+                                    themeMode: "dark",
+                                    listingFeePrice: 18,
+                                    globalDiscountPct: 15,
+                                    promoCode: "AFG20",
+                                    promoDiscountPct: 20,
+                                    tetherWalletAddress: "TR7NHqdjwmJZGZ86HnEpv842bC78e146vD",
+                                    adminShetabCard: "6037991823456789",
+                                    freeListingsLimit: 1,
+                                    feeType: "fixed",
+                                    listingFeeUSDT: 5,
+                                    feeRatePct: 0.05,
+                                    goldPriceToman: 800,
+                                    goldPriceUSDT: 10,
+                                    fiatCurrencyName: "AFN",
+                                    appVersionMode: "v3"
+                                  };
+                                  if (window.confirm(lang === "fa" ? "آیا از بازنشانی کلیه تنظیمات به حالت پیش‌فرض کارخانه اطمینان دارید؟" : "Are you sure you want to revert all configurations back to the initial factory defaults?")) {
+                                    handleSaveSettings(defaultSettings);
+                                    setSettingsSaveStatus("reset_success");
+                                  }
+                                }}
+                                className="flex-1 bg-slate-950 border border-slate-800 hover:bg-slate-900/40 text-rose-500 hover:text-rose-400 font-bold text-xs py-3 px-4 rounded-xl transition-all duration-300 font-sans cursor-pointer active:scale-98 flex items-center justify-center gap-1.5"
+                                id="btn-reset-defaults"
+                              >
+                                🔄 {lang === "fa" ? "پیش‌فرض" : "Reset Default"}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </form>
@@ -3252,115 +3349,117 @@ export default function App() {
 
       {/* Progressive Web App (PWA) Interactive Installation Guide Modal */}
       {showInstallGuide && (
-        <div className="fixed inset-0 bg-slate-955 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in" id="melkban-pwa-install-dialog">
-          <div className="bg-slate-905 bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 space-y-5 shadow-2xl relative">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in" id="melkban-pwa-install-dialog">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full shadow-2xl relative flex flex-col max-h-[calc(100dvh-3rem)] sm:max-h-[85dvh] overflow-hidden">
             
             {/* Close Button */}
             <button
               onClick={() => setShowInstallGuide(false)}
-              className="absolute top-4 right-4 text-slate-500 hover:text-white transition cursor-pointer text-sm"
+              className="absolute top-4 right-4 text-slate-500 hover:text-white transition cursor-pointer text-sm z-20"
             >
               ✕
             </button>
 
-            {/* App Icon Heading */}
-            <div className="text-center space-y-2 pt-2">
-              <div className="w-14 h-14 bg-slate-950 rounded-2xl mx-auto border border-slate-800 p-1.5 flex items-center justify-center shadow-lg relative group mb-3">
-                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-indigo-500 rounded-2xl blur opacity-25 animate-pulse"></div>
-                <img 
-                  src={arianaLogo} 
-                  alt="Ariana Rahnuma App" 
-                  className="w-full h-full object-cover rounded-xl relative z-10" 
-                  referrerPolicy="no-referrer"
-                />
+            {/* Scrollable Container */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 royal-thin-scrollbar">
+              {/* App Icon Heading */}
+              <div className="text-center space-y-2 pt-2">
+                <div className="w-14 h-14 bg-slate-950 rounded-2xl mx-auto border border-slate-800 p-1.5 flex items-center justify-center shadow-lg relative group mb-3">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-indigo-500 rounded-2xl blur opacity-25 animate-pulse"></div>
+                  <img 
+                    src={arianaLogo} 
+                    alt="Ariana Rahnuma App" 
+                    className="w-full h-full object-cover rounded-xl relative z-10" 
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <h3 className="text-md font-black text-slate-100 font-sans">
+                  <AutoTranslate text="Install Ariana Rahnuma Premium App" lang={lang} />
+                </h3>
+                <p className="text-[11px] text-slate-400 leading-normal">
+                  <AutoTranslate 
+                    text="Install our fast web-app shortcut registry. Gain instant, non-browser entry to cadastral maps and AI assistants with a dedicated application icon on your homescreen." 
+                    lang={lang} 
+                  />
+                </p>
               </div>
-              <h3 className="text-md font-black text-slate-100 font-sans">
-                <AutoTranslate text={`Install ${t.brand} Premium App`} lang={lang} />
-              </h3>
-              <p className="text-[11px] text-slate-400 leading-normal">
-                <AutoTranslate 
-                  text="Install our fast web-app shortcut registry. Gain instant, non-browser entry to cadastral maps and AI assistants with a dedicated application icon on your homescreen." 
-                  lang={lang} 
-                />
-              </p>
-            </div>
 
-            {/* Google Dev Preview Iframe Smart Interceptor */}
-            {(() => {
-              const isIframe = window.self !== window.top;
-              if (isIframe) {
-                return (
-                  <div className="bg-emerald-950/20 border border-emerald-500/25 p-3.5 rounded-xl space-y-2.5 animate-pulse-subtle">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm">🛡️</span>
-                      <p className="text-[10px] text-emerald-400 font-black uppercase tracking-wider">
-                        <AutoTranslate text="Google Sandbox Frame Active" lang={lang} />
+              {/* Google Dev Preview Iframe Smart Interceptor */}
+              {(() => {
+                const isIframe = window.self !== window.top;
+                if (isIframe) {
+                  return (
+                    <div className="bg-emerald-950/20 border border-emerald-500/25 p-3.5 rounded-xl space-y-2.5 animate-pulse-subtle">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">🛡️</span>
+                        <p className="text-[10px] text-emerald-400 font-black uppercase tracking-wider">
+                          <AutoTranslate text="Google Sandbox Frame Active" lang={lang} />
+                        </p>
+                      </div>
+                      <p className="text-[9.5px] text-slate-300 leading-normal">
+                        <AutoTranslate 
+                          text="Direct PWA installation handles are disabled inside nested sandboxed frames due to Chrome security policies inside iframe. Press the golden button below to launch an independent browser context, open in a new tab, and install instantly." 
+                          lang={lang} 
+                        />
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const targetUrl = window.location.origin + window.location.pathname + "?pwa_install=true";
+                          window.open(targetUrl, "_blank");
+                          setShowInstallGuide(false);
+                        }}
+                        className="w-full py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black rounded-lg transition shadow-lg shadow-amber-500/10 cursor-pointer active:scale-95 text-center flex items-center justify-center gap-1"
+                      >
+                        <span>🚀</span>
+                        <AutoTranslate text="Launch Standalone & Install Easily" lang={lang} />
+                      </button>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* OS Tab Selector Links */}
+              <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-850 gap-1">
+                <button
+                  onClick={() => setInstallTab("ios")}
+                  className={`flex-1 py-1.5 text-[10px] md:text-xs font-bold rounded-lg transition-all cursor-pointer ${installTab === "ios" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white"}`}
+                >
+                   iOS (iPhone / iPad)
+                </button>
+                <button
+                  onClick={() => setInstallTab("android")}
+                  className={`flex-1 py-1.5 text-[10px] md:text-xs font-bold rounded-lg transition-all cursor-pointer ${installTab === "android" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white"}`}
+                >
+                  🤖 Android / Chrome / PC
+                </button>
+              </div>
+
+              {/* Dynamic Step-by-Step guide layout */}
+              <div className="space-y-3.5 text-[11px] leading-relaxed text-slate-350 bg-slate-950/45 p-3.5 rounded-xl border border-slate-850">
+                {installTab === "ios" ? (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2.5">
+                      <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۱</span>
+                      <p>
+                        <AutoTranslate text="Open this page in Safari browser, then tap the 'Share' tool at the bottom." lang={lang} />
                       </p>
                     </div>
-                    <p className="text-[9.5px] text-slate-300 leading-normal">
-                      <AutoTranslate 
-                        text="Direct PWA installation handles are disabled inside nested sandboxed frames due to Chrome security policies inside iframe. Press the golden button below to launch an independent browser context, open in a new tab, and install instantly." 
-                        lang={lang} 
-                      />
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const targetUrl = window.location.origin + window.location.pathname + "?pwa_install=true";
-                        window.open(targetUrl, "_blank");
-                        setShowInstallGuide(false);
-                      }}
-                      className="w-full py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black rounded-lg transition shadow-lg shadow-amber-500/10 cursor-pointer active:scale-95 text-center flex items-center justify-center gap-1"
-                    >
-                      <span>🚀</span>
-                      <AutoTranslate text="Launch Standalone & Install Easily" lang={lang} />
-                    </button>
+                    <div className="flex items-start gap-2.5">
+                      <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۲</span>
+                      <p>
+                        <AutoTranslate text="Scroll down the list and select the 'Add to Home Screen' action." lang={lang} />
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۳</span>
+                      <p>
+                        <AutoTranslate text="Click 'Add' on the upper corner of your screen to conclude setting the shortcut." lang={lang} />
+                      </p>
+                    </div>
                   </div>
-                );
-              }
-              return null;
-            })()}
-
-            {/* OS Tab Selector Links */}
-            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-850 gap-1">
-              <button
-                onClick={() => setInstallTab("ios")}
-                className={`flex-1 py-1.5 text-[10px] md:text-xs font-bold rounded-lg transition-all cursor-pointer ${installTab === "ios" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white"}`}
-              >
-                 iOS (iPhone / iPad)
-              </button>
-              <button
-                onClick={() => setInstallTab("android")}
-                className={`flex-1 py-1.5 text-[10px] md:text-xs font-bold rounded-lg transition-all cursor-pointer ${installTab === "android" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white"}`}
-              >
-                🤖 Android / Chrome / PC
-              </button>
-            </div>
-
-            {/* Dynamic Step-by-Step guide layout */}
-            <div className="space-y-3.5 text-[11px] leading-relaxed text-slate-350 bg-slate-950/45 p-3.5 rounded-xl border border-slate-850">
-              {installTab === "ios" ? (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-2.5">
-                    <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۱</span>
-                    <p>
-                      <AutoTranslate text="Open this page in Safari browser, then tap the 'Share' tool at the bottom." lang={lang} />
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۲</span>
-                    <p>
-                      <AutoTranslate text="Scroll down the list and select the 'Add to Home Screen' action." lang={lang} />
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۳</span>
-                    <p>
-                      <AutoTranslate text="Click 'Add' on the upper corner of your screen to conclude setting the shortcut." lang={lang} />
-                    </p>
-                  </div>
-                </div>
-              ) : (
+                ) : (
                 <div className="space-y-3">
                   <div className="flex items-start gap-2.5">
                     <span className="bg-indigo-900/50 text-indigo-300 font-mono w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] shrink-0 font-extrabold">۱</span>
@@ -3397,12 +3496,13 @@ export default function App() {
                 </div>
               )}
             </div>
+          </div>
 
             {/* Action buttons footer */}
-            <div className="flex gap-2.5 pt-1">
+            <div className="p-4 bg-slate-950 border-t border-slate-850 flex gap-2.5 pb-6 sm:pb-4">
               <button
                 onClick={() => setShowInstallGuide(false)}
-                className="flex-1 py-2 bg-slate-950 border border-slate-850 hover:border-slate-800 text-slate-400 hover:text-white rounded-xl text-[11px] font-bold transition active:scale-95 cursor-pointer"
+                className="flex-1 py-2.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl text-[11px] font-bold transition active:scale-95 cursor-pointer text-center"
               >
                 <AutoTranslate text="Got it" lang={lang} />
               </button>
@@ -3412,7 +3512,7 @@ export default function App() {
                     setShowInstallGuide(false);
                     handleInstallPWA();
                   }}
-                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-bold transition active:scale-95 cursor-pointer shadow-md shadow-indigo-600/10 flex items-center justify-center gap-1"
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-bold transition active:scale-95 cursor-pointer shadow-md shadow-indigo-600/10 flex items-center justify-center gap-1"
                 >
                   <span>⚡️</span>
                   <AutoTranslate text="Install Instantly" lang={lang} />
