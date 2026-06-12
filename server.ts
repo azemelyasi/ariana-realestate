@@ -3,6 +3,8 @@ import cors from "cors";
 import path from "path";
 import compression from "compression";
 import { GoogleGenAI } from "@google/genai";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
 
 const app = express();
 app.use(compression()); // Ultra-high speed compression for fast loads on 3G/4G/5G mobile networks
@@ -1195,9 +1197,15 @@ async function initFirebase() {
 
   if (firebaseConfig) {
     try {
-      const { initializeApp } = await import("firebase/app");
-      const { getFirestore } = await import("firebase/firestore");
-      
+      // Auto-detect and set correct custom database ID for AI Studio projects if omitted
+      if (
+        firebaseConfig.projectId === "gen-lang-client-0649444500" &&
+        (!firebaseConfig.firestoreDatabaseId || firebaseConfig.firestoreDatabaseId === "(default)")
+      ) {
+        firebaseConfig.firestoreDatabaseId = "ai-studio-9d6ca7a0-46ab-4c8b-99ad-1c2ca7940a31";
+        console.log("⚡ [Firestore Auto-Config] Automatically mapped database ID to ai-studio-9d6ca7a0-46ab-4c8b-99ad-1c2ca7940a31 based on client projectId.");
+      }
+
       firebaseApp = initializeApp(firebaseConfig);
       firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || "(default)");
       console.log("★★★★★ Firebase Connected: Successfully initialized Firestore client DB connection ★★★★★");
@@ -1306,8 +1314,6 @@ function writeSettingsToDisk(settings: any) {
 async function seedFirestoreData() {
   if (!firestoreDb) return;
   try {
-    const { collection, getDocs, doc, setDoc, getDoc } = await import("firebase/firestore");
-    
     // Properties seeding
     const readPropsPromise = getDocs(collection(firestoreDb, "properties"));
     const timeoutPropsPromise = new Promise<never>((_, reject) =>
@@ -1374,7 +1380,6 @@ async function seedFirestoreData() {
 async function readSettingsFromDatabase(): Promise<any> {
   if (checkFirestoreAvailability()) {
     try {
-      const { doc, getDoc } = await import("firebase/firestore");
       const readPromise = getDoc(doc(firestoreDb, "shared_config", "system_settings"));
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Firestore settings read timeout")), 6000)
@@ -1399,7 +1404,6 @@ async function saveSettingsToDatabase(settings: any) {
   writeSettingsToDisk(settings);
   if (checkFirestoreAvailability()) {
     try {
-      const { doc, setDoc } = await import("firebase/firestore");
       const writePromise = setDoc(doc(firestoreDb, "shared_config", "system_settings"), settings);
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Firestore settings write timeout")), 8000)
@@ -1418,7 +1422,6 @@ async function saveSettingsToDatabase(settings: any) {
 async function readPropertiesFromDatabase(): Promise<any[]> {
   if (checkFirestoreAvailability()) {
     try {
-      const { collection, getDocs } = await import("firebase/firestore");
       const readPromise = getDocs(collection(firestoreDb, "properties"));
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Firestore properties read timeout")), 6000)
@@ -1460,7 +1463,6 @@ async function savePropertyToDatabase(property: any) {
   // Update cloud Firestore
   if (checkFirestoreAvailability()) {
     try {
-      const { doc, setDoc } = await import("firebase/firestore");
       const writePromise = setDoc(doc(firestoreDb, "properties", property.id), property);
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Firestore property write timeout")), 8000)
@@ -1483,7 +1485,6 @@ async function deletePropertyFromDatabase(id: string) {
   // Update cloud Firestore
   if (checkFirestoreAvailability()) {
     try {
-      const { doc, deleteDoc } = await import("firebase/firestore");
       const deletePromise = deleteDoc(doc(firestoreDb, "properties", id));
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Firestore property delete timeout")), 8000)
@@ -1500,7 +1501,6 @@ async function deletePropertyFromDatabase(id: string) {
 async function readChatsFromDatabase(): Promise<any[]> {
   if (checkFirestoreAvailability()) {
     try {
-      const { collection, getDocs } = await import("firebase/firestore");
       const readPromise = getDocs(collection(firestoreDb, "chats"));
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Firestore chats read timeout")), 6000)
@@ -1537,7 +1537,6 @@ async function saveChatToDatabase(msg: any) {
   // Update cloud Firestore
   if (checkFirestoreAvailability()) {
     try {
-      const { doc, setDoc } = await import("firebase/firestore");
       const writePromise = setDoc(doc(firestoreDb, "chats", msg.id), msg);
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Firestore chat write timeout")), 8000)
@@ -1990,7 +1989,6 @@ function injectDynamicSEO(html: string, propertyId: string | undefined): string 
 
 // Serve frontend assets or integrate Vite middleware based on environment
 async function setupFrontend() {
-  const fs = await import("fs");
   const distPath = path.join(process.cwd(), "dist");
 
   // If we are in production, serve production static files
