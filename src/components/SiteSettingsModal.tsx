@@ -45,6 +45,10 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
   const [securityPin, setSecurityPin] = React.useState("");
   const [pinError, setPinError] = React.useState("");
 
+  const [dbDiagStatus, setDbDiagStatus] = React.useState<"idle" | "checking" | "success" | "error">("idle");
+  const [dbDiagMsg, setDbDiagMsg] = React.useState("");
+  const [dbDiagError, setDbDiagError] = React.useState("");
+
   const clearFirefoxBrowserCache = () => {
     try {
       // Clear sessions and index indicators
@@ -80,6 +84,29 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
       }, 1500);
     } catch (err) {
       console.error("Cache busting error:", err);
+    }
+  };
+
+  const testCloudDatabaseConnection = async () => {
+    setDbDiagStatus("checking");
+    setDbDiagMsg("");
+    setDbDiagError("");
+    try {
+      const res = await fetch("/api/settings/test-firebase");
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setDbDiagStatus("success");
+        setDbDiagMsg(lang === "fa" 
+          ? `✓ موفقیت‌آمیز! اتصال مستقیم برقرار است. دیتابیسی: ${data.diagnostics?.databaseId || ""}` 
+          : `✓ Success! Direct connection established. DB: ${data.diagnostics?.databaseId || ""}`);
+      } else {
+        setDbDiagStatus("error");
+        setDbDiagError(data.error || "Connection failure");
+        console.error("Diagnostics error:", data);
+      }
+    } catch (err: any) {
+      setDbDiagStatus("error");
+      setDbDiagError(err.message || "Network request failed");
     }
   };
 
@@ -581,6 +608,52 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
             {cacheSuccessMsg && (
               <p className="text-[10px] text-emerald-400 font-extrabold text-center animate-pulse pt-1">
                 {cacheSuccessMsg}
+              </p>
+            )}
+          </div>
+
+          {/* FIRESTORE ACTIVE DIAGNOSTICS & SYNC UTILITY */}
+          <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl space-y-3">
+            <span className="text-[10px] text-sky-400 font-extrabold uppercase tracking-wider block font-mono">
+              🌐 {lang === "fa" ? "سامانه عیب‌یابی اتصال آنی دیتابیس ابری (Firestore)" : "Cloud Database Sync Diagnostics (Firestore)"}
+            </span>
+
+            <div className="text-[10.5px] text-slate-400 leading-normal border-b border-slate-900 pb-2">
+              {lang === "fa" ? (
+                <p>در صورت مشاهده خطای آفلاین یا عدم همگام‌سازی، دکمه تست اتصال را بفشارید تا زنده بودن دیتابیس در سرور بررسی شود.</p>
+              ) : (
+                <p>If you encounter offline notices or sync failures, trigger a direct cloud diagnostic trace state test.</p>
+              )}
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={testCloudDatabaseConnection}
+                disabled={dbDiagStatus === "checking"}
+                className={`w-full py-2 rounded-xl font-bold text-[10.5px] transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 border ${
+                  dbDiagStatus === "checking"
+                    ? "bg-slate-900 border-slate-800 text-slate-500 cursor-not-allowed"
+                    : "bg-sky-950/40 hover:bg-sky-900/40 text-sky-300 border-sky-900/35"
+                }`}
+              >
+                {dbDiagStatus === "checking" ? (
+                  <>🔄 {lang === "fa" ? "در حال دریافت سیگنال..." : "Testing Signal..."}</>
+                ) : (
+                  <>⚡ {lang === "fa" ? "تست و فعالسازی زنده اتصال به دیتابیس" : "Test & Wake Up Live Cloud DB Connection"}</>
+                )}
+              </button>
+            </div>
+
+            {dbDiagStatus === "success" && (
+              <p className="text-[10.5px] text-emerald-400 font-bold text-center animate-fade-in bg-emerald-950/30 border border-emerald-900/20 p-2 rounded-lg">
+                {dbDiagMsg}
+              </p>
+            )}
+
+            {dbDiagStatus === "error" && (
+              <p className="text-[10.5px] text-rose-400 font-bold text-center animate-fade-in bg-rose-950/30 border border-rose-900/20 p-2 rounded-lg break-words">
+                ❌ {lang === "fa" ? "خطا در اتصال:" : "Connection Error:"} {dbDiagError}
               </p>
             )}
           </div>

@@ -4,7 +4,13 @@ import path from "path";
 import compression from "compression";
 import { GoogleGenAI } from "@google/genai";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { initializeFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+
+// Static JSON imports to ensure 100% robust bundling on serverless hosters like Vercel/Netlify
+import firebaseAppletConfig from "./firebase-applet-config.json";
+import defaultProperties from "./properties.json";
+import defaultChats from "./chats.json";
+import defaultSettings from "./settings.json";
 
 const app = express();
 app.use(compression()); // Ultra-high speed compression for fast loads on 3G/4G/5G mobile networks
@@ -1185,7 +1191,11 @@ async function initFirebase() {
       console.error("Failed to parse FIREBASE_CONFIG env variable:", e);
     }
   }
-  // 3. Fallback to firebase-applet-config.json file
+  // 3. Fallback to statically imported firebase-applet-config.json for serverless (Vercel)
+  else if (firebaseAppletConfig && (firebaseAppletConfig as any).apiKey) {
+    firebaseConfig = firebaseAppletConfig;
+  }
+  // 4. Fallback to firebase-applet-config.json file read if somehow needed
   else if (fs.existsSync(configPath)) {
     try {
       const rawConfig = fs.readFileSync(configPath, "utf8");
@@ -1207,8 +1217,10 @@ async function initFirebase() {
       }
 
       firebaseApp = initializeApp(firebaseConfig);
-      firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || "(default)");
-      console.log("★★★★★ Firebase Connected: Successfully initialized Firestore client DB connection ★★★★★");
+      firestoreDb = initializeFirestore(firebaseApp, {
+        experimentalForceLongPolling: true
+      }, firebaseConfig.firestoreDatabaseId || "(default)");
+      console.log("★★★★★ Firebase Connected: Successfully initialized Firestore client DB connection with long-polling enabled ★★★★★");
       
       // Auto seed if empty (run asynchronously in background to never block startup flow)
       seedFirestoreData().catch(err => {
@@ -1225,7 +1237,7 @@ async function initFirebase() {
 // Spark on startup immediately
 initFirebase().catch(e => console.error("Firebase startup exception:", e));
 
-// Local disk read-back fallbacks
+// Local disk read-back fallbacks with compiled-in static assets for stateless serverless environments (Vercel)
 function readPropertiesFromDisk(): any[] {
   try {
     if (fs.existsSync(propertiesFilePath)) {
@@ -1235,7 +1247,7 @@ function readPropertiesFromDisk(): any[] {
   } catch (e) {
     console.error("Error reading properties.json:", e);
   }
-  return [];
+  return defaultProperties || [];
 }
 
 function writePropertiesToDisk(properties: any[]) {
@@ -1255,7 +1267,7 @@ function readChatsFromDisk(): any[] {
   } catch (e) {
     console.error("Error reading chats.json:", e);
   }
-  return [];
+  return defaultChats || [];
 }
 
 function writeChatsToDisk(chats: any[]) {
@@ -1276,7 +1288,7 @@ function readSettingsFromDisk(): any {
   } catch (e) {
     console.error("Error reading settings.json:", e);
   }
-  return {
+  return defaultSettings || {
     siteName: "Ariana Rahnuma",
     allowPublicPost: true,
     requireApproval: true,
@@ -1554,6 +1566,55 @@ async function saveChatToDatabase(msg: any) {
 const activeOTPs = new Map<string, { code: string; expires: number }>();
 
 // APIs:
+// GET test-firebase diagnostic tool
+app.get("/api/settings/test-firebase", async (_req, res) => {
+  const diagnosticInfo: any = {
+    initialized: !!firestoreDb,
+    healthy: isFirestoreHealthy,
+    databaseId: firestoreDb ? (firestoreDb.databaseId || "not accessible") : null,
+    time: new Date().toISOString(),
+    envKeysDetected: {
+      FIREBASE_API_KEY: !(!process.env.FIREBASE_API_KEY && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY && !process.env.VITE_FIREBASE_API_KEY)
+    }
+  };
+
+  if (!firestoreDb) {
+    return res.status(500).json({ success: false, error: "Firestore client is not initialized", diagnostics: diagnosticInfo });
+  }
+
+  try {
+    const testDocRef = doc(firestoreDb, "test_connection", "operational_status");
+    await setDoc(testDocRef, {
+      lastChecked: new Date().toISOString(),
+      platform: "vercel-serverless",
+      healthy: true
+    });
+    
+    const readSnap = await getDoc(testDocRef);
+    const readData = readSnap.exists() ? readSnap.data() : null;
+
+    res.json({
+      success: true,
+      message: "Firestore connection, read, and write are 100% functional and synchronized successfully!",
+      diagnostics: {
+        ...diagnosticInfo,
+        testWriteReadSuccessful: true,
+        readBackData: readData
+      }
+    });
+  } catch (err: any) {
+    res.status(550).json({
+      success: false,
+      error: err.message || "Failed to execute database write/read",
+      stack: err.stack,
+      diagnostics: {
+        ...diagnosticInfo,
+        testWriteReadSuccessful: false
+      }
+    });
+  }
+});
+
 // GET system settings
 app.get("/api/settings", async (_req, res) => {
   const settings = await readSettingsFromDatabase();
