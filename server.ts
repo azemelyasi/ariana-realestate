@@ -1160,15 +1160,46 @@ function markFirestoreUnhealthy() {
 }
 
 async function initFirebase() {
-  if (fs.existsSync(configPath)) {
+  let firebaseConfig: any = null;
+
+  // 1. Try to load from individual environment variables (supporting different standard prefixes)
+  const apiKey = process.env.FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || process.env.apiKey;
+  if (apiKey) {
+    firebaseConfig = {
+      apiKey: apiKey,
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN || process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || process.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.authDomain,
+      projectId: process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || process.env.projectId,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.storageBucket,
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.messagingSenderId,
+      appId: process.env.FIREBASE_APP_ID || process.env.NEXT_PUBLIC_FIREBASE_APP_ID || process.env.VITE_FIREBASE_APP_ID || process.env.appId,
+      firestoreDatabaseId: process.env.FIREBASE_FIRESTORE_DATABASE_ID || process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_DATABASE_ID || process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || process.env.firestoreDatabaseId || "(default)"
+    };
+  }
+  // 2. Try to load from FIREBASE_CONFIG JSON string
+  else if (process.env.FIREBASE_CONFIG) {
+    try {
+      firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+    } catch (e) {
+      console.error("Failed to parse FIREBASE_CONFIG env variable:", e);
+    }
+  }
+  // 3. Fallback to firebase-applet-config.json file
+  else if (fs.existsSync(configPath)) {
     try {
       const rawConfig = fs.readFileSync(configPath, "utf8");
-      const firebaseConfig = JSON.parse(rawConfig);
+      firebaseConfig = JSON.parse(rawConfig);
+    } catch (err) {
+      console.error("Failed to parse local firebase-applet-config.json:", err);
+    }
+  }
+
+  if (firebaseConfig) {
+    try {
       const { initializeApp } = await import("firebase/app");
       const { getFirestore } = await import("firebase/firestore");
       
       firebaseApp = initializeApp(firebaseConfig);
-      firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+      firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || "(default)");
       console.log("★★★★★ Firebase Connected: Successfully initialized Firestore client DB connection ★★★★★");
       
       // Auto seed if empty (run asynchronously in background to never block startup flow)
@@ -1179,7 +1210,7 @@ async function initFirebase() {
       console.error("Error during Firebase lazy init:", err);
     }
   } else {
-    console.warn("firebase-applet-config.json not found. Operating in local JSON files mode.");
+    console.warn("No Firebase configuration found (env variables or firebase-applet-config.json). Operating in local JSON files mode.");
   }
 }
 
