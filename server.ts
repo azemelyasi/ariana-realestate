@@ -1367,21 +1367,18 @@ async function readSettingsFromDatabase(): Promise<any> {
 async function saveSettingsToDatabase(settings: any) {
   writeSettingsToDisk(settings);
   if (checkFirestoreAvailability()) {
-    // Run Firestore save in the background to prevent blocking/hanging the API response thread
-    (async () => {
-      try {
-        const { doc, setDoc } = await import("firebase/firestore");
-        const writePromise = setDoc(doc(firestoreDb, "shared_config", "system_settings"), settings);
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore settings write timeout")), 8000)
-        );
-        await Promise.race([writePromise, timeoutPromise]);
-        console.log("Firestore SUCCESS: Fully persisted global system settings in background");
-      } catch (e) {
-        console.error("Firestore error writing global settings (background):", e);
-        markFirestoreUnhealthy();
-      }
-    })();
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      const writePromise = setDoc(doc(firestoreDb, "shared_config", "system_settings"), settings);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Firestore settings write timeout")), 8000)
+      );
+      await Promise.race([writePromise, timeoutPromise]);
+      console.log("Firestore SUCCESS: Fully persisted global system settings");
+    } catch (e) {
+      console.error("Firestore error writing global settings:", e);
+      markFirestoreUnhealthy();
+    }
   }
 }
 
@@ -1429,22 +1426,20 @@ async function savePropertyToDatabase(property: any) {
   }
   writePropertiesToDisk(list);
 
-  // Update cloud Firestore in background
+  // Update cloud Firestore
   if (checkFirestoreAvailability()) {
-    (async () => {
-      try {
-        const { doc, setDoc } = await import("firebase/firestore");
-        const writePromise = setDoc(doc(firestoreDb, "properties", property.id), property);
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore property write timeout")), 8000)
-        );
-        await Promise.race([writePromise, timeoutPromise]);
-        console.log(`Firestore SUCCESS: Fully persisted property ${property.id} in background`);
-      } catch (e) {
-        console.error(`Firestore error writing property ${property.id} (background):`, e);
-        markFirestoreUnhealthy();
-      }
-    })();
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      const writePromise = setDoc(doc(firestoreDb, "properties", property.id), property);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Firestore property write timeout")), 8000)
+      );
+      await Promise.race([writePromise, timeoutPromise]);
+      console.log(`Firestore SUCCESS: Fully persisted property ${property.id}`);
+    } catch (e) {
+      console.error(`Firestore error writing property ${property.id}:`, e);
+      markFirestoreUnhealthy();
+    }
   }
 }
 
@@ -1454,22 +1449,20 @@ async function deletePropertyFromDatabase(id: string) {
   list = list.filter((p: any) => p.id !== id);
   writePropertiesToDisk(list);
 
-  // Update cloud Firestore in background
+  // Update cloud Firestore
   if (checkFirestoreAvailability()) {
-    (async () => {
-      try {
-        const { doc, deleteDoc } = await import("firebase/firestore");
-        const deletePromise = deleteDoc(doc(firestoreDb, "properties", id));
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore property delete timeout")), 8000)
-        );
-        await Promise.race([deletePromise, timeoutPromise]);
-        console.log(`Firestore SUCCESS: Deleted property ${id} in background`);
-      } catch (e) {
-        console.error(`Firestore error deleting property ${id} (background):`, e);
-        markFirestoreUnhealthy();
-      }
-    })();
+    try {
+      const { doc, deleteDoc } = await import("firebase/firestore");
+      const deletePromise = deleteDoc(doc(firestoreDb, "properties", id));
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Firestore property delete timeout")), 8000)
+      );
+      await Promise.race([deletePromise, timeoutPromise]);
+      console.log(`Firestore SUCCESS: Deleted property ${id}`);
+    } catch (e) {
+      console.error(`Firestore error deleting property ${id}:`, e);
+      markFirestoreUnhealthy();
+    }
   }
 }
 
@@ -1510,22 +1503,20 @@ async function saveChatToDatabase(msg: any) {
   chats.push(msg);
   writeChatsToDisk(chats);
 
-  // Update cloud Firestore in background
+  // Update cloud Firestore
   if (checkFirestoreAvailability()) {
-    (async () => {
-      try {
-        const { doc, setDoc } = await import("firebase/firestore");
-        const writePromise = setDoc(doc(firestoreDb, "chats", msg.id), msg);
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore chat write timeout")), 8000)
-        );
-        await Promise.race([writePromise, timeoutPromise]);
-        console.log(`Firestore SUCCESS: Fully persisted chat msg ${msg.id} in background`);
-      } catch (e) {
-        console.error(`Firestore error writing chat message ${msg.id} (background):`, e);
-        markFirestoreUnhealthy();
-      }
-    })();
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      const writePromise = setDoc(doc(firestoreDb, "chats", msg.id), msg);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Firestore chat write timeout")), 8000)
+      );
+      await Promise.race([writePromise, timeoutPromise]);
+      console.log(`Firestore SUCCESS: Fully persisted chat msg ${msg.id}`);
+    } catch (e) {
+      console.error(`Firestore error writing chat message ${msg.id}:`, e);
+      markFirestoreUnhealthy();
+    }
   }
 }
 
