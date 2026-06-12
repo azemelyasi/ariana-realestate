@@ -2025,9 +2025,14 @@ async function setupFrontend() {
   }
 
   const PORT = 3000;
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Ariana Core Full-Stack Server running on http://0.0.0.0:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Ariana Core Full-Stack Server running on http://0.0.0.0:${PORT}`);
+    });
+  }
 }
 
 setupFrontend();
+
+export { app };
+export default app;
