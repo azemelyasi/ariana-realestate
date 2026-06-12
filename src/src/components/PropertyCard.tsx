@@ -1,0 +1,343 @@
+import React from "react";
+import { Property, Language } from "../types";
+import { TRANSLATIONS, getTranslation } from "../i18n";
+import { COUNTRIES } from "../data";
+import { toLocalizedDigits } from "./LocalCalendar";
+import { Heart } from "lucide-react";
+import { AutoTranslate } from "./AutoTranslate";
+
+interface PropertyCardProps {
+  property: Property;
+  lang: Language;
+  onViewDetails: (property: Property) => void;
+  onDelete?: (id: string) => void;
+  onEdit?: (property: Property) => void;
+  showAdminControls?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
+  isInClientBasket?: boolean;
+  onToggleClientBasket?: (id: string) => void;
+  rates?: Record<string, number>;
+}
+
+export const PropertyCard: React.FC<PropertyCardProps> = ({
+  property,
+  lang,
+  onViewDetails,
+  onDelete,
+  onEdit,
+  showAdminControls = false,
+  isFavorite = false,
+  onToggleFavorite,
+  isInClientBasket = false,
+  onToggleClientBasket,
+  rates: passedRates,
+}) => {
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+  const c = COUNTRIES.find((cnt) => cnt.code === property.country) || COUNTRIES[0];
+
+  const DEFAULT_RATES: Record<string, number> = {
+    USD: 1,
+    USDT: 1,
+    AED: 3.673,
+    SAR: 3.75,
+    QAR: 3.64,
+    KWD: 0.307,
+    BHD: 0.376,
+    OMR: 0.385,
+    IQD: 1310,
+    EGP: 47.85,
+    SYP: 13000,
+    LBP: 89500,
+    JOD: 0.709,
+    MAD: 10.02,
+    YER: 250,
+    LYD: 4.84,
+    SDG: 601,
+    TND: 3.12,
+    DZD: 134.2,
+    RUB: 91.45,
+    AFN: 62.50,
+    PKR: 278.10,
+    INR: 83.35,
+    TRY: 33.50,
+    EUR: 0.922,
+    CNY: 7.24,
+    JPY: 156.40,
+    IRR: 1375125,
+    TMN: 137512,
+  };
+
+  const getFidelityRates = (): Record<string, number> => {
+    if (passedRates) {
+      return { ...DEFAULT_RATES, ...passedRates };
+    }
+    try {
+      const saved = localStorage.getItem("melkban_rates");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") {
+          return { ...DEFAULT_RATES, ...parsed };
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    return DEFAULT_RATES;
+  };
+
+  const formatPrice = () => {
+    const ratesList = getFidelityRates();
+    const isIran = property.country === "IR" || c.currency === "TMN" || c.currency === "IRR";
+
+    if (property.type === "sale") {
+      const priceValUSD = property.totalPrice || ((property.pricePerSqm || 0) * property.area);
+      
+      if (isIran) {
+        const rateToman = ratesList["TMN"] || (ratesList["IRR"] / 10) || 63800;
+        const priceValToman = priceValUSD * rateToman;
+        if (lang === "fa") {
+          return `${toLocalizedDigits(Math.round(priceValToman).toLocaleString(), lang)} تومان (معادل ${toLocalizedDigits(priceValUSD.toLocaleString(), lang)} $)`;
+        } else {
+          return `${Math.round(priceValToman).toLocaleString()} Toman (Equiv ${priceValUSD.toLocaleString()} $)`;
+        }
+      } else {
+        const rateLocal = ratesList[c.currency] || c.baseExchangeRate || 1;
+        const priceValLocal = priceValUSD * rateLocal;
+        return `${toLocalizedDigits(Math.round(priceValLocal).toLocaleString(), lang)} ${c.currencySymbol} (${toLocalizedDigits(priceValUSD.toLocaleString(), lang)} $)`;
+      }
+    } else if (property.type === "rent") {
+      const rentUSD = property.rent || 0;
+      if (isIran) {
+        const rateToman = ratesList["TMN"] || (ratesList["IRR"] / 10) || 63800;
+        const rentToman = rentUSD * rateToman;
+        if (lang === "fa") {
+          return `${t.labelRent || "اجاره"}: ${toLocalizedDigits(Math.round(rentToman).toLocaleString(), lang)} تومان/ماه (معادل ${toLocalizedDigits(rentUSD.toLocaleString(), lang)} $)`;
+        } else {
+          return `${t.labelRent || "Rent"}: ${Math.round(rentToman).toLocaleString()} Toman/m (Equiv ${rentUSD.toLocaleString()} $)`;
+        }
+      } else {
+        const rateLocal = ratesList[c.currency] || c.baseExchangeRate || 1;
+        const rentLocal = rentUSD * rateLocal;
+        return `${t.labelRent || "Rent"}: ${toLocalizedDigits(Math.round(rentLocal).toLocaleString(), lang)} ${c.currencySymbol} (${toLocalizedDigits(rentUSD.toLocaleString(), lang)} $)`;
+      }
+    } else {
+      // mortgage or rent_mortgage
+      const depositUSD = property.deposit || 0;
+      const rentUSD = property.rent || 0;
+      if (isIran) {
+        const rateToman = ratesList["TMN"] || (ratesList["IRR"] / 10) || 63800;
+        const depositToman = depositUSD * rateToman;
+        const rentToman = rentUSD * rateToman;
+        if (lang === "fa") {
+          return `${t.labelDeposit || "رهن"}: ${toLocalizedDigits(Math.round(depositToman).toLocaleString(), lang)} تومان ${
+            rentUSD ? `+ اجاره: ${toLocalizedDigits(Math.round(rentToman).toLocaleString(), lang)} تومان` : ""
+          } (${toLocalizedDigits(depositUSD.toLocaleString(), lang)} $ ${rentUSD ? `+ ${toLocalizedDigits(rentUSD.toLocaleString(), lang)} $/m` : ""})`;
+        } else {
+          return `${t.labelDeposit || "Deposit"}: ${Math.round(depositToman).toLocaleString()} Toman ${
+            rentUSD ? `+ Rent: ${Math.round(rentToman).toLocaleString()}/m` : ""
+          } (Equiv ${depositUSD.toLocaleString()} $ ${rentUSD ? `+ ${rentUSD.toLocaleString()}/m` : ""})`;
+        }
+      } else {
+        const rateLocal = ratesList[c.currency] || c.baseExchangeRate || 1;
+        const depositLocal = depositUSD * rateLocal;
+        const rentLocal = rentUSD * rateLocal;
+        return `${t.labelDeposit || "Deposit"}: ${toLocalizedDigits(Math.round(depositLocal).toLocaleString(), lang)} ${c.currencySymbol} ${
+          rentUSD ? `+ ${toLocalizedDigits(Math.round(rentLocal).toLocaleString(), lang)}/m` : ""
+        } (${toLocalizedDigits(depositUSD.toLocaleString(), lang)} $ ${rentUSD ? `+ ${toLocalizedDigits(rentUSD.toLocaleString(), lang)} $/m` : ""})`;
+      }
+    }
+  };
+
+  const getSqmPriceText = () => {
+    if (property.pricePerSqm) {
+      const ratesList = getFidelityRates();
+      const isIran = property.country === "IR" || c.currency === "TMN" || c.currency === "IRR";
+      const rateLocal = isIran ? (ratesList["TMN"] || (ratesList["IRR"] / 10) || 63800) : (ratesList[c.currency] || c.baseExchangeRate || 1);
+      const valLocal = property.pricePerSqm * rateLocal;
+      const currencyLabel = isIran ? (lang === "fa" ? "تومان" : "Toman") : c.currencySymbol;
+      
+      return `${toLocalizedDigits(Math.round(valLocal).toLocaleString(), lang)} ${currencyLabel}/${getTranslation(lang, "perSqmText", "sqm")} (${toLocalizedDigits(property.pricePerSqm.toLocaleString(), lang)} $/${getTranslation(lang, "perSqmText", "sqm")})`;
+    }
+    return "";
+  };
+
+  return (
+    <div 
+      onClick={() => onViewDetails(property)}
+      className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 hover:-translate-y-1 transition duration-300 flex flex-col justify-between shadow-lg cursor-pointer" 
+      id={`property-card-${property.id}`}
+    >
+      {/* Top Image & Badge */}
+      <div className="relative aspect-video bg-slate-950 overflow-hidden">
+        <img
+          src={property.images[0] || "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600"}
+          alt={property.title}
+          className="object-cover w-full h-full hover:scale-105 transition duration-500"
+        />
+        <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur px-2.5 py-1 rounded-full text-xs font-semibold text-indigo-400 border border-slate-800 flex items-center gap-1">
+          <span>{c.flag}</span>
+          <span>{lang === "fa" ? c.nameFa : c.nameEn}</span>
+        </div>
+
+        {/* Premium Heart Bookmark Toggle */}
+        {onToggleFavorite && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(property.id);
+            }}
+            className={`absolute top-3 right-3 p-1.5 rounded-full backdrop-blur border text-sm transition-all shadow-md cursor-pointer active:scale-90 ${
+              isFavorite
+                ? "bg-rose-500/25 border-rose-500/50 text-rose-400 hover:bg-rose-500/35"
+                : "bg-slate-950/70 border-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+            title="Bookmark unit"
+          >
+            <Heart className={`w-3.5 h-3.5 ${isFavorite ? "fill-current" : ""}`} />
+          </button>
+        )}
+
+        {/* Client Export Basket Toggle */}
+        {onToggleClientBasket && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleClientBasket(property.id);
+            }}
+            className={`absolute top-3 right-11 p-1.5 rounded-full backdrop-blur border text-xs transition-all shadow-md cursor-pointer active:scale-90 flex items-center justify-center ${
+              isInClientBasket
+                ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30 font-black scale-105"
+                : "bg-slate-950/75 border-slate-800/80 text-slate-400 hover:text-emerald-400 hover:bg-slate-900"
+            }`}
+            title={lang === "fa" ? "افزودن به سبد خروجی مشتری" : "Add to Client Export Basket"}
+          >
+            📥
+          </button>
+        )}
+
+        {property.images && property.images.length > 1 && (
+          <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur px-2.5 py-1 rounded-lg text-[9px] font-black font-mono text-indigo-300 border border-indigo-900/30 flex items-center gap-1 shadow-md">
+            <span>📸</span>
+            <span>{toLocalizedDigits(property.images.length, lang)} {lang === "fa" ? "تصویر" : "Photos"}</span>
+          </div>
+        )}
+        <div className="absolute bottom-3 right-3 bg-indigo-600 px-3 py-1 rounded-lg text-[10px] uppercase font-black text-white tracking-widest shadow-md">
+          {property.type === "sale" ? getTranslation(lang, "dealTypeSale", "Sale") : getTranslation(lang, "dealTypeRent", "Rent")}
+        </div>
+      </div>
+
+      {/* Content details */}
+      <div className="p-5 flex-1 flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between gap-1 mb-1 flex-wrap">
+            <span className="text-[10px] text-indigo-400 font-bold tracking-wider block truncate animate-fade-in" title={`${property.district}${property.address && property.address !== property.district ? ` - ${property.address}` : ""}`}>
+              📍 <AutoTranslate text={`${property.district}${property.address && property.address !== property.district ? ` (${property.address})` : ""}`} lang={lang} />
+            </span>
+            <span className="text-[8px] bg-indigo-950/40 border border-indigo-900/30 px-1.5 py-0.5 rounded text-indigo-300 font-mono" title="Mathematical Coordinates Secured to avoid lawsuits">
+              📡 GPS: SECURED
+            </span>
+          </div>
+          <h4 className="text-sm font-bold text-slate-100 line-clamp-1 mb-2 hover:text-indigo-400 transition cursor-pointer" onClick={() => onViewDetails(property)}>
+            <AutoTranslate text={property.title} lang={lang} />
+          </h4>
+          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
+            <AutoTranslate text={property.description} lang={lang} />
+          </p>
+
+          {/* Zillow Killer Trust badging */}
+          <div className="flex flex-wrap gap-1.5 mb-3.5">
+            {property.isLocalTrustEndorsed ? (
+              <span className="text-[8.5px] items-center bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg text-amber-400 font-bold flex gap-1">
+                🤝 {lang === "fa" ? "تعهدنامه ملی و محلی" : "Local Trust Certified"}
+              </span>
+            ) : (
+              <span className="text-[8.5px] items-center bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg text-emerald-400 font-bold flex gap-1">
+                ⚖️ {lang === "fa" ? "مجوز رسمی احراز شد" : "Official Registry Verified"}
+              </span>
+            )}
+            
+            <span className="text-[8.5px] items-center bg-blue-500/15 border border-blue-500/20 px-2 py-0.5 rounded-lg text-blue-300 font-semibold font-mono flex gap-1">
+              ⚖️ {lang === "fa" ? "سند بدون غش حقوقی" : "Lawsuit Immunity"}
+            </span>
+          </div>
+        </div>
+
+        <div>
+          {/* Metadata Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-4 text-[10px] text-slate-400 border-t border-b border-slate-850/60 py-2.5 font-mono">
+            <div className="flex items-center gap-1.5">
+              <span>📐</span>
+              <span>
+                {toLocalizedDigits(property.area || 0, lang)} {getTranslation(lang, "perSqmText", "sqm")}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span>🛌</span>
+              <span>
+                {toLocalizedDigits(property.bedrooms !== undefined ? property.bedrooms : 0, lang)} {getTranslation(lang, "typeBedsPlural", "Beds")}
+              </span>
+            </div>
+            {property.pricePerSqm && (
+              <div className="col-span-2 text-indigo-400/80 text-[10px] flex items-center gap-1">
+                <span>💎</span>
+                <span>{getSqmPriceText()}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Pricing Row */}
+          <div className="flex items-center justify-between pb-1 gap-2">
+            <div className="text-sm font-black text-white">{formatPrice()}</div>
+            <div className="flex gap-1.5">
+              {onEdit && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(property);
+                  }}
+                  className="text-xs bg-indigo-950/40 hover:bg-indigo-900 border border-indigo-900/30 text-indigo-400 hover:text-white px-2.5 py-1.5 rounded-xl transition font-medium cursor-pointer"
+                  title={lang === "fa" ? "ویرایش آگهی" : "Edit Listing"}
+                >
+                  ✏️
+                </button>
+              )}
+              <button
+                onClick={() => onViewDetails(property)}
+                className="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-white px-3 py-1.5 rounded-xl transition font-medium cursor-pointer"
+              >
+                {getTranslation(lang, "viewDetailsText", "View Details")}
+              </button>
+            </div>
+          </div>
+
+          {/* Admin Tools banner */}
+          {showAdminControls && onDelete && (
+            <div className="flex justify-end gap-2 border-t border-slate-850 pt-3 mt-3">
+              {onEdit && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(property);
+                  }}
+                  className="text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg font-bold cursor-pointer"
+                >
+                  ✏️ {lang === "fa" ? "ویرایش" : "Edit"}
+                </button>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(property.id);
+                }}
+                className="text-[10px] bg-rose-950/60 hover:bg-rose-900 border border-rose-900/50 text-rose-300 px-3 py-1.5 rounded-lg font-bold cursor-pointer"
+              >
+                ✕ {t.btnDelete}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
