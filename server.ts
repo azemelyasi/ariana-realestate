@@ -7,7 +7,6 @@ import { initializeApp } from "firebase/app";
 import { initializeFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
 
 // Static JSON imports to ensure 100% robust bundling on serverless hosters like Vercel/Netlify
-import firebaseAppletConfig from "./firebase-applet-config.json";
 import defaultProperties from "./properties.json";
 import defaultChats from "./chats.json";
 import defaultSettings from "./settings.json";
@@ -1191,17 +1190,13 @@ async function initFirebase() {
       console.error("Failed to parse FIREBASE_CONFIG env variable:", e);
     }
   }
-  // 3. Fallback to statically imported firebase-applet-config.json for serverless (Vercel)
-  else if (firebaseAppletConfig && (firebaseAppletConfig as any).apiKey) {
-    firebaseConfig = firebaseAppletConfig;
-  }
-  // 4. Fallback to firebase-applet-config.json file read if somehow needed
+  // 3. Fallback to firebase-applet-config.json file read dynamically (highly robust for both dev and Vercel serverless deploys)
   else if (fs.existsSync(configPath)) {
     try {
       const rawConfig = fs.readFileSync(configPath, "utf8");
       firebaseConfig = JSON.parse(rawConfig);
     } catch (err) {
-      console.error("Failed to parse local firebase-applet-config.json:", err);
+      console.error("Failed to parse local firebase-applet-config.json dynamically:", err);
     }
   }
 

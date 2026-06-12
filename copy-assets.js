@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { Jimp } from "jimp";
 
 const src1 = path.join(process.cwd(), "src/assets/images/ariana_premium_logo_1780405823718.png");
 const src2 = path.join(process.cwd(), "src/assets/images/ariana_new_logo_1780405216507.png");
@@ -10,6 +9,10 @@ const dest2 = path.join(process.cwd(), "public/logo192.png");
 
 async function run() {
   try {
+    // Dynamically load Jimp to handle serverless build-time failures or library mismatch on target hosts like Vercel
+    const jimpModule = await import("jimp");
+    const Jimp = jimpModule.Jimp;
+
     // If the premium logo exists, process it with proper aspect ratio padding to 1:1 square config
     const sourcePath = fs.existsSync(src1) ? src1 : (fs.existsSync(src2) ? src2 : null);
 
