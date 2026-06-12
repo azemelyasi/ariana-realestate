@@ -4,7 +4,216 @@ import { COUNTRIES } from "../data";
 import { toLocalizedDigits } from "./LocalCalendar";
 import { CALC_TRANSLATIONS } from "./calculatorTranslations";
 import { getForexDisclaimer } from "../utils/forexDisclaimer";
-import { AutoTranslate } from "./AutoTranslate";
+
+const CURRENCY_MAP: Record<string, {
+  name: Record<Language, string>;
+  desc: Record<Language, string>;
+}> = {
+  USDT: {
+    name: {
+      en: "Tether USDT", fa: "تتر تتر", tr: "Tether USDT", ar: "تيزر USDT", de: "Tether USDT",
+      ja: "テザー USDT", zh: "泰达币 USDT", uz: "Tether USDT", ru: "Тетер USDT", ku: "تێتەر USDT",
+      ps: "تېتر USDT", hi: "टीथर USDT", ur: "ٹیھر USDT", sg: "Tether USDT", fr: "Tether USDT", es: "Tether USDT"
+    },
+    desc: {
+      en: "Stable Digital Dollar", fa: "دلار دیجیتال پایدار", tr: "Stabil Dijital Dolar", ar: "الدولار الرقمي المستقر", de: "Stabiler digitaler Dollar",
+      ja: "安定型デジタル米ドル", zh: "稳定数字美元", uz: "Barqaror raqamli dollar", ru: "Стабильный цифровой доллар", ku: "دۆلاری دیجیتاڵی جێگیر",
+      ps: "باثباته ډیجیټل ډالر", hi: "स्थिर دیجیتัล डॉलर", ur: "مستحکم ڈیجیٹل ڈالر", sg: "Dollar digital", fr: "Dollar numérique stable", es: "Dólar digital de USDT"
+    }
+  },
+  USD: {
+    name: {
+      en: "US Dollar", fa: "دلار آمریکا", tr: "ABD Doları", ar: "دولار أمريكي", de: "US-Dollar",
+      ja: "USドル", zh: "美元", uz: "AQSH dollari", ru: "Доллар США", ku: "دۆلاری ئەمریکی",
+      ps: "د امریکا ډالر", hi: "अमेरिकी डॉलर", ur: "امریکی ڈالر", sg: "Dollar ti US", fr: "Dollar américain", es: "Dólar estadounidense"
+    },
+    desc: {
+      en: "Dominant Global Benchmark", fa: "مبنای جهانی مقتدر", tr: "Küresel Güçlü Temel", ar: "المعيار العالمي المقتدر", de: "Führende globale Benchmark",
+      ja: "強力なグローバル基準", zh: "全球主导基准", uz: "Nufuzli global mezon", ru: "Ведущий мировой эталон", ku: "پێوەری جیهانی باڵا",
+      ps: "باثباته نړیوال معیار", hi: "वैश्विक संप्रभु बेंचमार्क", ur: "عالمی معتبر پیمانہ", sg: "L'étalon ti dunia", fr: "Référence mondiale dominante", es: "Referencia mundial dominante"
+    }
+  },
+  TMN: {
+    name: {
+      en: "Iranian Toman", fa: "تومان ایران", tr: "İran Tümeni", ar: "تومان إيراني", de: "Iranischer Toman",
+      ja: "イラン・トマン", zh: "伊朗土曼", uz: "Eron tumani", ru: "Иранский томан", ku: "تۆمانی ئێرانی",
+      ps: "د ايران توماني", hi: "ईरानी तोमन", ur: "ایرانی تومان", sg: "Toman ti Iran", fr: "Toman iranien", es: "Tomán iraní"
+    },
+    desc: {
+      en: "Exchange Free Market", fa: "بازار آزاد صرافی‌ها", tr: "Serbest Döviz Piyasası", ar: "سوق الصرف الحر", de: "Freier Devisenmarkt",
+      ja: "自由為替市場", zh: "自由兑换外汇市场", uz: "Erkin valyuta bozori", ru: "Свободный рынок обмена", ku: "بازاڕی ئازادی ئاڵوگۆڕ",
+      ps: "د صرافۍ د ازاد بازار", hi: "मुक्त विनिमय बाजार", ur: "اوپن مارکیٹ صرافی", sg: "Gara ti d'échange", fr: "Marché libre des changes", es: "Mercado libre de divisas"
+    }
+  },
+  IRR: {
+    name: {
+      en: "Iranian Rial", fa: "ریال ایران", tr: "İran Riyali", ar: "ريال إيراني", de: "Iranischer Rial",
+      ja: "イラン・リアル", zh: "伊朗里亚尔", uz: "Eron rioli", ru: "Иранский риал", ku: "ڕیاڵی ئێرانی",
+      ps: "د ايران ريال", hi: "ईरानी रियाल", ur: "ایرانی ریال", sg: "Rial ti Iran", fr: "Rial iranien", es: "Rial iraní"
+    },
+    desc: {
+      en: "Official Sovereign Rate", fa: "ریال دولتی و رسمی", tr: "Resmi Devlet Kuru", ar: "الريال الحكومي الرسمي", de: "Offizieller staatlicher Wechselkurs",
+      ja: "公定政府レート", zh: "官方政府汇率", uz: "Rasmiy davlat kursi", ru: "Официальный курс риала", ku: "ڕیاڵی فەرمی دەوڵەت",
+      ps: "رسمي دولتي ريال", hi: "आधिकारिक सरकारी दर", ur: "سرکاری اور دفتری ریال", sg: "Kuta nzo-sese", fr: "Taux officiel d'État", es: "Tasa estatal oficial"
+    }
+  },
+  AFN: {
+    name: {
+      en: "Afghan Afghani", fa: "افغانی افغانستان", tr: "Afganistan Afganisi", ar: "أفغاني أفغانستان", de: "Afghani",
+      ja: "アフガニ", zh: "阿富汗尼", uz: "Afg'on afg'onisi", ru: "Афганский афгани", ku: "ئەفغانی ئەفغانستان",
+      ps: "افغانۍ", hi: "अफ़गानी", ur: "افغان افغانی", sg: "Afghani", fr: "Afghani", es: "Afgani"
+    },
+    desc: {
+      en: "Kabul & Cadastral Board", fa: "کابل و هبات کاداستر", tr: "Kabil ve Kadastro Kurulu", ar: "مجلس كابل والمسح العقاري", de: "Kabul & Katasterrat",
+      ja: "カブール・地籍委員会", zh: "喀布尔与地籍局", uz: "Kobul va kadastr kengashi", ru: "Кабул и Кадастровый совет", ku: "کابول و دەستەی کاداستر",
+      ps: "کابل او د کادستر عالي هیئت", hi: "काबुल और भूकर बोर्ड", ur: "کابل اور کیڈسٹریل ہائی کونسل", sg: "Kabul na nzo ti Kadastre", fr: "Kaboul et Conseil du Cadastre", es: "Kabul y Consejo Catastral"
+    }
+  },
+  AED: {
+    name: {
+      en: "UAE Dirham", fa: "درهم امارات", tr: "BAE Dirhemi", ar: "درهم إماراتي", de: "VAE-Dirham",
+      ja: "UAEディルハム", zh: "阿联酋迪拉姆", uz: "BAE dirhami", ru: "Дирхам ОАЭ", ku: "درهمی ئیماراتی",
+      ps: "د اماراتو درهم", hi: "संयुक्त अरब अमीरात दिरहाम", ur: "اماراتی درہم", sg: "Dirham ti UAE", fr: "Dirham des Émirats", es: "Dírham de los Emiratos"
+    },
+    desc: {
+      en: "Dubai & Abu Dhabi", fa: "دبی و ابوظبی", tr: "Dubai ve Abu Dabi", ar: "دبي وأبوظبي", de: "Dubai & Abu Dhabi",
+      ja: "ドバイ＆アブダビ", zh: "迪拜与阿布扎比", uz: "Dubay va Abu-Dabi", ru: "Дубай и Абу-Даби", ku: "دوبەی و ئەبووزەبی",
+      ps: "دوبۍ او ابوظهبي", hi: "दुबई और अबू धाबी", ur: "دبئی اور ابوظہبی", sg: "Dubai na Abu Dhabi", fr: "Dubaï et Abou Dabi", es: "Dubái y Abu Dabi"
+    }
+  },
+  SAR: {
+    name: {
+      en: "Saudi Riyal", fa: "ریال سعودی", tr: "Suudi Riyali", ar: "ريال سعودي", de: "Saudi-Riyal",
+      ja: "サウジ・リアル", zh: "沙特里亚尔", uz: "Saudiya rioli", ru: "Саудовский риял", ku: "ڕیاڵی سعوودی",
+      ps: "سعودي ريال", hi: "सऊदी रियाल", ur: "سعودی ریال", sg: "Riyal ti Arabie Saoudite", fr: "Riyal saoudien", es: "Riyal saudí"
+    },
+    desc: {
+      en: "Riyadh & Mecca", fa: "ریاض و مکه", tr: "Riyad ve Mekke", ar: "الرياض ومكة المكرمة", de: "Riad & Mekka",
+      ja: "リヤド＆メッカ", zh: "利雅得与麦加", uz: "Riyod va Makka", ru: "Эр-Рияд и Мекка", ku: "ڕیاز و مەککە",
+      ps: "ریاض او مکه", hi: "रियाद और मक्का", ur: "ریاض اور مکہ", sg: "Riyadh na Mecca", fr: "Riyad et La Mecque", es: "Riad y La Meca"
+    }
+  },
+  EUR: {
+    name: {
+      en: "Euro", fa: "یورو اروپا", tr: "Euro", ar: "يورو", de: "Euro",
+      ja: "ユーロ", zh: "欧元", uz: "Evro", ru: "Евро", ku: "یۆرۆ",
+      ps: "ایورو", hi: "यूरो", ur: "یورو", sg: "Euro", fr: "Euro", es: "Euro"
+    },
+    desc: {
+      en: "Germany & Schengen Zone", fa: "آلمان و شنگن", tr: "Almanya ve Schengen", ar: "ألمانيا ومنطقة شنجن", de: "Deutschland & Schengen",
+      ja: "ドイツ＆シェンゲン", zh: "德国与申根区", uz: "Germaniya va Shengen", ru: "Германия и Шенген", ku: "ئەڵمانیا و شنگن",
+      ps: "جرمني او شنګن حوزه", hi: "जर्मनी और शेंगेन", ur: "جرمنی اور شینگن", sg: "Allemagne na Schengen", fr: "Allemagne et Espace Schengen", es: "Alemania y Espacio Schengen"
+    }
+  },
+  TRY: {
+    name: {
+      en: "Turkish Lira", fa: "لیر ترکیه", tr: "Türk Lirası", ar: "ليرة تركية", de: "Türkische Lira",
+      ja: "トルコリラ", zh: "土耳其里拉", uz: "Turk lirasi", ru: "Турецкая лира", ku: "لیرەی تورکی",
+      ps: "ترکي لیره", hi: "तुर्की लीرا", ur: "ترک لیرہ", sg: "Lira ti Turquie", fr: "Lire turque", es: "Lira turca"
+    },
+    desc: {
+      en: "Istanbul & Ankara", fa: "استانبول و آنکارا", tr: "İstanbul ve Ankara", ar: "إسطنبول وأنقرة", de: "Istanbul & Ankara",
+      ja: "イスタンブール＆アンカラ", zh: "伊斯坦布尔与安卡拉", uz: "Istanbul va Anqara", ru: "Стамбул и Анкара", ku: "ئەستانبۆل و ئەنقەرە",
+      ps: "استانبول او انکره", hi: "इस्तांबुल और अंकारा", ur: "استنبول اور انقرہ", sg: "Istanbul na Ankara", fr: "Istanbul et Ankara", es: "Estambul y Ankara"
+    }
+  },
+  RUB: {
+    name: {
+      en: "Russian Ruble", fa: "روبل روسیه", tr: "Rus Rublesi", ar: "روبل روسي", de: "Russischer Rubel",
+      ja: "ロシア・ルーブル", zh: "俄罗斯卢布", uz: "Rossiya rubli", ru: "Российский рубль", ku: "ڕووبڵى ڕووسی",
+      ps: "روسي روبل", hi: "रूसी रूबल", ur: "روسی روبل", sg: "Ruble ti Russie", fr: "Rouble russe", es: "Rublo ruso"
+    },
+    desc: {
+      en: "Moscow Cadastral Registry", fa: "مسکو کاداستر", tr: "Moskova Katastrosu", ar: "مسح كادستر بموسكو", de: "Moskauer Katasteramt",
+      ja: "モスクワ地籍レジストリ", zh: "莫斯科地籍登记", uz: "Moskva kadastri", ru: "Московский кадастр", ku: "کاداستری مۆسکۆ",
+      ps: "د مسکو کادستر اداره", hi: "मास्को भूकर रजिस्ट्री", ur: "ماسکو کیڈسٹریل رجسٹری", sg: "Kadastre ti Moscou", fr: "Cadastre de Moscou", es: "Catastro de Moscú"
+    }
+  },
+  CNY: {
+    name: {
+      en: "Chinese Yuan", fa: "یوان چین", tr: "Çin Yuanı", ar: "يوان صيني", de: "Chinesischer Yuan",
+      ja: "中国元", zh: "人民币", uz: "Xitoy yuani", ru: "Китайский юань", ku: "یوانی چینی",
+      ps: "چینايي یوان", hi: "चीनी युआन", ur: "چینی یوآن", sg: "Yuan ti Chine", fr: "Yuan chinois", es: "Yuan chino"
+    },
+    desc: {
+      en: "Beijing & Shanghai", fa: "پکن و شانگهای", tr: "Pekin ve Şanghay", ar: "بكين وشنغهاي", de: "Peking & Shanghai",
+      ja: "北京＆上海", zh: "北京与上海", uz: "Pekin va Shanxay", ru: "Пекин и Шанхай", ku: "پەکین و شانگهای",
+      ps: "پیکن او شانګهای", hi: "बीजिंग और शंघाई", ur: "بیجنگ اور شنگھائی", sg: "Beijing na Shanghai", fr: "Pékin et Shanghai", es: "Pekín y Shanghái"
+    }
+  },
+  JPY: {
+    name: {
+      en: "Japanese Yen", fa: "ین ژاپن", tr: "Japon Yeni", ar: "ين ياباني", de: "Japanischer Yen",
+      ja: "日本円", zh: "日元", uz: "Yapon yeni", ru: "Японская иена", ku: "یێنی ژاپۆنی",
+      ps: "جاپاني ین", hi: "जापानी येन", ur: "جاپانی ین", sg: "Yen ti Japon", fr: "Yen japonais", es: "Yen japonés"
+    },
+    desc: {
+      en: "Tokyo Cadastral Registry", fa: "توکیو کاداستر", tr: "Tokyo Katastrosu", ar: "مسح كادستر بطوكيو", de: "Tokioter Katasteramt",
+      ja: "東京地籍インデックス", zh: "东京地籍指数", uz: "Tokio kadastri", ru: "Токийский кадастр", ku: "کاداستری تۆکیۆ",
+      ps: "د توکیو کادستر اداره", hi: "टोक्यो भूकर सूचकांक", ur: "ٹوکیو کیڈسٹریل انڈیکس", sg: "Kadastre ti Tokyo", fr: "Cadastre de Tokyo", es: "Catastro de Tokio"
+    }
+  },
+  GBP: {
+    name: {
+      en: "British Pound", fa: "پوند بریتانیا", tr: "İngiliz Sterlini", ar: "جنيه إسترليني", de: "Britisches Pfund",
+      ja: "英ポンド", zh: "英镑", uz: "Britaniya funti", ru: "Британский фунт", ku: "پۆندی بەریتانی",
+      ps: "برتانوي پونډ", hi: "ब्रिटिश पाउंड", ur: "برطانوی پاؤنڈ", sg: "Livre ti Gbia", fr: "Livre sterling", es: "Libra esterlina"
+    },
+    desc: {
+      en: "London & Manchester", fa: "لندن و منچستر", tr: "Londra ve Manchester", ar: "لندن ومانشستر", de: "London & Manchester",
+      ja: "ロンドン＆マンチェスター", zh: "伦敦与曼彻斯特", uz: "London va Manchester", ru: "Лондон и Манчестер", ku: "لەندەن و مانچستەر",
+      ps: "لندن او منچسټر", hi: "लंदन और मैनचेस्टर", ur: "لندن اور مانچسٹر", sg: "London na Manchester", fr: "Londres et Manchester", es: "Londres y Mánchester"
+    }
+  },
+  CAD: {
+    name: {
+      en: "Canadian Dollar", fa: "دلار کانادا", tr: "Kanada Doları", ar: "دولار كندي", de: "Kanadischer Dollar",
+      ja: "カナダドル", zh: "加元", uz: "Kanada dollari", ru: "Канадский доллар", ku: "دۆلاری کەنەدی",
+      ps: "کاناډايي ډالر", hi: "कनाडाई डॉलर", ur: "کینیڈین ڈالر", sg: "Dollar ti Canada", fr: "Dollar canadien", es: "Dólar canadien"
+    },
+    desc: {
+      en: "Toronto Cadastral Registry", fa: "تورنتو کاداستر", tr: "Toronto Katastrosu", ar: "مسح كادستر بتورونتو", de: "Torontoer Katasteramt",
+      ja: "トロント地籍管理局", zh: "多伦多地籍局", uz: "Toronto kadastri", ru: "Кадастр Торонто", ku: "کاداستری تۆرۆنتۆ",
+      ps: "د ټورنټو کادستر اداره", hi: "टोरंटो भूکر कार्यालय", ur: "ٹورنٹو کیڈسٹریل ہاؤس", sg: "Kadastre ti Toronto", fr: "Bureau du Cadastre de Toronto", es: "Catastro de Toronto"
+    }
+  },
+  AUD: {
+    name: {
+      en: "Australian Dollar", fa: "دلار استرالیا", tr: "Avustralya Doları", ar: "دولار أسترالي", de: "Australischer Dollar",
+      ja: "豪ドル", zh: "澳元", uz: "Avstraliya dollari", ru: "Австралийский доллар", ku: "دۆلاری ئوسترالی",
+      ps: "اسټرالیايي ډالر", hi: "ऑस्ट्रेलियाई डॉलर", ur: "آسٹریلین ڈالر", sg: "Dollar ti Australie", fr: "Dollar australien", es: "Dólar australiano"
+    },
+    desc: {
+      en: "Sydney Cadastral Registry", fa: "سیدنی کاداستر", tr: "Sidney Katastrosu", ar: "مسح كادستر بسيدني", de: "Sydneyer Katasteramt",
+      ja: "シدنی地籍レジストリ", zh: "悉尼地籍登记", uz: "Sidney kadastri", ru: "Сиднейский кадастр", ku: "کاداستری سیدنی",
+      ps: "د سیډني کادستر اداره", hi: "सिडनी भूकर सूचकांक", ur: "سڈنی کیڈسٹریل زون", sg: "Kadastre ti Sydney", fr: "Cadastre de Sydney", es: "Catastro de Sídney"
+    }
+  },
+  KWD: {
+    name: {
+      en: "Kuwaiti Dinar", fa: "دینار کویت", tr: "Kuveyt Dinarı", ar: "دينار كويتي", de: "Kuwait-Dinar",
+      ja: "クウェート・ディナール", zh: "科威特第纳尔", uz: "Quvayt dinori", ru: "Кувейтский динар", ku: "دیناری کوێتی",
+      ps: "کویټي دینار", hi: "कुवैती दीनार", ur: "کویتی دینار", sg: "Dinar ti Kuwait", fr: "Dinar koweïtien", es: "Dinar kuwaití"
+    },
+    desc: {
+      en: "Kuwait City", fa: "کویت سیتی", tr: "Kuveyt Şehri", ar: "مدينة الكويت", de: "Kuwait-Stadt",
+      ja: "クウェート市", zh: "科威特城", uz: "Quvayt shahri", ru: "Эль-Кувейت", ku: "شارى کوێت",
+      ps: "د کویټ ښار", hi: "कुवैत शहर", ur: "کویت سٹی", sg: "Kuwait City", fr: "Kuwait City", es: "Ciudad de Kuwait"
+    }
+  },
+  QAR: {
+    name: {
+      en: "Qatari Riyal", fa: "ریال قطر", tr: "Katar Riyali", ar: "ريال قطري", de: "Katar-Riyal",
+      ja: "カタール・リアル", zh: "卡塔尔里亚尔", uz: "Katar rioli", ru: "Катарский риял", ku: "ڕیاڵی قەتەری",
+      ps: "قطري ريال", hi: "कतरी रियाल", ur: "قطری ریال", sg: "Riyal ti Qatar", fr: "Riyal qatari", es: "Riyal qatarí"
+    },
+    desc: {
+      en: "Doha, State of Qatar", fa: "دوحه کشور قطر", tr: "Doha, Katar Devleti", ar: "الدوحة، دولة قطر", de: "Doha, Staat Katar",
+      ja: "ドーハ、カタール国", zh: "多哈，卡塔尔国", uz: "Doha, Qatar davlati", ru: "Доха, Государство Катар", ku: "دەوحە، دەوڵەتی قەتەر",
+      ps: "دوحه، د قطر هیواد", hi: "दोहा, कतर राज्य", ur: "دوحہ، ریاست قطر", sg: "Doha ti Qatar", fr: "Doha, État du Qatar", es: "Doha, Estado de Qatar"
+    }
+  }
+};
 
 interface CadastralCalculatorProps {
   lang: Language;
@@ -459,7 +668,7 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
               >
                 {currenciesList.map((curr) => (
                   <option key={curr.code} value={curr.code}>
-                    {curr.flag} {lang === "fa" ? curr.nameFa : curr.nameEn} ({curr.code})
+                    {curr.flag} {CURRENCY_MAP[curr.code]?.name[lang] || curr.nameEn} ({curr.code})
                   </option>
                 ))}
               </select>
@@ -526,7 +735,7 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
                         <span className="text-slate-400 font-bold flex items-center gap-1">
                           <span>{curr.flag}</span>
                           <span className="truncate">
-                            <AutoTranslate text={lang === "fa" ? curr.nameFa : curr.nameEn} lang={lang} /> ({curr.code})
+                            {CURRENCY_MAP[curr.code]?.name[lang] || curr.nameEn} ({curr.code})
                           </span>
                         </span>
                         <div className="relative flex items-center mt-1">
@@ -612,7 +821,7 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
                       <span className="text-xs font-bold text-slate-200 flex items-center gap-1">
                         <span>{curr.flag}</span>
                         <span>
-                          <AutoTranslate text={lang === "fa" ? curr.nameFa : curr.nameEn} lang={lang} />
+                          {CURRENCY_MAP[curr.code]?.name[lang] || curr.nameEn}
                         </span>
                       </span>
                       <span className="text-[8px] bg-slate-900 text-slate-400 border border-slate-800 px-1 py-0.5 rounded font-mono">
@@ -626,7 +835,7 @@ export const CadastralCalculator: React.FC<CadastralCalculatorProps> = ({ lang, 
                       </div>
                       <div className="text-[9px] text-slate-500 font-medium flex justify-between mt-0.5 w-full min-w-0">
                         <span className="truncate pr-1">
-                          <AutoTranslate text={curr.desc} lang={lang} />
+                          {CURRENCY_MAP[curr.code]?.desc[lang] || curr.desc}
                         </span>
                         <span className="text-indigo-400 font-bold shrink-0">{curr.symbol}</span>
                       </div>

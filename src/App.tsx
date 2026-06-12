@@ -257,7 +257,7 @@ export default function App() {
   });
 
   const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [settingsSaveStatus, setSettingsSaveStatus] = useState<"idle" | "success" | "error" | "reset_success">("idle");
+  const [settingsSaveStatus, setSettingsSaveStatus] = useState<"idle" | "success" | "local_success" | "error" | "reset_success">("idle");
 
   // Apply theme dynamically to document body
   useEffect(() => {
@@ -1122,17 +1122,17 @@ export default function App() {
       if (data && data.success) {
         setSettingsSaveStatus("success");
       } else {
-        setSettingsSaveStatus("error");
+        setSettingsSaveStatus("local_success");
       }
       console.log("Global server settings updated and persisted successfully!");
     } catch (e) {
-      setSettingsSaveStatus("error");
-      console.error("Failed to save global server settings:", e);
+      setSettingsSaveStatus("local_success");
+      console.error("Failed to save global server settings to server, falling back to local device storage:", e);
     } finally {
       setIsSavingSettings(false);
       setTimeout(() => {
         setSettingsSaveStatus("idle");
-      }, 5000);
+      }, 7000);
     }
   };
 
@@ -2385,6 +2385,11 @@ export default function App() {
                             {settingsSaveStatus === "success" && (
                               <div className="p-3 bg-emerald-950/40 border border-emerald-900/30 text-emerald-300 rounded-xl text-center text-xs animate-fade-in font-sans font-medium" id="settings-success-alert">
                                 ✅ {lang === "fa" ? "تغییرات با موفقیت در دیتابیس ابری ذخیره شدند و همگام‌سازی گردید!" : "Settings saved and synchronized successfully to Cloud Database!"}
+                              </div>
+                            )}
+                            {settingsSaveStatus === "local_success" && (
+                              <div className="p-3 bg-amber-950/40 border border-amber-900/30 text-amber-300 rounded-xl text-center text-xs animate-fade-in font-sans font-medium" id="settings-local-success-alert">
+                                ⚠️ {lang === "fa" ? "تنظیمات در این دستگاه ذخیره موقت شدند، اما اتصال به سرور جهت همگام‌سازی با سایر دستگاه‌ها موقتاً برقرار نشد." : "Changes saved locally on this device, but could not sync to other devices due to server offline/timeout state."}
                               </div>
                             )}
                             {settingsSaveStatus === "reset_success" && (
