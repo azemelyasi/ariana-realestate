@@ -10,6 +10,7 @@ import { initializeFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDoc
 import defaultProperties from "./properties.json";
 import defaultChats from "./chats.json";
 import defaultSettings from "./settings.json";
+import firebaseAppletConfig from "./firebase-applet-config.json";
 
 const app = express();
 app.use(compression()); // Ultra-high speed compression for fast loads on 3G/4G/5G mobile networks
@@ -1190,7 +1191,11 @@ async function initFirebase() {
       console.error("Failed to parse FIREBASE_CONFIG env variable:", e);
     }
   }
-  // 3. Fallback to firebase-applet-config.json file read dynamically (highly robust for both dev and Vercel serverless deploys)
+  // 3. Fallback to statically imported firebase-applet-config.json (crucial for Vercel serverless function bundling)
+  else if (firebaseAppletConfig && (firebaseAppletConfig as any).apiKey) {
+    firebaseConfig = firebaseAppletConfig;
+  }
+  // 4. Fallback to firebase-applet-config.json file read dynamically (highly robust for both dev and other server environments)
   else if (fs.existsSync(configPath)) {
     try {
       const rawConfig = fs.readFileSync(configPath, "utf8");

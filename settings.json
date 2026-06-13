@@ -1,5 +1,10 @@
 {
-  "theme": "default",
-  "language": "en",
-  "notifications": true
+  "siteName": "Ariana Rahnuma",
+  "allowPublicPost": true,
+  "requireApproval": true,
+  "autoCategorization": true,
+  "requireVeto": false,
+  "themeMode": "ambient-dark",
+  "goldPriceUSDT": 10,
+  "fiatCurrencyName": "AFN"
 }
