@@ -4,7 +4,7 @@ import path from "path";
 import compression from "compression";
 import { GoogleGenAI } from "@google/genai";
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { initializeFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs, memoryLocalCache } from "firebase/firestore";
 
 // Static JSON imports to ensure 100% robust bundling on serverless hosters like Vercel/Netlify
 import defaultProperties from "./properties.json";
@@ -1132,9 +1132,10 @@ app.post("/api/automation/trigger-alert", (req, res) => {
 import fs from "fs";
 
 // 1. Properties persistence
-const propertiesFilePath = path.join(process.cwd(), "properties.json");
-const chatsFilePath = path.join(process.cwd(), "chats.json");
-const settingsFilePath = path.join(process.cwd(), "settings.json");
+const isVercel = !!process.env.VERCEL;
+const propertiesFilePath = isVercel ? "/tmp/properties.json" : path.join(process.cwd(), "properties.json");
+const chatsFilePath = isVercel ? "/tmp/chats.json" : path.join(process.cwd(), "chats.json");
+const settingsFilePath = isVercel ? "/tmp/settings.json" : path.join(process.cwd(), "settings.json");
 
 // Dynamic lazy initializer for Firebase client connection
 const configPath = path.join(process.cwd(), "firebase-applet-config.json");
@@ -1149,7 +1150,7 @@ function checkFirestoreAvailability(): boolean {
   if (!firestoreDb) return false;
   if (!isFirestoreHealthy) {
     const elapsed = Date.now() - lastFirestoreErrorTime;
-    if (elapsed > 45000) { // Retry after 45 seconds
+    if (elapsed > 5000) { // Retry after 5 seconds for extreme serverless responsiveness
       isFirestoreHealthy = true;
       console.log("⚡ [Firestore Circuit Breaker] Retrying connection attempt...");
     } else {
@@ -1218,14 +1219,13 @@ async function initFirebase() {
 
       firebaseApp = initializeApp(firebaseConfig);
       firestoreDb = initializeFirestore(firebaseApp, {
-        experimentalForceLongPolling: true
+        experimentalForceLongPolling: true,
+        localCache: memoryLocalCache()
       }, firebaseConfig.firestoreDatabaseId || "(default)");
       console.log("★★★★★ Firebase Connected: Successfully initialized Firestore client DB connection with long-polling enabled ★★★★★");
       
-      // Auto seed if empty (run asynchronously in background to never block startup flow)
-      seedFirestoreData().catch(err => {
-        console.error("Error seeding firestore background task:", err);
-      });
+      // Seeding is handled lazily on-demand inside read requests to prevent Vercel connection contention
+      console.log("⚡ [Firestore Auto-Config] Offline / Lazy Seeding configured.");
     } catch (err) {
       console.error("Error during Firebase lazy init:", err);
     }
@@ -1323,78 +1323,13 @@ function writeSettingsToDisk(settings: any) {
 // -------------------------------------------------------------
 // FIRESTORE HIGH ENERGY HYDRATION ENGINE
 // -------------------------------------------------------------
-async function seedFirestoreData() {
-  if (!firestoreDb) return;
-  try {
-    // Properties seeding
-    const readPropsPromise = getDocs(collection(firestoreDb, "properties"));
-    const timeoutPropsPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Properties seed retrieve timeout")), 8000)
-    );
-    const propSnapshot = await Promise.race([readPropsPromise, timeoutPropsPromise]);
-    
-    if (propSnapshot.empty) {
-      console.log("Firestore properties is completely vacant. Seeding default listings...");
-      const initialProps = readPropertiesFromDisk();
-      for (const p of initialProps) {
-        const writePromise = setDoc(doc(firestoreDb, "properties", p.id), p);
-        const timeoutWritePromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Property seed write timeout")), 8000)
-        );
-        await Promise.race([writePromise, timeoutWritePromise]);
-      }
-      console.log(`Firestore seeded successfully with ${initialProps.length} property listings!`);
-    }
-
-    // Chats seeding
-    const readChatsPromise = getDocs(collection(firestoreDb, "chats"));
-    const timeoutChatsPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Chats seed retrieve timeout")), 8000)
-    );
-    const chatSnapshot = await Promise.race([readChatsPromise, timeoutChatsPromise]);
-    
-    if (chatSnapshot.empty) {
-      console.log("Firestore chats is completely vacant. Seeding default messages...");
-      const initialChats = readChatsFromDisk();
-      for (const c of initialChats) {
-        const writePromise = setDoc(doc(firestoreDb, "chats", c.id), c);
-        const timeoutWritePromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Chat seed write timeout")), 8000)
-        );
-        await Promise.race([writePromise, timeoutWritePromise]);
-      }
-      console.log(`Firestore seeded successfully with ${initialChats.length} chat messages!`);
-    }
-
-    // Settings seeding
-    const settingsDocRef = doc(firestoreDb, "shared_config", "system_settings");
-    const readSettingsPromise = getDoc(settingsDocRef);
-    const timeoutSettingsPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Settings seed retrieve timeout")), 8000)
-    );
-    const settingsSnap = await Promise.race([readSettingsPromise, timeoutSettingsPromise]);
-    
-    if (!settingsSnap.exists()) {
-      console.log("Firestore shared_config/system_settings is completely empty. Seeding defaults...");
-      const defaultSet = readSettingsFromDisk();
-      const writePromise = setDoc(settingsDocRef, defaultSet);
-      const timeoutWritePromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Settings seed write timeout")), 8000)
-      );
-      await Promise.race([writePromise, timeoutWritePromise]);
-      console.log("Firestore system settings seeded successfully!");
-    }
-  } catch (err) {
-    console.error("Warning during background Firestore seeding. Will continue operational flow:", err);
-  }
-}
 
 async function readSettingsFromDatabase(): Promise<any> {
   if (checkFirestoreAvailability()) {
     try {
       const readPromise = getDoc(doc(firestoreDb, "shared_config", "system_settings"));
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore settings read timeout")), 6000)
+        setTimeout(() => reject(new Error("Firestore settings read timeout")), 5000)
       );
       const snap = await Promise.race([readPromise, timeoutPromise]);
       if (snap.exists()) {
@@ -1403,6 +1338,12 @@ async function readSettingsFromDatabase(): Promise<any> {
           fs.writeFileSync(settingsFilePath, JSON.stringify(val, null, 2), "utf8");
         } catch (err) {}
         return val;
+      } else {
+        // Safe lazy seeding
+        const defaultSet = readSettingsFromDisk();
+        console.log("⚡ [Firestore Lazy-Seed] Seeding default system settings to empty database...");
+        await setDoc(doc(firestoreDb, "shared_config", "system_settings"), defaultSet);
+        return defaultSet;
       }
     } catch (e) {
       console.error("Firestore readSettings failure, fallback to disk:", e);
@@ -1418,7 +1359,7 @@ async function saveSettingsToDatabase(settings: any) {
     try {
       const writePromise = setDoc(doc(firestoreDb, "shared_config", "system_settings"), settings);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore settings write timeout")), 8000)
+        setTimeout(() => reject(new Error("Firestore settings write timeout")), 5000)
       );
       await Promise.race([writePromise, timeoutPromise]);
       console.log("Firestore SUCCESS: Fully persisted global system settings");
@@ -1436,7 +1377,7 @@ async function readPropertiesFromDatabase(): Promise<any[]> {
     try {
       const readPromise = getDocs(collection(firestoreDb, "properties"));
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore properties read timeout")), 6000)
+        setTimeout(() => reject(new Error("Firestore properties read timeout")), 5000)
       );
       const snapshot = await Promise.race([readPromise, timeoutPromise]);
       const list: any[] = [];
@@ -1452,6 +1393,14 @@ async function readPropertiesFromDatabase(): Promise<any[]> {
           fs.writeFileSync(propertiesFilePath, JSON.stringify(list, null, 2), "utf8");
         } catch (err) {}
         return list;
+      } else {
+        // Safe lazy seeding of default properties
+        const initialProps = readPropertiesFromDisk();
+        console.log("⚡ [Firestore Lazy-Seed] Seeding default listings to vacant properties collection...");
+        for (const p of initialProps) {
+          await setDoc(doc(firestoreDb, "properties", p.id), p);
+        }
+        return initialProps;
       }
     } catch (e) {
       console.error("Firestore readProperties failure, fallback to disk:", e);
@@ -1477,7 +1426,7 @@ async function savePropertyToDatabase(property: any) {
     try {
       const writePromise = setDoc(doc(firestoreDb, "properties", property.id), property);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore property write timeout")), 8000)
+        setTimeout(() => reject(new Error("Firestore property write timeout")), 5000)
       );
       await Promise.race([writePromise, timeoutPromise]);
       console.log(`Firestore SUCCESS: Fully persisted property ${property.id}`);
@@ -1499,7 +1448,7 @@ async function deletePropertyFromDatabase(id: string) {
     try {
       const deletePromise = deleteDoc(doc(firestoreDb, "properties", id));
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore property delete timeout")), 8000)
+        setTimeout(() => reject(new Error("Firestore property delete timeout")), 5000)
       );
       await Promise.race([deletePromise, timeoutPromise]);
       console.log(`Firestore SUCCESS: Deleted property ${id}`);
@@ -1515,7 +1464,7 @@ async function readChatsFromDatabase(): Promise<any[]> {
     try {
       const readPromise = getDocs(collection(firestoreDb, "chats"));
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore chats read timeout")), 6000)
+        setTimeout(() => reject(new Error("Firestore chats read timeout")), 5000)
       );
       const snapshot = await Promise.race([readPromise, timeoutPromise]);
       const list: any[] = [];
@@ -1531,6 +1480,14 @@ async function readChatsFromDatabase(): Promise<any[]> {
           fs.writeFileSync(chatsFilePath, JSON.stringify(list, null, 2), "utf8");
         } catch (err) {}
         return list;
+      } else {
+        // Safe lazy seeding of default chats
+        const initialChats = readChatsFromDisk();
+        console.log("⚡ [Firestore Lazy-Seed] Seeding default messages to vacant chats collection...");
+        for (const c of initialChats) {
+          await setDoc(doc(firestoreDb, "chats", c.id), c);
+        }
+        return initialChats;
       }
     } catch (e) {
       console.error("Firestore readChats failure, fallback to disk:", e);
@@ -1551,7 +1508,7 @@ async function saveChatToDatabase(msg: any) {
     try {
       const writePromise = setDoc(doc(firestoreDb, "chats", msg.id), msg);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore chat write timeout")), 8000)
+        setTimeout(() => reject(new Error("Firestore chat write timeout")), 5000)
       );
       await Promise.race([writePromise, timeoutPromise]);
       console.log(`Firestore SUCCESS: Fully persisted chat msg ${msg.id}`);
