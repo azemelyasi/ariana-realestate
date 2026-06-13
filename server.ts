@@ -1142,6 +1142,115 @@ const configPath = path.join(process.cwd(), "firebase-applet-config.json");
 let firebaseApp: any = null;
 let firestoreDb: any = null;
 
+let dbProjectId = "";
+let dbDatabaseId = "(default)";
+let dbApiKey = "";
+
+// Conversion helpers to map modern JS objects to/from Firestore REST format
+function toFirestoreValue(val: any): any {
+  if (val === null || val === undefined) {
+    return { nullValue: null };
+  }
+  if (typeof val === "string") {
+    return { stringValue: val };
+  }
+  if (typeof val === "number") {
+    if (Number.isInteger(val)) {
+      return { integerValue: val.toString() };
+    }
+    return { doubleValue: val };
+  }
+  if (typeof val === "boolean") {
+    return { booleanValue: val };
+  }
+  if (Array.isArray(val)) {
+    return {
+      arrayValue: {
+        values: val.map((v) => toFirestoreValue(v))
+      }
+    };
+  }
+  if (typeof val === "object") {
+    return {
+      mapValue: {
+        fields: toFirestoreFields(val)
+      }
+    };
+  }
+  return { stringValue: String(val) };
+}
+
+function toFirestoreFields(obj: any): any {
+  const fields: any = {};
+  if (!obj || typeof obj !== "object") return fields;
+  for (const key of Object.keys(obj)) {
+    fields[key] = toFirestoreValue(obj[key]);
+  }
+  return fields;
+}
+
+function fromFirestoreValue(val: any): any {
+  if (!val || typeof val !== "object") return val;
+  if ("stringValue" in val) return val.stringValue;
+  if ("integerValue" in val) return parseInt(val.integerValue, 10);
+  if ("doubleValue" in val) return val.doubleValue;
+  if ("booleanValue" in val) return val.booleanValue;
+  if ("nullValue" in val) return null;
+  if ("arrayValue" in val) {
+    const values = val.arrayValue.values || [];
+    return values.map((v: any) => fromFirestoreValue(v));
+  }
+  if ("mapValue" in val) {
+    return fromFirestoreFields(val.mapValue.fields || {});
+  }
+  return val;
+}
+
+function fromFirestoreFields(fields: any): any {
+  const result: any = {};
+  if (!fields || typeof fields !== "object") return result;
+  for (const key of Object.keys(fields)) {
+    result[key] = fromFirestoreValue(fields[key]);
+  }
+  return result;
+}
+
+// REST Client wrapper for serverless deployments (Vercel) where client SDK times out or freezes
+async function firestoreRestCall(method: "GET" | "POST" | "PATCH" | "DELETE", docPath: string, body?: any): Promise<any> {
+  const url = `https://firestore.googleapis.com/v1/projects/${dbProjectId}/databases/${dbDatabaseId}/documents/${docPath}?key=${dbApiKey}`;
+  const options: any = {
+    method,
+    headers: {
+      "Content-Type": "application/json"
+    }
+  };
+  if (body) {
+    if (method === "PATCH" || method === "POST") {
+      options.body = JSON.stringify({
+        fields: toFirestoreFields(body)
+      });
+    } else {
+      options.body = JSON.stringify(body);
+    }
+  }
+
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    if (response.status === 404 && method === "GET") {
+      return null; // Document not found is normal for reads
+    }
+    const text = await response.text();
+    throw new Error(`Firestore REST error: ${response.status} - ${text}`);
+  }
+
+  if (method === "DELETE") {
+    return { success: true };
+  }
+
+  const json = await response.json();
+  return json;
+}
+
 // CIRCUIT BREAKER / ROBUST HEALTH MONITOR PATTERN
 let isFirestoreHealthy = true;
 let lastFirestoreErrorTime = 0;
@@ -1216,6 +1325,10 @@ async function initFirebase() {
         firebaseConfig.firestoreDatabaseId = "ai-studio-9d6ca7a0-46ab-4c8b-99ad-1c2ca7940a31";
         console.log("⚡ [Firestore Auto-Config] Automatically mapped database ID to ai-studio-9d6ca7a0-46ab-4c8b-99ad-1c2ca7940a31 based on client projectId.");
       }
+
+      dbProjectId = firebaseConfig.projectId;
+      dbDatabaseId = firebaseConfig.firestoreDatabaseId || "(default)";
+      dbApiKey = firebaseConfig.apiKey || "";
 
       firebaseApp = initializeApp(firebaseConfig);
       firestoreDb = initializeFirestore(firebaseApp, {
@@ -1325,6 +1438,28 @@ function writeSettingsToDisk(settings: any) {
 // -------------------------------------------------------------
 
 async function readSettingsFromDatabase(): Promise<any> {
+  const isVercelEnvironment = !!process.env.VERCEL || isVercel;
+  if (isVercelEnvironment && dbProjectId && dbApiKey) {
+    try {
+      console.log("⚡ [Vercel Serverless REST] Querying system_settings document...");
+      const res = await firestoreRestCall("GET", "shared_config/system_settings");
+      if (res && res.fields) {
+        const val = fromFirestoreFields(res.fields);
+        try {
+          fs.writeFileSync(settingsFilePath, JSON.stringify(val, null, 2), "utf8");
+        } catch (err) {}
+        return val;
+      } else {
+        const defaultSet = readSettingsFromDisk();
+        console.log("⚡ [Vercel Serverless REST] Seeding default system settings to empty database...");
+        await firestoreRestCall("PATCH", "shared_config/system_settings", defaultSet);
+        return defaultSet;
+      }
+    } catch (e) {
+      console.error("Vercel Serverless REST readSettings failure:", e);
+    }
+  }
+
   if (checkFirestoreAvailability()) {
     try {
       const readPromise = getDoc(doc(firestoreDb, "shared_config", "system_settings"));
@@ -1355,6 +1490,18 @@ async function readSettingsFromDatabase(): Promise<any> {
 
 async function saveSettingsToDatabase(settings: any) {
   writeSettingsToDisk(settings);
+  const isVercelEnvironment = !!process.env.VERCEL || isVercel;
+  if (isVercelEnvironment && dbProjectId && dbApiKey) {
+    try {
+      console.log("⚡ [Vercel Serverless REST] Writing system_settings document...");
+      await firestoreRestCall("PATCH", "shared_config/system_settings", settings);
+      console.log("REST SUCCESS: Fully persisted global system settings");
+      return;
+    } catch (e) {
+      console.error("Vercel Serverless REST saveSettings failure:", e);
+    }
+  }
+
   if (checkFirestoreAvailability()) {
     try {
       const writePromise = setDoc(doc(firestoreDb, "shared_config", "system_settings"), settings);
@@ -1373,6 +1520,39 @@ async function saveSettingsToDatabase(settings: any) {
 // Master read-write functions that interact seamlessly with Firestore and keep local files updated
 
 async function readPropertiesFromDatabase(): Promise<any[]> {
+  const isVercelEnvironment = !!process.env.VERCEL || isVercel;
+  if (isVercelEnvironment && dbProjectId && dbApiKey) {
+    try {
+      console.log("⚡ [Vercel Serverless REST] Querying properties collection...");
+      const res = await firestoreRestCall("GET", "properties");
+      const list: any[] = [];
+      if (res && res.documents) {
+        for (const docObj of res.documents) {
+          if (docObj.fields) {
+            list.push(fromFirestoreFields(docObj.fields));
+          }
+        }
+      }
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      
+      if (list.length > 0) {
+        try {
+          fs.writeFileSync(propertiesFilePath, JSON.stringify(list, null, 2), "utf8");
+        } catch (err) {}
+        return list;
+      } else {
+        const initialProps = readPropertiesFromDisk();
+        console.log("⚡ [Vercel Serverless REST] Seeding default listings to vacant properties collection...");
+        for (const p of initialProps) {
+          await firestoreRestCall("PATCH", `properties/${p.id}`, p);
+        }
+        return initialProps;
+      }
+    } catch (e) {
+      console.error("Vercel Serverless REST readProperties failure:", e);
+    }
+  }
+
   if (checkFirestoreAvailability()) {
     try {
       const readPromise = getDocs(collection(firestoreDb, "properties"));
@@ -1421,6 +1601,18 @@ async function savePropertyToDatabase(property: any) {
   }
   writePropertiesToDisk(list);
 
+  const isVercelEnvironment = !!process.env.VERCEL || isVercel;
+  if (isVercelEnvironment && dbProjectId && dbApiKey) {
+    try {
+      console.log(`⚡ [Vercel Serverless REST] Writing property document ${property.id}...`);
+      await firestoreRestCall("PATCH", `properties/${property.id}`, property);
+      console.log(`REST SUCCESS: Fully persisted property ${property.id}`);
+      return;
+    } catch (e) {
+      console.error(`Vercel Serverless REST saveProperty failure:`, e);
+    }
+  }
+
   // Update cloud Firestore
   if (checkFirestoreAvailability()) {
     try {
@@ -1443,6 +1635,18 @@ async function deletePropertyFromDatabase(id: string) {
   list = list.filter((p: any) => p.id !== id);
   writePropertiesToDisk(list);
 
+  const isVercelEnvironment = !!process.env.VERCEL || isVercel;
+  if (isVercelEnvironment && dbProjectId && dbApiKey) {
+    try {
+      console.log(`⚡ [Vercel Serverless REST] Deleting property document ${id}...`);
+      await firestoreRestCall("DELETE", `properties/${id}`);
+      console.log(`REST SUCCESS: Deleted property ${id}`);
+      return;
+    } catch (e) {
+      console.error(`Vercel Serverless REST deleteProperty failure:`, e);
+    }
+  }
+
   // Update cloud Firestore
   if (checkFirestoreAvailability()) {
     try {
@@ -1460,6 +1664,39 @@ async function deletePropertyFromDatabase(id: string) {
 }
 
 async function readChatsFromDatabase(): Promise<any[]> {
+  const isVercelEnvironment = !!process.env.VERCEL || isVercel;
+  if (isVercelEnvironment && dbProjectId && dbApiKey) {
+    try {
+      console.log("⚡ [Vercel Serverless REST] Querying chats collection...");
+      const res = await firestoreRestCall("GET", "chats");
+      const list: any[] = [];
+      if (res && res.documents) {
+        for (const docObj of res.documents) {
+          if (docObj.fields) {
+            list.push(fromFirestoreFields(docObj.fields));
+          }
+        }
+      }
+      list.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+      
+      if (list.length > 0) {
+        try {
+          fs.writeFileSync(chatsFilePath, JSON.stringify(list, null, 2), "utf8");
+        } catch (err) {}
+        return list;
+      } else {
+        const initialChats = readChatsFromDisk();
+        console.log("⚡ [Vercel Serverless REST] Seeding default messages to vacant chats collection...");
+        for (const c of initialChats) {
+          await firestoreRestCall("PATCH", `chats/${c.id}`, c);
+        }
+        return initialChats;
+      }
+    } catch (e) {
+      console.error("Vercel Serverless REST readChats failure:", e);
+    }
+  }
+
   if (checkFirestoreAvailability()) {
     try {
       const readPromise = getDocs(collection(firestoreDb, "chats"));
@@ -1503,6 +1740,18 @@ async function saveChatToDatabase(msg: any) {
   chats.push(msg);
   writeChatsToDisk(chats);
 
+  const isVercelEnvironment = !!process.env.VERCEL || isVercel;
+  if (isVercelEnvironment && dbProjectId && dbApiKey) {
+    try {
+      console.log(`⚡ [Vercel Serverless REST] Writing chat message document ${msg.id}...`);
+      await firestoreRestCall("PATCH", `chats/${msg.id}`, msg);
+      console.log(`REST SUCCESS: Fully persisted chat msg ${msg.id}`);
+      return;
+    } catch (e) {
+      console.error(`Vercel Serverless REST saveChat failure:`, e);
+    }
+  }
+
   // Update cloud Firestore
   if (checkFirestoreAvailability()) {
     try {
@@ -1525,15 +1774,52 @@ const activeOTPs = new Map<string, { code: string; expires: number }>();
 // APIs:
 // GET test-firebase diagnostic tool
 app.get("/api/settings/test-firebase", async (_req, res) => {
+  const isVercelEnvironment = !!process.env.VERCEL || isVercel;
   const diagnosticInfo: any = {
     initialized: !!firestoreDb,
     healthy: isFirestoreHealthy,
     databaseId: firestoreDb ? (firestoreDb.databaseId || "not accessible") : null,
+    isVercel: isVercelEnvironment,
+    dbProjectId,
+    dbDatabaseId,
+    dbApiKey: dbApiKey ? "PRESENT" : "MISSING",
     time: new Date().toISOString(),
     envKeysDetected: {
       FIREBASE_API_KEY: !(!process.env.FIREBASE_API_KEY && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY && !process.env.VITE_FIREBASE_API_KEY)
     }
   };
+
+  if (isVercelEnvironment) {
+    try {
+      const testDoc = {
+        lastChecked: new Date().toISOString(),
+        platform: "vercel-serverless-rest",
+        healthy: true
+      };
+      await firestoreRestCall("PATCH", "test_connection/operational_status", testDoc);
+      const readData = await firestoreRestCall("GET", "test_connection/operational_status");
+      
+      return res.json({
+        success: true,
+        message: "Firestore REST connection, read, and write are 100% functional and synchronized on Vercel serverless environment successfully!",
+        diagnostics: {
+          ...diagnosticInfo,
+          testWriteReadSuccessful: true,
+          readBackData: readData ? fromFirestoreFields(readData.fields) : null
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        success: false,
+        error: "REST API test failed: " + err.message,
+        stack: err.stack,
+        diagnostics: {
+          ...diagnosticInfo,
+          testWriteReadSuccessful: false
+        }
+      });
+    }
+  }
 
   if (!firestoreDb) {
     return res.status(500).json({ success: false, error: "Firestore client is not initialized", diagnostics: diagnosticInfo });
@@ -1560,7 +1846,7 @@ app.get("/api/settings/test-firebase", async (_req, res) => {
       }
     });
   } catch (err: any) {
-    res.status(550).json({
+    res.status(500).json({
       success: false,
       error: err.message || "Failed to execute database write/read",
       stack: err.stack,
